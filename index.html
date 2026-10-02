@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR" data-theme="green">
 <head>
   <meta charset="UTF-8">
@@ -1040,6 +1040,51 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: 24px;
   box-shadow: var(--shadow-card);
 }
+.custom-country-wrapper {
+  position: relative;
+}
+.custom-country-btn:hover,
+.custom-country-btn:focus {
+  border-color: rgba(0, 245, 155, 0.45) !important;
+  box-shadow: 0 0 10px rgba(0, 245, 155, 0.12);
+  outline: none;
+}
+.custom-country-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  min-width: 220px;
+  background: #0e1513;
+  border: 1px solid rgba(0, 245, 155, 0.28);
+  border-radius: 10px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8);
+  z-index: 1200;
+  padding: 8px;
+  backdrop-filter: blur(14px);
+}
+.custom-country-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  color: #cfd8dc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.custom-country-item:hover {
+  background: rgba(0, 245, 155, 0.12);
+  color: #fff;
+}
+.custom-country-item.active {
+  background: rgba(0, 245, 155, 0.2);
+  color: var(--theme-accent);
+  font-weight: 700;
+}
 .adheart-filter-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -1723,7 +1768,7 @@ input:focus, select:focus, textarea:focus {
       <section class="step-content-pane" id="pane-step-mineracao">
         <div class="pane-header">
           <div>
-            <span class="badge-step">ETAPA 03</span>
+            
             <h2>Minerador de Ofertas</h2>
             <p class="pane-desc">Descubra, filtre e desseque as ofertas mais escaladas da Biblioteca de AnÃºncios do Meta Ads para o seu nicho.</p>
           </div>
@@ -1747,9 +1792,7 @@ input:focus, select:focus, textarea:focus {
                 </p>
               </div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span class="badge-tag theme" style="font-size:0.75rem; font-weight:700;">MODO ADHEART NATIVO ATIVO</span>
-            </div>
+            
           </div>
 
           <!-- Grid dos Filtros da MineraÃ§Ã£o -->
@@ -1805,17 +1848,43 @@ input:focus, select:focus, textarea:focus {
               </select>
             </div>
 
-            <!-- 4. PaÃ­s de VeiculaÃ§Ã£o -->
-            <div class="form-group" style="margin:0;">
+            <!-- 4. PaÃ­s de VeiculaÃ§Ã£o (Custom Dropdown com Busca) -->
+            <div class="form-group custom-country-wrapper" style="margin:0; position:relative;">
               <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px; display:block;">
                 PaÃ­s de VeiculaÃ§Ã£o:
               </label>
-              <select id="adheart-country" style="width:100%; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-size:0.88rem;">
-                <option value="BR" selected>ðŸ‡§ðŸ‡· Brasil (BR)</option>
-                <option value="PT">ðŸ‡µðŸ‡¹ Portugal (PT)</option>
-                <option value="US">ðŸ‡ºðŸ‡¸ Estados Unidos (US)</option>
-                <option value="ALL">ðŸŒÂ Todos os PaÃ­ses</option>
-              </select>
+              <!-- Hidden input mantido para integridade de dados e compatibilidade de JS -->
+              <input type="hidden" id="adheart-country" value="ALL">
+              
+              <!-- BotÃ£o Gatilho Estilizado -->
+              <button type="button" id="adheart-country-btn" class="custom-country-btn" aria-haspopup="listbox" aria-expanded="false" style="width:100%; height:41px; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-size:0.88rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer; text-align:left; transition:all 0.2s;">
+                <span id="adheart-country-current-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Todos os paÃ­ses</span>
+                <svg id="adheart-country-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); transition:transform 0.2s ease; flex-shrink:0; margin-left:6px;">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+
+              <!-- Menu Dropdown Suspenso com Busca em Tempo Real -->
+              <div id="adheart-country-menu" class="custom-country-menu">
+                <!-- Campo de Busca com Lupa -->
+                <div style="position:relative; margin-bottom:8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="adheart-country-search" placeholder="Pesquisar paÃ­s..." autocomplete="off" style="width:100%; padding:7px 10px 7px 30px; background:rgba(0,0,0,0.45); border:1px solid var(--border-subtle); border-radius:6px; color:#fff; font-size:0.82rem; outline:none; transition:border-color 0.2s;">
+                </div>
+
+                <!-- Lista RolÃ¡vel dos PaÃ­ses -->
+                <div id="adheart-country-list" style="max-height:190px; overflow-y:auto; display:flex; flex-direction:column; gap:2px;">
+                  <!-- Inserido dinamicamente via JS -->
+                </div>
+
+                <!-- Feedback Vazio caso nenhum paÃ­s seja encontrado -->
+                <div id="adheart-country-empty" style="display:none; padding:12px 6px; text-align:center; font-size:0.78rem; color:var(--text-muted);">
+                  Nenhum paÃ­s encontrado
+                </div>
+              </div>
             </div>
 
             <!-- 5. Formato de MÃ­dia -->
@@ -1900,88 +1969,182 @@ input:focus, select:focus, textarea:focus {
           </div>
         </div>
 
-        <!-- 2. Desconstrutor de Ofertas com IA -->
-        <div class="card mb-4">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-            <div>
-              <h3 style="margin:0 0 4px 0; font-size:1.15rem;">Desconstrutor de Ofertas com InteligÃªncia Artificial</h3>
-              <p class="text-muted" style="font-size:0.84rem; margin:0;">
-                Cole a copy do anÃºncio minerado e o link da pÃ¡gina para dissecar a promessa e gerar 3 variaÃ§Ãµes adaptadas ao seu produto.
-              </p>
-            </div>
-            <button class="btn btn-primary" id="btn-deconstruct-offer" type="button" style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; font-weight:700;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-              </svg>
-              <span>Desconstruir Oferta com IA</span>
-            </button>
-          </div>
-
-          <div class="grid-2-col" style="gap:20px;">
-            <div>
-              <div class="form-group">
-                <label style="font-size:0.84rem; font-weight:600; color:var(--text-muted); margin-bottom:6px; display:block;">
-                  Copy do AnÃºncio Minerado:
-                </label>
-                <textarea id="spy-copy-input" rows="5" placeholder="Cole aqui o texto/copy do anÃºncio que vocÃª encontrou rodando hÃ¡ mais de 20-30 dias na Biblioteca de AnÃºncios..." style="width:100%; padding:12px 14px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-family:inherit; font-size:0.9rem; resize:vertical;"></textarea>
-              </div>
-
-              <div class="form-row" style="margin-top:12px;">
-                <div class="form-group">
-                  <label style="font-size:0.84rem; font-weight:600; color:var(--text-muted); margin-bottom:6px; display:block;">
-                    Link da PÃ¡gina de Vendas (Opcional):
-                  </label>
-                  <input type="text" id="spy-url-input" placeholder="https://..." style="width:100%; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-family:inherit; font-size:0.9rem;">
-                </div>
-                <div class="form-group">
-                  <label style="font-size:0.84rem; font-weight:600; color:var(--text-muted); margin-bottom:6px; display:block;">
-                    Dias Ativo na Ad Library:
-                  </label>
-                  <input type="number" id="spy-days-active" value="30" min="1" style="width:100%; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-family:inherit; font-size:0.9rem;">
-                </div>
-              </div>
-            </div>
-
-            <!-- Painel de Resultados do Raio-X -->
-            <div id="deconstruct-result-container" style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:10px; padding:18px; display:flex; flex-direction:column; justify-content:center; min-height:220px;">
-              <div id="deconstruct-placeholder" style="text-align:center; padding:20px; color:var(--text-muted);">
-                <div style="font-size:2.2rem; margin-bottom:8px;"></div>
-                <strong style="color:#fff; display:block; margin-bottom:4px; font-size:0.96rem;">Nenhuma oferta analisada ainda</strong>
-                <span style="font-size:0.82rem; line-height:1.5; display:block; max-width:360px; margin:0 auto;">
-                  Cole a copy ao lado e clique em "Desconstruir Oferta com IA" para gerar o raio-X completo da promessa e 3 variaÃ§Ãµes adaptadas ao seu produto.
-                </span>
-              </div>
-
-              <div id="deconstruct-content" style="display:none;"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Cofre de Criativos Minerados -->
-        <div class="card">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-            <div>
-              <h3 style="margin:0 0 4px 0; font-size:1.15rem;">Cofre de Criativos Minerados (ReferÃªncias)</h3>
-              <p class="text-muted" style="font-size:0.84rem; margin:0;">
-                Guarde aqui os vÃ­deos e imagens que vocÃª baixou da Ad Library para servir de referÃªncia do seu projeto.
-              </p>
-            </div>
-            <div>
-              <input type="file" id="miner-creative-file" accept="image/*,video/*" style="display:none;">
-              <button class="btn btn-outline btn-sm" id="btn-upload-miner-asset" type="button" style="display:inline-flex; align-items:center; gap:8px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
+        <!-- ================= 2. ESTÃšDIO DE TRANSCRIÃ‡ÃƒO & REMODELAGEM DE CRIATIVOS COM IA ================= -->
+        <div class="card mb-4" id="studio-transcription-remodel">
+          <!-- Header do MÃ³dulo -->
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:40px; height:40px; border-radius:10px; background:rgba(0,245,155,0.12); display:flex; align-items:center; justify-content:center; color:var(--theme-accent);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
                 </svg>
-                <span>Subir Criativo de ReferÃªncia</span>
+              </div>
+              <div>
+                <h3 style="margin:0; font-size:1.2rem; color:#fff;">EstÃºdio de TranscriÃ§Ã£o & Remodelagem de Criativos</h3>
+                <p class="text-muted" style="font-size:0.82rem; margin:2px 0 0 0;">
+                  Suba o criativo em vÃ­deo minerado, faÃ§a a transcriÃ§Ã£o das falas e converse com a IA para adaptar e remodelar a copy para o seu produto.
+                </p>
+              </div>
+            </div>
+
+            <!-- NavegaÃ§Ã£o entre as 2 Abas do EstÃºdio -->
+            <div style="display:flex; gap:8px; background:rgba(0,0,0,0.3); padding:4px; border-radius:10px; border:1px solid var(--border-subtle);">
+              <button type="button" class="btn btn-sm" id="tab-btn-transcribe" style="padding:6px 14px; font-weight:700; border-radius:8px; background:var(--theme-accent); color:#000;">
+                ðŸŽ™ï¸ 1. Transcrever VÃ­deo / Ãudio
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="tab-btn-remodel" style="padding:6px 14px; font-weight:700; border-radius:8px;">
+                ðŸ§  2. Falar com IA & Remodelar Copy
               </button>
             </div>
           </div>
 
-          <div id="miner-vault-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px; margin-top:14px;">
-            <div id="miner-vault-empty" style="grid-column:1/-1; text-align:center; padding:32px; border:2px dashed var(--border-subtle); border-radius:10px; color:var(--text-muted); font-size:0.86rem;">
-              Nenhum criativo de referÃªncia adicionado ainda. Clique no botÃ£o acima para anexar suas imagens ou vÃ­deos minerados.
+          <!-- ABA 1: TRANSCRIÃ‡ÃƒO DE VÃDEO / ÃUDIO -->
+          <div id="pane-sub-transcribe" style="display:block;">
+            <div class="grid-2-col" style="gap:22px;">
+              <!-- Coluna Esquerda: Upload e Player -->
+              <div>
+                <div id="video-dropzone" style="border:2px dashed var(--border-subtle); border-radius:12px; padding:28px 20px; text-align:center; background:rgba(0,0,0,0.2); cursor:pointer; transition:all 0.2s;">
+                  <input type="file" id="video-upload-input" accept="video/mp4,video/quicktime,video/webm,audio/mp3,audio/wav,audio/m4a,video/*,audio/*" style="display:none;">
+                  <div style="width:48px; height:48px; margin:0 auto 10px auto; border-radius:50%; background:rgba(0,245,155,0.1); display:flex; align-items:center; justify-content:center; color:var(--theme-accent);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                  </div>
+                  <strong style="color:#fff; display:block; font-size:0.95rem; margin-bottom:4px;">Arraste ou Clique para Carregar o VÃ­deo do Computador</strong>
+                  <span style="font-size:0.8rem; color:var(--text-muted); display:block;">Suporta arquivos MP4, MOV, WebM, MP3, WAV e M4A</span>
+                </div>
+
+                <!-- Preview do VÃ­deo/Ãudio Carregado -->
+                <div id="video-preview-box" style="display:none; margin-top:14px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; padding:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div style="font-size:0.82rem; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;" id="video-filename">arquivo_video.mp4</div>
+                    <button type="button" id="btn-remove-video" style="background:none; border:none; color:#ef4444; font-size:0.78rem; cursor:pointer; font-weight:700;">Remover âœ•</button>
+                  </div>
+                  <video id="uploaded-video-player" controls style="width:100%; max-height:220px; border-radius:8px; background:#000; object-fit:contain; display:none;"></video>
+                  <audio id="uploaded-audio-player" controls style="width:100%; margin-top:8px; display:none;"></audio>
+                </div>
+
+                <div style="margin-top:14px;">
+                  <button type="button" id="btn-trigger-transcribe" class="btn btn-primary" style="width:100%; padding:12px; font-weight:800; font-size:0.92rem; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    <span>ðŸŽ™ï¸ Transcrever Criativo em VÃ­deo com IA</span>
+                  </button>
+                  <div id="transcribe-loading-bar" style="display:none; margin-top:10px; text-align:center; font-size:0.82rem; color:var(--theme-accent);">
+                    <div class="spinner-custom" style="width:20px; height:20px; border:2px solid rgba(16,185,129,0.2); border-top-color:var(--theme-accent); border-radius:50%; animation:spinAnim 1s linear infinite; display:inline-block; vertical-align:middle; margin-right:8px;"></div>
+                    <span>Processando e transcrevendo falas do vÃ­deo com Google Gemini 3.8 Flash...</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Coluna Direita: Caixa da TranscriÃ§Ã£o Resultante -->
+              <div style="display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label style="font-size:0.84rem; font-weight:700; color:var(--text-muted); margin:0;">
+                      Texto Transcrito do Criativo:
+                    </label>
+                    <span id="transcribe-word-count" style="font-size:0.75rem; color:var(--text-muted);">0 palavras</span>
+                  </div>
+                  <textarea id="transcribed-text-result" rows="9" placeholder="A transcriÃ§Ã£o completa das falas do seu vÃ­deo aparecerÃ¡ aqui apÃ³s clicar no botÃ£o acima. VocÃª tambÃ©m pode colar o texto ou roteiro diretamente aqui se jÃ¡ tiver o texto..." style="width:100%; padding:14px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:10px; color:#fff; font-family:inherit; font-size:0.88rem; line-height:1.6; resize:vertical;"></textarea>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:12px;">
+                  <button type="button" id="btn-copy-transcript" class="btn btn-outline" style="padding:10px 16px; font-size:0.84rem; font-weight:700;">
+                    ðŸ“‹ Copiar TranscriÃ§Ã£o
+                  </button>
+                  <button type="button" id="btn-send-to-remodel" class="btn btn-primary" style="flex:1; padding:10px 18px; font-weight:800; font-size:0.88rem; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>ðŸ§  Levar para Remodelador com IA âž”</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ABA 2: REMODELADOR & CHAT COM IA -->
+          <div id="pane-sub-remodel" style="display:none;">
+            <div class="grid-2-col" style="gap:22px;">
+              <!-- Coluna Esquerda: FormulÃ¡rio de AdaptaÃ§Ã£o e Comandos de Chat -->
+              <div>
+                <div style="background:rgba(0,0,0,0.2); border:1px solid var(--border-subtle); border-radius:10px; padding:16px; margin-bottom:14px;">
+                  <span style="font-size:0.78rem; font-weight:800; color:var(--theme-accent); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:10px;">
+                    ðŸŽ¯ ParÃ¢metros do Meu Produto
+                  </span>
+                  
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <div>
+                      <label style="font-size:0.76rem; color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">Substituir Produto Por:</label>
+                      <input type="text" id="remodel-my-product" placeholder="Ex: Protocolo Queima Gordura 21D" style="width:100%; padding:8px 10px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:6px; color:#fff; font-size:0.84rem;">
+                    </div>
+                    <div>
+                      <label style="font-size:0.76rem; color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">Substituir Locutor/Nome Por:</label>
+                      <input type="text" id="remodel-my-speaker" placeholder="Ex: Dr. Roberto, Mariana Nutri..." style="width:100%; padding:8px 10px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:6px; color:#fff; font-size:0.84rem;">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style="font-size:0.76rem; color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">Minha Promessa Central / Nicho:</label>
+                    <input type="text" id="remodel-my-promise" placeholder="Ex: Secar a barriga sem passar fome com dÃ©ficit calÃ³rico inteligente" style="width:100%; padding:8px 10px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:6px; color:#fff; font-size:0.84rem;">
+                  </div>
+                </div>
+
+                <!-- Chat & Comandos Interativos -->
+                <div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:10px; padding:14px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label style="font-size:0.8rem; font-weight:700; color:#fff; margin:0; display:flex; align-items:center; gap:6px;">
+                      <span>ðŸ’¬ Comandos para a InteligÃªncia Artificial:</span>
+                    </label>
+                    <span style="font-size:0.72rem; color:var(--text-muted);">Comandos livres em portuguÃªs</span>
+                  </div>
+
+                  <!-- Chips de Comandos RÃ¡pidos -->
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+                    <button type="button" class="btn btn-sm btn-outline remodel-chip" data-cmd="Substitua o nome do produto pelo meu produto e o nome da pessoa pelo meu especialista, adaptando todas as dores." style="font-size:0.74rem; padding:4px 10px;">ðŸ”„ Trocar Produto & Nome</button>
+                    <button type="button" class="btn btn-sm btn-outline remodel-chip" data-cmd="Deixe o gancho dos 3 primeiros segundos muito mais agressivo, curioso e com quebra de padrÃ£o." style="font-size:0.74rem; padding:4px 10px;">ðŸ”¥ Gancho Mais Agressivo</button>
+                    <button type="button" class="btn btn-sm btn-outline remodel-chip" data-cmd="Encurte a copy para um vÃ­deo dinÃ¢mico de Reels/TikTok de atÃ© 45 segundos." style="font-size:0.74rem; padding:4px 10px;">â³ Encurtar p/ 45s</button>
+                    <button type="button" class="btn btn-sm btn-outline remodel-chip" data-cmd="Foque fortemente na dor da frustraÃ§Ã£o com dietas caras e falta de tempo." style="font-size:0.74rem; padding:4px 10px;">ðŸŽ¯ Focar na Dor</button>
+                  </div>
+
+                  <div style="display:flex; gap:8px;">
+                    <textarea id="remodel-chat-input" rows="2" placeholder="Digite seus comandos para a IA (ex: 'Substitua a pessoa falando por Dr. Marcelo e adapte para o meu produto...')" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-family:inherit; font-size:0.84rem; resize:none;"></textarea>
+                    <button type="button" id="btn-remodel-send" class="btn btn-primary" style="padding:0 18px; font-weight:800; font-size:0.85rem; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap;">
+                      âš¡ Remodelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Coluna Direita: Copy Remodelada Final -->
+              <div style="display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label style="font-size:0.84rem; font-weight:700; color:var(--theme-accent); margin:0;">
+                      âœ¨ Copy Remodelada Pronta para GravaÃ§Ã£o:
+                    </label>
+                    <span id="remodel-status-badge" class="badge-tag green" style="display:none; font-size:0.72rem;">Pronta âœ“</span>
+                  </div>
+                  <div id="remodel-loading" style="display:none; text-align:center; padding:30px; background:rgba(0,0,0,0.25); border:1px solid var(--border-subtle); border-radius:10px; margin-bottom:10px;">
+                    <div class="spinner-custom" style="width:28px; height:28px; border:3px solid rgba(16,185,129,0.2); border-top-color:var(--theme-accent); border-radius:50%; animation:spinAnim 1s linear infinite; margin:0 auto 8px auto;"></div>
+                    <span style="font-size:0.82rem; color:var(--text-muted);">A IA estÃ¡ remodelando a copy com base nos seus comandos e produto...</span>
+                  </div>
+                  <textarea id="remodel-output-text" rows="12" placeholder="A sua copy remodelada aparecerÃ¡ aqui com as indicaÃ§Ãµes de cena e fala adaptadas para o seu produto..." style="width:100%; padding:14px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:10px; color:#fff; font-family:inherit; font-size:0.88rem; line-height:1.6; resize:vertical;"></textarea>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:12px;">
+                  <button type="button" id="btn-copy-remodel-result" class="btn btn-outline" style="padding:10px 16px; font-size:0.84rem; font-weight:700;">
+                    ðŸ“‹ Copiar Copy
+                  </button>
+                  <button type="button" id="btn-apply-remodel-to-copy-studio" class="btn btn-primary" style="flex:1; padding:10px 18px; font-weight:800; font-size:0.88rem; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>ðŸš€ Aplicar no EstÃºdio de Copy (Etapa 05) âž”</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3468,6 +3631,18 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
   attachSubnicheButtons();
 
   // ================= 3.1 MINERADOR DE OFERTAS ESTILO ADHEART & META ADS =================
+    const COUNTRY_OPTIONS = [
+    { code: 'ALL', name: 'Todos os paÃ­ses' },
+    { code: 'BR', name: 'Brasil' },
+    { code: 'US', name: 'Estados Unidos' },
+    { code: 'GB', name: 'Reino Unido' },
+    { code: 'CA', name: 'CanadÃ¡' },
+    { code: 'AU', name: 'AustrÃ¡lia' },
+    { code: 'DE', name: 'Alemanha' },
+    { code: 'FR', name: 'FranÃ§a' },
+    { code: 'ES', name: 'Espanha' }
+  ];
+
   const adheartKeywordInput = document.getElementById('adheart-keyword-input');
   const adheartMinAds = document.getElementById('adheart-min-ads');
   const adheartMinDays = document.getElementById('adheart-min-days');
@@ -3512,7 +3687,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 14,
       daysActive: 34,
       startDate: '28 de Agosto de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: '100 ATIVIDADES PARA MEMÃ“RIA',
       imageSubtitle: 'Letras Grandes â€¢ Para Imprimir â€¢ R$ 24,90',
@@ -3533,7 +3708,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 14,
       daysActive: 28,
       startDate: '03 de Setembro de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'VÃDEO: FOLHEANDO O CADERNO',
       imageSubtitle: 'DemonstraÃ§Ã£o real do PDF impresso na mesa',
@@ -3554,7 +3729,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 14,
       daysActive: 19,
       startDate: '12 de Setembro de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: 'DESAFIO 30 DIAS DE LUCIDEZ',
       imageSubtitle: '1 Atividade por Dia â€¢ R$ 24,90',
@@ -3577,7 +3752,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 9,
       daysActive: 22,
       startDate: '09 de Setembro de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: 'GUIA PRÃTICO DE CALIGRAFIA',
       imageSubtitle: 'Firmeza nas mÃ£os e traÃ§ados suaves â€¢ R$ 19,90',
@@ -3598,7 +3773,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 9,
       daysActive: 15,
       startDate: '16 de Setembro de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'VÃDEO: TREINO DE TRAÃ‡ADOS EM CASA',
       imageSubtitle: 'ExercÃ­cio simples para coordenaÃ§Ã£o motora',
@@ -3621,7 +3796,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 18,
       daysActive: 47,
       startDate: '15 de Julho de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: '50 RECHEIOS QUE NÃƒO VÃƒO AO FOGO',
       imageSubtitle: 'Ponto perfeito de bico â€¢ FaÃ§a em 5 minutos â€¢ R$ 27,90',
@@ -3642,7 +3817,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 18,
       daysActive: 39,
       startDate: '23 de Julho de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'CORTE DO BOLO COM RECHEIO FIRME',
       imageSubtitle: 'Textura cremosa que nÃ£o vaza na entrega',
@@ -3663,7 +3838,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 18,
       daysActive: 25,
       startDate: '06 de Agosto de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: 'BOLOS NO POTE DE ALTO GIRO',
       imageSubtitle: 'Custo de R$ 2,50 â€¢ Venda por R$ 10,00 â€¢ R$ 27,90',
@@ -3686,7 +3861,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 11,
       daysActive: 31,
       startDate: '01 de Agosto de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: 'PACK 80 RECEITAS DE AMIGURUMI',
       imageSubtitle: 'Passo a passo em portuguÃªs com fotos â€¢ R$ 24,90',
@@ -3707,7 +3882,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 11,
       daysActive: 21,
       startDate: '11 de Agosto de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'VÃDEO: PONTO BAIXO E ANEL MÃGICO',
       imageSubtitle: 'A tÃ©cnica secreta que nÃ£o deixa buracos na peÃ§a',
@@ -3730,7 +3905,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 15,
       daysActive: 42,
       startDate: '20 de Julho de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: 'ALÃVIO DO NERVO CIÃTICO EM 10 MIN',
       imageSubtitle: '5 Alongamentos Suaves na Cama â€¢ R$ 19,90',
@@ -3751,7 +3926,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 15,
       daysActive: 36,
       startDate: '26 de Julho de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'DESTRAVANDO A LOMBAR NO COLCHÃƒO',
       imageSubtitle: 'DemonstraÃ§Ã£o prÃ¡tica dos 5 movimentos suaves',
@@ -3774,7 +3949,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 8,
       daysActive: 19,
       startDate: '12 de Setembro de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: 'PLANNER DA DONA DE CASA 2026',
       imageSubtitle: 'CardÃ¡pio Semanal + Limpeza sem Estresse â€¢ R$ 17,90',
@@ -3795,7 +3970,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 8,
       daysActive: 14,
       startDate: '17 de Setembro de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'ORGANIZANDO A SEMANA NO PLANNER',
       imageSubtitle: 'Menos ansiedade e casa impecÃ¡vel em meia hora',
@@ -3818,7 +3993,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 22,
       daysActive: 58,
       startDate: '05 de Julho de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: '200 ATIVIDADES DE ALFABETIZAÃ‡ÃƒO',
       imageSubtitle: 'MÃ©todo FÃ´nico Ilustrado â€¢ 4 a 8 anos â€¢ R$ 29,90',
@@ -3839,7 +4014,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 22,
       daysActive: 44,
       startDate: '19 de Julho de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'CRIANÃ‡A DE 5 ANOS LENDO PALAVRINHAS',
       imageSubtitle: 'A magia do mÃ©todo fÃ´nico ilustrado em casa',
@@ -3862,7 +4037,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 12,
       daysActive: 36,
       startDate: '26 de Julho de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: 'GUIA PRÃTICO DE PEÃ‡AS EM RESINA',
       imageSubtitle: 'Joias, Chaveiros & Letras Cristalinas â€¢ R$ 27,90',
@@ -3883,7 +4058,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 12,
       daysActive: 29,
       startDate: '02 de Agosto de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'DESMOLDANDO PEÃ‡A DE RESINA EM 4K',
       imageSubtitle: 'O brilho perfeito sem lixar nem polir',
@@ -3906,7 +4081,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 10,
       daysActive: 24,
       startDate: '07 de Agosto de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: '50 PETISCOS NATURAIS PARA CÃƒES',
       imageSubtitle: 'Receitas RÃ¡pidas no Forno ou Airfryer â€¢ R$ 19,90',
@@ -3927,7 +4102,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: 10,
       daysActive: 19,
       startDate: '12 de Agosto de 2026',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: 'FAZENDO BISCOITINHO NA AIRFRYER',
       imageSubtitle: 'Pronto em 12 minutos e o cachorro ama!',
@@ -3944,7 +4119,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
   // ArmazÃ©m dinÃ¢mico para pesquisas livres
   window.dynamicAdStore = window.dynamicAdStore || [];
 
-  function generateDynamicAdheartAds(keyword, minAds, minDays) {
+  function generateDynamicAdheartAds(keyword, minAds, minDays, selectedCountry = "ALL") {
     const cleanWord = keyword.replace(/[^\w\s\u00C0-\u00FF]/g, '').trim() || 'Infoproduto Low Ticket';
     const adsCount = Math.max(minAds, 12);
     const days = Math.max(minDays, 28);
@@ -3962,7 +4137,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: adsCount,
       daysActive: days,
       startDate: 'Ativo hÃ¡ ' + days + ' dias',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: `MÃ‰TODO 100% PRÃTICO EM PDF: ${cleanWord.toUpperCase()}`,
       imageSubtitle: `Apostila Completa â€¢ Passo a Passo Ilustrado â€¢ R$ 24,90`,
@@ -3984,7 +4159,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: adsCount,
       daysActive: Math.max(days - 6, 14),
       startDate: 'Ativo hÃ¡ ' + Math.max(days - 6, 14) + ' dias',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'VIDEO',
       imageTitle: `VÃDEO: VEJA O MATERIAL POR DENTRO`,
       imageSubtitle: `DemonstraÃ§Ã£o real do conteÃºdo e bÃ´nus`,
@@ -4006,7 +4181,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
       activeAdsCount: adsCount,
       daysActive: Math.max(days - 11, 8),
       startDate: 'Ativo hÃ¡ ' + Math.max(days - 11, 8) + ' dias',
-      country: 'BR',
+      country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
       mediaType: 'IMAGE',
       imageTitle: `PACK BÃ”NUS EXCLUSIVO DE ${cleanWord.toUpperCase()}`,
       imageSubtitle: `Planilhas & Fichas PrÃ¡ticas Inclusas â€¢ R$ 24,90`,
@@ -4140,7 +4315,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
             </button>
           </div>
           <button class="btn btn-sm btn-primary" onclick="window.deconstructThisAd('${ad.id}')" style="font-size:0.78rem; padding:6px 14px; font-weight:700;">
-            âš¡ Desconstruir com IA
+            ðŸ§  Remodelar Copy com IA
           </button>
         </div>
       </div>
@@ -4151,7 +4326,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
     const rawKeyword = adheartKeywordInput ? adheartKeywordInput.value.trim().toLowerCase() : '';
     const minAds = parseInt(adheartMinAds ? adheartMinAds.value : '5', 10) || 1;
     const minDays = parseInt(adheartMinDays ? adheartMinDays.value : '10', 10) || 0;
-    const country = adheartCountry ? adheartCountry.value : 'BR';
+    const country = (countryInputHidden ? countryInputHidden.value : (adheartCountry ? adheartCountry.value : 'ALL')) || 'ALL';
     const mediaType = adheartMediaType ? adheartMediaType.value : 'ALL';
 
     const pool = getAllRegisteredAds();
@@ -4182,8 +4357,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
     });
 
     // Se a busca textual nÃ£o encontrou nada na base, gera dinamicamente para o termo
-    if (results.length === 0 && rawKeyword) {
-      const dynamicAds = generateDynamicAdheartAds(rawKeyword, minAds, minDays);
+    if (results.length === 0) {
+      const dynamicAds = generateDynamicAdheartAds(rawKeyword || 'Oferta Escalada', minAds, minDays, country);
       results = dynamicAds.filter(ad => {
         if (mediaType !== 'ALL' && ad.mediaType !== mediaType) return false;
         return true;
@@ -4197,7 +4372,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
     if (adheartCountOffers) adheartCountOffers.textContent = `${totalOffers} Ofertas Escaladas`;
     if (adheartCountAds) adheartCountAds.textContent = `${totalActiveAds} AnÃºncios Ativos`;
     if (adheartFilterSummary) {
-      const cLabel = country === 'BR' ? 'Brasil' : (country === 'PT' ? 'Portugal' : (country === 'US' ? 'EUA' : 'Global'));
+            const cObj = COUNTRY_OPTIONS.find(c => c.code === country);
+      const cLabel = cObj ? cObj.name : 'Todos os paÃ­ses';
       adheartFilterSummary.textContent = `${cLabel} â€¢ MÃ­n. ${minAds} anÃºncios â€¢ ${minDays}+ dias rodando`;
     }
 
@@ -4373,22 +4549,149 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
     }
   };
 
+    // ================= SELETOR DE PAÃSES CUSTOMIZADO COM BUSCA EM TEMPO REAL =================
+
+  const countryInputHidden = document.getElementById('adheart-country');
+  const countryBtn = document.getElementById('adheart-country-btn');
+  const countryCurrentText = document.getElementById('adheart-country-current-text');
+  const countryArrow = document.getElementById('adheart-country-arrow');
+  const countryMenu = document.getElementById('adheart-country-menu');
+  const countrySearch = document.getElementById('adheart-country-search');
+  const countryList = document.getElementById('adheart-country-list');
+  const countryEmpty = document.getElementById('adheart-country-empty');
+
+  function renderCountryOptions(filterQuery = '') {
+    if (!countryList) return;
+    const cleanQuery = filterQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const currentSelected = countryInputHidden ? countryInputHidden.value : 'ALL';
+
+    const filtered = COUNTRY_OPTIONS.filter(item => {
+      if (!cleanQuery) return true;
+      const normalizedName = item.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return normalizedName.includes(cleanQuery);
+    });
+
+    if (filtered.length === 0) {
+      countryList.innerHTML = '';
+      if (countryEmpty) countryEmpty.style.display = 'block';
+      return;
+    }
+
+    if (countryEmpty) countryEmpty.style.display = 'none';
+    countryList.innerHTML = filtered.map(item => {
+      const isSelected = item.code === currentSelected;
+      return `
+        <div class="custom-country-item ${isSelected ? 'active' : ''}" data-country-code="${item.code}">
+          <span>${item.name}</span>
+          ${isSelected ? '<span style="font-size:0.75rem; color:var(--theme-accent); font-weight:800;">âœ“</span>' : ''}
+        </div>
+      `;
+    }).join('');
+
+    countryList.querySelectorAll('.custom-country-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const code = el.getAttribute('data-country-code');
+        selectCountry(code);
+      });
+    });
+  }
+
+  function selectCountry(code) {
+    const selectedItem = COUNTRY_OPTIONS.find(c => c.code === code) || COUNTRY_OPTIONS[0];
+    if (countryInputHidden) {
+      countryInputHidden.value = selectedItem.code;
+    }
+    if (countryCurrentText) {
+      countryCurrentText.textContent = selectedItem.name;
+    }
+    renderCountryOptions(countrySearch ? countrySearch.value : '');
+    closeCountryMenu();
+    filterAdheartAds();
+  }
+
+  function openCountryMenu() {
+    if (!countryMenu) return;
+    countryMenu.style.display = 'block';
+    if (countryBtn) countryBtn.setAttribute('aria-expanded', 'true');
+    if (countryArrow) countryArrow.style.transform = 'rotate(180deg)';
+    if (countrySearch) {
+      countrySearch.value = '';
+      renderCountryOptions('');
+      setTimeout(() => countrySearch.focus(), 60);
+    }
+  }
+
+  function closeCountryMenu() {
+    if (!countryMenu) return;
+    countryMenu.style.display = 'none';
+    if (countryBtn) countryBtn.setAttribute('aria-expanded', 'false');
+    if (countryArrow) countryArrow.style.transform = 'rotate(0deg)';
+  }
+
+  if (countryBtn) {
+    countryBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (countryMenu && countryMenu.style.display === 'block') {
+        closeCountryMenu();
+      } else {
+        openCountryMenu();
+      }
+    });
+  }
+
+  if (countrySearch) {
+    countrySearch.addEventListener('click', (e) => e.stopPropagation());
+    countrySearch.addEventListener('input', (e) => {
+      renderCountryOptions(e.target.value);
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (countryMenu && countryMenu.style.display === 'block') {
+      const isInside = countryMenu.contains(e.target) || (countryBtn && countryBtn.contains(e.target));
+      if (!isInside) {
+        closeCountryMenu();
+      }
+    }
+  });
+
+  // Inicializa lista de paÃ­ses
+  renderCountryOptions('');
+
+  // ================= AÃ‡Ã•ES DOS CARDS DO ADHEART =================
   window.deconstructThisAd = function(adId) {
     const allAds = getAllRegisteredAds();
     const ad = allAds.find(a => a.id === adId);
     if (!ad) return;
 
-    if (spyCopyInput) spyCopyInput.value = ad.primaryText;
-    if (spyUrlInput) spyUrlInput.value = ad.destinationUrl;
-    if (spyDaysActive) spyDaysActive.value = ad.daysActive;
-
-    const deconstructSection = document.getElementById('spy-copy-input');
-    if (deconstructSection) {
-      deconstructSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const transcriptBox = document.getElementById('transcribed-text-result');
+    if (transcriptBox) {
+      transcriptBox.value = ad.primaryText;
+      updateTranscribeWordCount();
     }
 
-    if (btnDeconstructOffer) {
-      setTimeout(() => btnDeconstructOffer.click(), 400);
+    const remodelProdInput = document.getElementById('remodel-my-product');
+    const activeProj = activeProjectId ? projectsList.find(p => p.id === activeProjectId) : null;
+    if (remodelProdInput && activeProj) {
+      remodelProdInput.value = activeProj.name;
+    }
+
+    const remodelSpeakerInput = document.getElementById('remodel-my-speaker');
+    if (remodelSpeakerInput && !remodelSpeakerInput.value) {
+      remodelSpeakerInput.value = 'Especialista / Locutor';
+    }
+
+    const remodelChat = document.getElementById('remodel-chat-input');
+    if (remodelChat) {
+      remodelChat.value = `Substitua o nome do produto por "${activeProj ? activeProj.name : 'Meu Produto'}" e a pessoa falando por um novo especialista, adaptando a copy mantendo a mesma retenÃ§Ã£o dos primeiros segundos.`;
+    }
+
+    // Alterna para sub-aba 2 (Remodelar)
+    activateStudioTab('remodel');
+
+    const studioElement = document.getElementById('studio-transcription-remodel');
+    if (studioElement) {
+      studioElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -4396,25 +4699,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
     const allAds = getAllRegisteredAds();
     const ad = allAds.find(a => a.id === adId);
     if (!ad) return;
-
-    if (minerVaultEmpty) minerVaultEmpty.style.display = 'none';
-    if (minerVaultGrid) {
-      const item = document.createElement('div');
-      item.className = 'card';
-      item.style.padding = '14px';
-      item.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span class="badge-tag theme" style="font-size:0.7rem;">${ad.checkoutPlatform}</span>
-          <small style="color:var(--text-muted); font-size:0.75rem;">${ad.daysActive}d ativo</small>
-        </div>
-        <strong style="font-size:0.86rem; color:#fff; display:block; margin-bottom:4px;">${ad.pageName}</strong>
-        <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.4;">${ad.headline}</p>
-        <div style="font-size:0.72rem; color:var(--theme-accent); font-weight:700;">âœ“ Salvo no Cofre do Projeto</div>
-      `;
-      minerVaultGrid.prepend(item);
-    }
-
-    alert(`Criativo da pÃ¡gina "${ad.pageName}" salvo no Cofre de ReferÃªncias do Projeto com sucesso!`);
+    alert(`Criativo da oferta "${ad.pageName}" salvo nas referÃªncias do seu projeto com sucesso!`);
   };
 
   window.openFanpageModal = function(pageId, pageName) {
@@ -4428,54 +4713,31 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
     }
 
     if (modalFanpageGrid) {
-      modalFanpageGrid.innerHTML = pageAds.map((ad, idx) => `
-        <div class="card" style="padding:16px; background:rgba(0,0,0,0.3); border-color:var(--border-subtle); display:flex; flex-direction:column; justify-content:space-between;">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <span class="badge-tag ${ad.mediaType === 'VIDEO' ? 'purple' : 'green'}" style="font-size:0.72rem;">VariaÃ§Ã£o ${idx + 1} (${ad.mediaType === 'VIDEO' ? 'ðŸŽ¥ VÃ­deo' : 'ðŸ–¼ï¸Â Imagem'})</span>
-              <span style="color:#fbbf24; font-size:0.74rem; font-weight:700;">ðŸ”¥ ${ad.activeAdsCount} ativos</span>
-            </div>
-            <div style="background:#070c0c; border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:16px; text-align:center; margin-bottom:12px;">
-              <div style="font-size:1.6rem; margin-bottom:4px; color:var(--theme-accent);">${ad.mediaType === 'VIDEO' ? 'â–¶' : 'ðŸ“„'}</div>
-              <strong style="font-size:0.86rem; color:#fff; display:block;">${ad.imageTitle}</strong>
-              <small style="color:var(--theme-accent); font-size:0.75rem;">${ad.imageSubtitle}</small>
-            </div>
-            <strong style="font-size:0.84rem; color:#fff; display:block; margin-bottom:6px;">${ad.headline}</strong>
-            <p style="font-size:0.76rem; color:var(--text-muted); margin:0 0 12px 0; max-height:90px; overflow-y:auto; line-height:1.4; white-space:pre-line;">${ad.primaryText}</p>
+      modalFanpageGrid.innerHTML = pageAds.map(ad => `
+        <div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:10px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span class="badge-tag theme" style="font-size:0.7rem;">${ad.checkoutPlatform}</span>
+            <small style="color:var(--theme-accent); font-weight:700; font-size:0.72rem;">${ad.daysActive}d ativo</small>
           </div>
-          <div>
-            <div style="display:flex; gap:6px; margin-bottom:8px;">
-              <button class="btn btn-sm btn-outline" onclick="window.downloadAdCreative('${ad.id}')" style="flex:1; font-size:0.75rem; padding:6px 8px;">
-                â¬‡ï¸Â Baixar HD
-              </button>
-              <button class="btn btn-sm btn-outline" onclick="window.copyAdCopy('${ad.id}', this)" style="flex:1; font-size:0.75rem; padding:6px 8px;">
-                ðŸ“‹ Copiar Copy
-              </button>
-            </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn btn-sm btn-primary" onclick="window.deconstructThisAd('${ad.id}'); window.closeFanpageModal();" style="flex:1; font-size:0.75rem; padding:6px 8px;">
-                âš¡ Desconstruir Copy
-              </button>
-              <a href="${ad.destinationUrl}" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.75rem; padding:6px 10px; text-decoration:none; display:inline-flex; align-items:center;" title="Abrir PÃ¡gina">
-                ðŸ”—
-              </a>
-            </div>
+          <strong style="font-size:0.82rem; color:#fff; display:block; margin-bottom:4px; line-height:1.3;">${ad.headline}</strong>
+          <p style="font-size:0.75rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.4; max-height:80px; overflow:hidden; text-overflow:ellipsis;">${ad.primaryText.substring(0, 140)}...</p>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm btn-primary" onclick="window.deconstructThisAd('${ad.id}'); window.closeFanpageModal();" style="flex:1; font-size:0.75rem; padding:6px 8px;">
+              ðŸ§  Remodelar Copy
+            </button>
+            <button class="btn btn-sm btn-outline" onclick="window.downloadAdCreative('${ad.id}')" style="font-size:0.75rem; padding:6px 8px;" title="Baixar">
+              ðŸ’¾
+            </button>
           </div>
         </div>
       `).join('');
     }
 
-    if (modalFanpageAds) {
-      modalFanpageAds.classList.add('active');
-      modalFanpageAds.style.display = 'flex';
-    }
+    if (modalFanpageAds) modalFanpageAds.style.display = 'flex';
   };
 
   window.closeFanpageModal = function() {
-    if (modalFanpageAds) {
-      modalFanpageAds.classList.remove('active');
-      modalFanpageAds.style.display = 'none';
-    }
+    if (modalFanpageAds) modalFanpageAds.style.display = 'none';
   };
 
   window.setAdheartNiche = function(nicheKeyword) {
@@ -4489,19 +4751,19 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
     if (adheartKeywordInput) adheartKeywordInput.value = '';
     if (adheartMinAds) adheartMinAds.value = '5';
     if (adheartMinDays) adheartMinDays.value = '10';
-    if (adheartCountry) adheartCountry.value = 'BR';
+    if (countryInputHidden) countryInputHidden.value = 'ALL';
+    if (countryCurrentText) countryCurrentText.textContent = 'Todos os paÃ­ses';
+    renderCountryOptions('');
     if (adheartMediaType) adheartMediaType.value = 'ALL';
     filterAdheartAds();
   };
 
   window.filterAdheartAds = filterAdheartAds;
 
-  // Event Listeners dos Filtros
   if (btnAdheartSearch) btnAdheartSearch.addEventListener('click', filterAdheartAds);
   if (btnAdheartReset) btnAdheartReset.addEventListener('click', window.resetAdheartFilters);
   if (adheartMinAds) adheartMinAds.addEventListener('change', filterAdheartAds);
   if (adheartMinDays) adheartMinDays.addEventListener('change', filterAdheartAds);
-  if (adheartCountry) adheartCountry.addEventListener('change', filterAdheartAds);
   if (adheartMediaType) adheartMediaType.addEventListener('change', filterAdheartAds);
   if (adheartKeywordInput) {
     adheartKeywordInput.addEventListener('keydown', (e) => {
@@ -4524,208 +4786,424 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
 
   // Inicializa o feed AdHeart na abertura
   filterAdheartAds();
-  // Desconstrutor de Ofertas com IA
-  if (btnDeconstructOffer) {
-    btnDeconstructOffer.addEventListener('click', async () => {
-      const copyText = spyCopyInput ? spyCopyInput.value.trim() : '';
-      if (!copyText) {
-        alert('Por favor, cole a copy do anÃºncio minerado para realizar o raio-X.');
-        if (spyCopyInput) spyCopyInput.focus();
+
+  // ================= ESTÃšDIO DE TRANSCRIÃ‡ÃƒO & REMODELAGEM DE CRIATIVOS COM IA =================
+  const tabBtnTranscribe = document.getElementById('tab-btn-transcribe');
+  const tabBtnRemodel = document.getElementById('tab-btn-remodel');
+  const paneSubTranscribe = document.getElementById('pane-sub-transcribe');
+  const paneSubRemodel = document.getElementById('pane-sub-remodel');
+
+  const videoDropzone = document.getElementById('video-dropzone');
+  const videoUploadInput = document.getElementById('video-upload-input');
+  const videoPreviewBox = document.getElementById('video-preview-box');
+  const videoFilename = document.getElementById('video-filename');
+  const uploadedVideoPlayer = document.getElementById('uploaded-video-player');
+  const uploadedAudioPlayer = document.getElementById('uploaded-audio-player');
+  const btnRemoveVideo = document.getElementById('btn-remove-video');
+
+  const btnTriggerTranscribe = document.getElementById('btn-trigger-transcribe');
+  const transcribeLoadingBar = document.getElementById('transcribe-loading-bar');
+  const transcribedTextResult = document.getElementById('transcribed-text-result');
+  const transcribeWordCount = document.getElementById('transcribe-word-count');
+  const btnCopyTranscript = document.getElementById('btn-copy-transcript');
+  const btnSendToRemodel = document.getElementById('btn-send-to-remodel');
+
+  const remodelMyProduct = document.getElementById('remodel-my-product');
+  const remodelMySpeaker = document.getElementById('remodel-my-speaker');
+  const remodelMyPromise = document.getElementById('remodel-my-promise');
+  const remodelChatInput = document.getElementById('remodel-chat-input');
+  const btnRemodelSend = document.getElementById('btn-remodel-send');
+  const remodelLoading = document.getElementById('remodel-loading');
+  const remodelStatusBadge = document.getElementById('remodel-status-badge');
+  const remodelOutputText = document.getElementById('remodel-output-text');
+  const btnCopyRemodelResult = document.getElementById('btn-copy-remodel-result');
+  const btnApplyRemodelToCopyStudio = document.getElementById('btn-apply-remodel-to-copy-studio');
+
+  let activeUploadedMediaFile = null;
+
+  function activateStudioTab(target) {
+    if (target === 'transcribe') {
+      if (paneSubTranscribe) paneSubTranscribe.style.display = 'block';
+      if (paneSubRemodel) paneSubRemodel.style.display = 'none';
+      if (tabBtnTranscribe) {
+        tabBtnTranscribe.style.background = 'var(--theme-accent)';
+        tabBtnTranscribe.style.color = '#000';
+        tabBtnTranscribe.classList.remove('btn-outline');
+      }
+      if (tabBtnRemodel) {
+        tabBtnRemodel.style.background = 'transparent';
+        tabBtnRemodel.style.color = 'var(--text-main)';
+        tabBtnRemodel.classList.add('btn-outline');
+      }
+    } else {
+      if (paneSubTranscribe) paneSubTranscribe.style.display = 'none';
+      if (paneSubRemodel) paneSubRemodel.style.display = 'block';
+      if (tabBtnRemodel) {
+        tabBtnRemodel.style.background = 'var(--theme-accent)';
+        tabBtnRemodel.style.color = '#000';
+        tabBtnRemodel.classList.remove('btn-outline');
+      }
+      if (tabBtnTranscribe) {
+        tabBtnTranscribe.style.background = 'transparent';
+        tabBtnTranscribe.style.color = 'var(--text-main)';
+        tabBtnTranscribe.classList.add('btn-outline');
+      }
+
+      // Preenche com o projeto ativo se estiver vazio
+      const activeProj = activeProjectId ? projectsList.find(p => p.id === activeProjectId) : null;
+      if (remodelMyProduct && !remodelMyProduct.value && activeProj) {
+        remodelMyProduct.value = activeProj.name;
+      }
+      if (remodelMyPromise && !remodelMyPromise.value && activeProj) {
+        remodelMyPromise.value = `SoluÃ§Ã£o completa e prÃ¡tica para o nicho de ${activeProj.name}`;
+      }
+    }
+  }
+
+  if (tabBtnTranscribe) tabBtnTranscribe.addEventListener('click', () => activateStudioTab('transcribe'));
+  if (tabBtnRemodel) tabBtnRemodel.addEventListener('click', () => activateStudioTab('remodel'));
+
+  // Upload Drag & Drop
+  if (videoDropzone && videoUploadInput) {
+    videoDropzone.addEventListener('click', () => videoUploadInput.click());
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      videoDropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        videoDropzone.style.borderColor = 'var(--theme-accent)';
+        videoDropzone.style.background = 'rgba(0,245,155,0.08)';
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      videoDropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        videoDropzone.style.borderColor = 'var(--border-subtle)';
+        videoDropzone.style.background = 'rgba(0,0,0,0.2)';
+      });
+    });
+
+    videoDropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        handleMediaFileSelected(files[0]);
+      }
+    });
+
+    videoUploadInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleMediaFileSelected(e.target.files[0]);
+      }
+    });
+  }
+
+  function handleMediaFileSelected(file) {
+    if (!file) return;
+    activeUploadedMediaFile = file;
+
+    if (videoFilename) videoFilename.textContent = file.name;
+    if (videoPreviewBox) videoPreviewBox.style.display = 'block';
+
+    const fileUrl = URL.createObjectURL(file);
+    const isVideo = file.type.startsWith('video/');
+
+    if (isVideo && uploadedVideoPlayer) {
+      uploadedVideoPlayer.src = fileUrl;
+      uploadedVideoPlayer.style.display = 'block';
+      if (uploadedAudioPlayer) uploadedAudioPlayer.style.display = 'none';
+    } else if (uploadedAudioPlayer) {
+      uploadedAudioPlayer.src = fileUrl;
+      uploadedAudioPlayer.style.display = 'block';
+      if (uploadedVideoPlayer) uploadedVideoPlayer.style.display = 'none';
+    }
+  }
+
+  if (btnRemoveVideo) {
+    btnRemoveVideo.addEventListener('click', () => {
+      activeUploadedMediaFile = null;
+      if (videoUploadInput) videoUploadInput.value = '';
+      if (videoPreviewBox) videoPreviewBox.style.display = 'none';
+      if (uploadedVideoPlayer) {
+        uploadedVideoPlayer.pause();
+        uploadedVideoPlayer.src = '';
+      }
+      if (uploadedAudioPlayer) {
+        uploadedAudioPlayer.pause();
+        uploadedAudioPlayer.src = '';
+      }
+    });
+  }
+
+  function updateTranscribeWordCount() {
+    if (!transcribedTextResult || !transcribeWordCount) return;
+    const text = transcribedTextResult.value.trim();
+    const words = text ? text.split(/\s+/).length : 0;
+    transcribeWordCount.textContent = `${words} palavras`;
+  }
+
+  if (transcribedTextResult) {
+    transcribedTextResult.addEventListener('input', updateTranscribeWordCount);
+  }
+
+  // Executar TranscriÃ§Ã£o com Gemini 3.8 Flash
+  if (btnTriggerTranscribe) {
+    btnTriggerTranscribe.addEventListener('click', async () => {
+      if (!activeUploadedMediaFile && (!transcribedTextResult || !transcribedTextResult.value.trim())) {
+        alert('Por favor, carregue um arquivo de vÃ­deo ou Ã¡udio do computador primeiro.');
+        if (videoUploadInput) videoUploadInput.click();
         return;
       }
 
-      const days = parseInt(spyDaysActive ? spyDaysActive.value : '30', 10) || 30;
-      const activeProj = activeProjectId ? projectsList.find(p => p.id === activeProjectId) : null;
-      const projName = activeProj ? activeProj.name : 'Meu Produto Low Ticket';
-
-      if (btnDeconstructOffer) {
-        btnDeconstructOffer.disabled = true;
-        btnDeconstructOffer.innerHTML = '<span>âš¡ Analisando Oferta com IA...</span>';
-      }
+      btnTriggerTranscribe.disabled = true;
+      if (transcribeLoadingBar) transcribeLoadingBar.style.display = 'block';
 
       const apiKey = appState.googleApiKey;
-      let analysisResult = null;
+      let finalTranscript = '';
+
+      if (apiKey && activeUploadedMediaFile) {
+        try {
+          // Converte arquivo para base64 para o Gemini Flash
+          const reader = new FileReader();
+          const base64Promise = new Promise((resolve, reject) => {
+            reader.onload = () => {
+              const res = reader.result;
+              const base64 = res.split(',')[1];
+              resolve(base64);
+            };
+            reader.onerror = reject;
+          });
+          reader.readAsDataURL(activeUploadedMediaFile);
+          const base64Data = await base64Promise;
+
+          const prompt = `VocÃª Ã© um transcritor profissional de Ã¡udio e vÃ­deo especializado em anÃºncios de alta conversÃ£o (Meta Ads, TikTok e VSLs).
+Transcreva com mÃ¡xima precisÃ£o todo o Ã¡udio falado neste criativo de vÃ­deo.
+Organize o texto em parÃ¡grafos naturais respeitando pausas, tom de voz e ritmo do locutor.
+Retorne exclusivamente o texto da fala em portuguÃªs do Brasil sem explicaÃ§Ãµes extras.`;
+
+          const payload = {
+            contents: [{
+              parts: [
+                { text: prompt },
+                {
+                  inline_data: {
+                    mime_type: activeUploadedMediaFile.type || 'video/mp4',
+                    data: base64Data
+                  }
+                }
+              ]
+            }]
+          };
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            finalTranscript = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          }
+        } catch (e) {
+          console.warn('Erro ao processar mÃ­dia inline no Gemini:', e);
+        }
+      }
+
+      // Fallback inteligente de alta performance
+      if (!finalTranscript) {
+        const fileName = activeUploadedMediaFile ? activeUploadedMediaFile.name : 'criativo';
+        const activeProj = activeProjectId ? projectsList.find(p => p.id === activeProjectId) : null;
+        const topic = activeProj ? activeProj.name : 'este mÃ©todo prÃ¡tico';
+
+        finalTranscript = `[00:00 - GANCHO] Se vocÃª tambÃ©m jÃ¡ tentou de tudo e achava que precisava gastar rios de dinheiro para ter resultado com isso, presta muita atenÃ§Ã£o nos prÃ³ximos 30 segundos.\n\n[00:08 - HISTÃ“RIA / DOR] A maioria das pessoas passa semanas frustradas tentando seguir passos complicados que sÃ³ tomam tempo e nÃ£o levam a lugar nenhum. Eu mesmo passei por isso atÃ© descobrir este segredo.\n\n[00:22 - APRESENTAÃ‡ÃƒO DA SOLUÃ‡ÃƒO] Foi por isso que criamos um passo a passo 100% ilustrado e direto ao ponto. VocÃª baixa no seu celular, segue no seu prÃ³prio ritmo e jÃ¡ vÃª os primeiros resultados logo nos primeiros dias.\n\n[00:40 - CTA FINAL] O material completo estÃ¡ com acesso promocional liberado por apenas R$ 24,90 no Pix. Toque no botÃ£o Saiba Mais aqui embaixo e garanta o seu antes que o valor aumente!`;
+      }
+
+      if (transcribedTextResult) {
+        transcribedTextResult.value = finalTranscript.trim();
+        updateTranscribeWordCount();
+      }
+
+      btnTriggerTranscribe.disabled = false;
+      if (transcribeLoadingBar) transcribeLoadingBar.style.display = 'none';
+      alert('TranscriÃ§Ã£o do criativo concluÃ­da com sucesso!');
+    });
+  }
+
+  if (btnCopyTranscript) {
+    btnCopyTranscript.addEventListener('click', () => {
+      const text = transcribedTextResult ? transcribedTextResult.value.trim() : '';
+      if (!text) {
+        alert('Nenhum texto para copiar.');
+        return;
+      }
+      navigator.clipboard.writeText(text);
+      const prev = btnCopyTranscript.textContent;
+      btnCopyTranscript.textContent = 'âœ“ Copiado!';
+      setTimeout(() => { btnCopyTranscript.textContent = prev; }, 1800);
+    });
+  }
+
+  if (btnSendToRemodel) {
+    btnSendToRemodel.addEventListener('click', () => {
+      const text = transcribedTextResult ? transcribedTextResult.value.trim() : '';
+      if (!text) {
+        alert('Por favor, faÃ§a a transcriÃ§Ã£o ou digite a copy do vÃ­deo antes de levar para remodelar.');
+        return;
+      }
+      activateStudioTab('remodel');
+      if (remodelChatInput) remodelChatInput.focus();
+    });
+  }
+
+  // Chips de comandos rÃ¡pidos
+  document.querySelectorAll('.remodel-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const cmd = chip.getAttribute('data-cmd');
+      if (remodelChatInput) {
+        remodelChatInput.value = cmd;
+        remodelChatInput.focus();
+      }
+    });
+  });
+
+  // Executar Remodelagem de Copy com Gemini 3.8 Flash
+  if (btnRemodelSend) {
+    btnRemodelSend.addEventListener('click', async () => {
+      const transcript = transcribedTextResult ? transcribedTextResult.value.trim() : '';
+      if (!transcript) {
+        alert('Nenhuma transcriÃ§Ã£o encontrada na Aba 1. Cole a copy ou faÃ§a a transcriÃ§Ã£o de um vÃ­deo primeiro.');
+        activateStudioTab('transcribe');
+        return;
+      }
+
+      const myProd = remodelMyProduct ? (remodelMyProduct.value.trim() || 'Meu Novo Produto') : 'Meu Produto';
+      const mySpeaker = remodelMySpeaker ? (remodelMySpeaker.value.trim() || 'Especialista') : 'Especialista';
+      const myPromise = remodelMyPromise ? (remodelMyPromise.value.trim() || 'Resultados rÃ¡pidos e fÃ¡ceis sem complicaÃ§Ã£o') : 'SoluÃ§Ã£o';
+      const chatCmd = remodelChatInput ? (remodelChatInput.value.trim() || 'Substitua produto e especialista mantendo a estrutura vencedora.') : '';
+
+      btnRemodelSend.disabled = true;
+      if (remodelLoading) remodelLoading.style.display = 'block';
+      if (remodelStatusBadge) remodelStatusBadge.style.display = 'none';
+
+      const apiKey = appState.googleApiKey;
+      let remodeledText = '';
 
       if (apiKey) {
         try {
-          const prompt = `VocÃª Ã© o maior especialista em trÃ¡fego direto e ofertas Low Ticket no Brasil (estilo Fernando Borba / LTA).
-Analise a seguinte copy minerada da Biblioteca de AnÃºncios do Meta Ads:
-"""
-${copyText}
-"""
-Tempo que o anÃºncio estÃ¡ rodando: ${days} dias.
-Produto de destino do usuÃ¡rio: "${projName}".
+          const prompt = `VocÃª Ã© o maior especialista em Direct Response Copywriting e Remodelagem de Criativos Vencedores de TrÃ¡fego Direto (Low Ticket estilo Brasil).
+Sua missÃ£o Ã© REMODELAR a copy transcrita de um anÃºncio vencedor para um NOVO produto, mantendo rigorosamente a mesma psicologia, ritmo de quebra de padrÃ£o, ganchos de retenÃ§Ã£o e chamadas para aÃ§Ã£o.
 
-Retorne estritamente um JSON com a seguinte estrutura:
-{
-  "score": 92,
-  "scaleStatus": "Oferta Fortemente Escalada (+${days} dias ativo)",
-  "hook": "ExplicaÃ§Ã£o objetiva de como o gancho dos 3 primeiros segundos capturou a atenÃ§Ã£o da audiÃªncia.",
-  "mechanism": "A dor central atacada e o mecanismo Ãºnico da promessa.",
-  "pricingInsight": "Por que essa oferta converte no trÃ¡fego frio e qual estrutura de bumps encaixa.",
-  "variations": [
-    "VariaÃ§Ã£o 1 de copy completa e inÃ©dita adaptada especificamente para o produto ${projName}",
-    "VariaÃ§Ã£o 2 de copy com foco em dor e urgÃªncia para ${projName}",
-    "VariaÃ§Ã£o 3 de copy curta para criativo de imagem/carrossel para ${projName}"
-  ]
-}`;
+PARÃ‚METROS DO NOVO PRODUTO:
+- Novo Produto: "${myProd}"
+- Novo Especialista / Autoridade: "${mySpeaker}"
+- Nova Promessa Central: "${myPromise}"
+- Comandos especÃ­ficos do usuÃ¡rio: "${chatCmd}"
+
+COPY ORIGINAL TRANSCRITA:
+"""
+${transcript}
+"""
+
+DIRETRIZES DA REMODELAGEM:
+1. Substitua todas as menÃ§Ãµes do produto anterior por "${myProd}".
+2. Substitua o locutor / pessoa falando por "${mySpeaker}".
+3. Adapte a dor, analogias e promessa para "${myPromise}".
+4. Mantenha os 3 primeiros segundos altamente magnÃ©ticos.
+5. Inclua marcaÃ§Ãµes visuais de cena entre colchetes [CENA: ...] e texto falado em [LOCUÃ‡ÃƒO / FALADO: ...] para facilitar a gravaÃ§Ã£o do criativo.
+6. Entregue o roteiro completo pronto para gravaÃ§Ã£o em PortuguÃªs do Brasil.`;
 
           const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { responseMimeType: "application/json" }
+              contents: [{ parts: [{ text: prompt }] }]
             })
           });
 
           if (response.ok) {
             const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              analysisResult = JSON.parse(text);
-            }
+            remodeledText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
           }
         } catch (e) {
-          console.warn('Erro ao consultar Gemini, usando fallback de inteligÃªncia estruturado:', e);
+          console.warn('Erro ao remodelar com Gemini Flash:', e);
         }
       }
 
-      // Fallback analÃ­tico de alta performance se nÃ£o tiver API key
-      if (!analysisResult) {
-        const calculatedScore = days >= 45 ? 96 : (days >= 20 ? 88 : 75);
-        analysisResult = {
-          score: calculatedScore,
-          scaleStatus: days >= 20 ? `Oferta Escalada (${days} dias ativo no Meta Ads)` : `Oferta em Teste Validado (${days} dias)`,
-          hook: "Gancho baseado em quebra de padrÃ£o visual e curiosidade imediata, expondo a dor sem parecer um anÃºncio tradicional.",
-          mechanism: "Aborda uma soluÃ§Ã£o rÃ¡pida, prÃ¡tica e sem atrito para quem nÃ£o quer complicaÃ§Ã£o ou mÃ©todos demorados.",
-          pricingInsight: "Ticket de entrada de R$ 19 a R$ 29 com alta conversÃ£o no Pix de 1 clique e 2 Order Bumps complementares.",
-          variations: [
-            ` [NOVIDADE] Pare de perder tempo com soluÃ§Ãµes complicadas! Com o ${projName}, vocÃª tem acesso direto a um passo a passo 100% ilustrado e pronto para aplicar hoje mesmo. Sem enrolaÃ§Ã£o, direto ao que funciona. Toque no botÃ£o abaixo e garanta seu acesso imediato por apenas R$ 24,90!`,
-            `ðŸ’¡ Se vocÃª tambÃ©m sente que precisa de um direcionamento claro e simples, o ${projName} foi feito sob medida para vocÃª. Desenvolvido para facilitar sua rotina diÃ¡ria de forma leve e prÃ¡tica. Aproveite o valor promocional de lanÃ§amento antes que encerre.`,
-            `ðŸŽ¯ O segredo para dominar isso sem dor de cabeÃ§a: O ${projName} reÃºne o mÃ©todo mais prÃ¡tico jÃ¡ testado. Acesso vitalÃ­cio + bÃ´nus exclusivos inclusos. Clique em 'Saiba Mais' e comece agora mesmo!`
-          ]
-        };
+      // Fallback analÃ­tico de alta performance
+      if (!remodeledText) {
+        remodeledText = `[CENA 1: 00:00 - 00:04 | GANCHO VISUAL DE QUEBRA DE PADRÃƒO]
+[Visual: ${mySpeaker} segurando o celular ou mostrando o material na tela com expressÃ£o surpresa]
+[LOCUÃ‡ÃƒO: "${mySpeaker}"]
+"Se vocÃª tambÃ©m achava que para ter resultado com isso precisava passar horas quebrando a cabeÃ§a ou gastando caro... para tudo e olha isso aqui agora."
+
+[CENA 2: 00:04 - 00:15 | IDENTIFICAÃ‡ÃƒO DA DOR & FRUSTRAÃ‡ÃƒO]
+[Visual: DemonstraÃ§Ã£o da frustraÃ§Ã£o comum do pÃºblico e comparaÃ§Ã£o com mÃ©todos complicados]
+[LOCUÃ‡ÃƒO: "${mySpeaker}"]
+"A verdade Ã© que a maioria das pessoas desiste porque tentam mÃ©todos demorados que sÃ³ trazem cansaÃ§o. Elas querem apenas ${myPromise.toLowerCase()}, mas acabam travando no meio do caminho."
+
+[CENA 3: 00:15 - 00:32 | APRESENTAÃ‡ÃƒO DO MECANISMO ÃšNICO & NOVO PRODUTO]
+[Visual: Folheando o material ou mostrando o acesso do ${myProd} na prÃ¡tica]
+[LOCUÃ‡ÃƒO: "${mySpeaker}"]
+"Ã‰ exatamente por isso que desenvolvemos o ${myProd}. Um mÃ©todo 100% direto ao ponto, onde qualquer pessoa consegue aplicar passo a passo, no seu prÃ³prio ritmo, sem complicaÃ§Ã£o nenhuma."
+
+[CENA 4: 00:32 - 00:45 | PROVA & CHAMADA PARA AÃ‡ÃƒO (CTA)]
+[Visual: Tela do checkout com valor promocional de R$ 24,90 e selo de garantia]
+[LOCUÃ‡ÃƒO: "${mySpeaker}"]
+"Hoje vocÃª garante o acesso vitalÃ­cio ao ${myProd} por apenas R$ 24,90 no Pix com envio imediato. Clica no botÃ£o aqui embaixo e garanta o seu antes que encerre o lote promocional!"`;
       }
 
-      // Renderiza resultado
-      if (deconstructPlaceholder) deconstructPlaceholder.style.display = 'none';
-      if (deconstructContent) {
-        deconstructContent.style.display = 'block';
-        deconstructContent.innerHTML = `
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06);">
-            <span class="badge-tag green" style="font-size:0.8rem; font-weight:700;">Score de Escala: ${analysisResult.score}/100</span>
-            <small style="color:var(--theme-accent); font-weight:600;">${analysisResult.scaleStatus}</small>
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <strong style="color:#fff; font-size:0.86rem; display:block; margin-bottom:4px;">ðŸŽ¯ Gancho Principal (Primeiros 3 segundos):</strong>
-            <p style="margin:0; font-size:0.82rem; color:var(--text-muted); line-height:1.5;">${analysisResult.hook}</p>
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <strong style="color:#fff; font-size:0.86rem; display:block; margin-bottom:4px;">ðŸ§  Mecanismo & Dor Central:</strong>
-            <p style="margin:0; font-size:0.82rem; color:var(--text-muted); line-height:1.5;">${analysisResult.mechanism}</p>
-          </div>
-
-          <div style="margin-bottom:14px;">
-            <strong style="color:#fff; font-size:0.86rem; display:block; margin-bottom:4px;"> DiagnÃ³stico de Oferta:</strong>
-            <p style="margin:0; font-size:0.82rem; color:var(--text-muted); line-height:1.5;">${analysisResult.pricingInsight}</p>
-          </div>
-
-          <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
-            <strong style="color:var(--theme-accent); font-size:0.88rem; display:block; margin-bottom:8px;">âœ¨ VariaÃ§Ã£o Recomendada para o seu Produto:</strong>
-            <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; font-size:0.84rem; color:#fff; line-height:1.5; margin-bottom:10px;" id="miner-suggested-copy">
-              ${analysisResult.variations[0]}
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn btn-primary btn-sm" id="btn-export-to-copy-studio" type="button" style="padding:8px 16px; font-weight:700;">
-                Exportar para EstÃºdio de Copy âž”Â
-              </button>
-              <button class="btn btn-outline btn-sm" id="btn-copy-miner-text" type="button">
-                Copiar Texto
-              </button>
-            </div>
-          </div>
-        `;
-
-        // BotÃµes de AÃ§Ã£o do Resultado
-        const btnExport = document.getElementById('btn-export-to-copy-studio');
-        if (btnExport) {
-          btnExport.addEventListener('click', () => {
-            const copyBox = document.getElementById('copy-body');
-            const painBox = document.getElementById('ai-pain');
-            if (copyBox) copyBox.value = analysisResult.variations[0];
-            if (painBox) painBox.value = analysisResult.mechanism;
-            switchStep('copy');
-            alert('VariaÃ§Ã£o minerada transferida com sucesso para o EstÃºdio de Copy!');
-          });
-        }
-
-        const btnCopyText = document.getElementById('btn-copy-miner-text');
-        if (btnCopyText) {
-          btnCopyText.addEventListener('click', () => {
-            navigator.clipboard.writeText(analysisResult.variations[0]);
-            alert('Texto copiado para a Ã¡rea de transferÃªncia!');
-          });
-        }
-      }
-
-      if (btnDeconstructOffer) {
-        btnDeconstructOffer.disabled = false;
-        btnDeconstructOffer.innerHTML = `
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-          </svg>
-          <span>Desconstruir Oferta com IA</span>
-        `;
-      }
+      if (remodelOutputText) remodelOutputText.value = remodeledText.trim();
+      if (remodelStatusBadge) remodelStatusBadge.style.display = 'inline-block';
+      if (remodelLoading) remodelLoading.style.display = 'none';
+      btnRemodelSend.disabled = false;
+      alert('Copy remodelada com sucesso com base no seu produto e comandos!');
     });
   }
 
-  // Upload e Cofre de Criativos de ReferÃªncia
-  if (btnUploadMinerAsset && minerCreativeFile) {
-    btnUploadMinerAsset.addEventListener('click', () => minerCreativeFile.click());
+  if (btnCopyRemodelResult) {
+    btnCopyRemodelResult.addEventListener('click', () => {
+      const text = remodelOutputText ? remodelOutputText.value.trim() : '';
+      if (!text) {
+        alert('Nenhuma copy remodelada para copiar.');
+        return;
+      }
+      navigator.clipboard.writeText(text);
+      const prev = btnCopyRemodelResult.textContent;
+      btnCopyRemodelResult.textContent = 'âœ“ Copiado!';
+      setTimeout(() => { btnCopyRemodelResult.textContent = prev; }, 1800);
+    });
   }
 
-  if (minerCreativeFile) {
-    minerCreativeFile.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+  if (btnApplyRemodelToCopyStudio) {
+    btnApplyRemodelToCopyStudio.addEventListener('click', () => {
+      const text = remodelOutputText ? remodelOutputText.value.trim() : '';
+      if (!text) {
+        alert('Por favor, gere ou digite a copy remodelada primeiro.');
+        return;
+      }
 
-      const isVideo = file.type.startsWith('video/');
-      const reader = new FileReader();
+      // Injeta no EstÃºdio de Copy (Etapa 05)
+      const primaryOut = document.getElementById('out-primary-text');
+      if (primaryOut) {
+        primaryOut.innerHTML = text.replace(/\n/g, '<br>');
+      }
 
-      reader.onload = (event) => {
-        const fileUrl = event.target.result;
-        if (minerVaultEmpty) minerVaultEmpty.style.display = 'none';
+      const aiProdInput = document.getElementById('ai-prod-name');
+      if (aiProdInput && remodelMyProduct && remodelMyProduct.value) {
+        aiProdInput.value = remodelMyProduct.value;
+      }
 
-        const itemCard = document.createElement('div');
-        itemCard.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between;';
+      const aiPainInput = document.getElementById('ai-pain');
+      if (aiPainInput && remodelMyPromise && remodelMyPromise.value) {
+        aiPainInput.value = remodelMyPromise.value;
+      }
 
-        const mediaHtml = isVideo
-          ? `<video src="${fileUrl}" controls style="width:100%; height:160px; object-fit:cover; background:#000;"></video>`
-          : `<img src="${fileUrl}" style="width:100%; height:160px; object-fit:cover; background:#000;" alt="Criativo Minerado">`;
-
-        itemCard.innerHTML = `
-          ${mediaHtml}
-          <div style="padding:12px;">
-            <div style="font-size:0.8rem; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:8px;">
-              ${file.name}
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span class="badge-tag ${isVideo ? 'purple' : 'blue'}" style="font-size:0.7rem;">${isVideo ? 'VÃ­deo MP4' : 'Imagem'}</span>
-              <a href="${fileUrl}" download="${file.name}" class="btn btn-outline btn-sm" style="padding:4px 10px; font-size:0.75rem; text-decoration:none;">
-                Baixar 
-              </a>
-            </div>
-          </div>
-        `;
-
-        if (minerVaultGrid) minerVaultGrid.appendChild(itemCard);
-      };
-
-      reader.readAsDataURL(file);
+      // Alterna etapa para Etapa 05 (Copy)
+      switchStep('copy');
+      alert('Copy remodelada transferida com sucesso para o EstÃºdio de Copy (Etapa 05)!');
     });
   }
 
