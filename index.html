@@ -1297,7 +1297,13 @@ input:focus, select:focus, textarea:focus {
 
    
 
-   <button class="btn btn-api-config" id="btn-open-settings" onclick="document.getElementById('settings-modal').classList.add('active')">
+       <!-- Indicador de Status do Banco de Dados PostgreSQL -->
+    <div id="db-status-pill" style="display:inline-flex; align-items:center; gap:7px; padding:6px 14px; border-radius:20px; font-size:0.75rem; background:rgba(0,0,0,0.4); border:1px solid var(--border-subtle); color:var(--text-muted); cursor:help; transition:all 0.3s; margin-right:8px;" title="Verificando conexÃ£o com o PostgreSQL...">
+      <span id="db-status-dot" style="width:7px; height:7px; border-radius:50%; background:#829a94; display:inline-block; transition:all 0.3s ease;"></span>
+      <span id="db-status-text" style="font-weight:600;">PostgreSQL: Verificando...</span>
+    </div>
+
+    <button class="btn btn-api-config" id="btn-open-settings" onclick="document.getElementById('settings-modal').classList.add('active')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
      <circle cx="12" cy="12" r="3"></circle>
      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -2751,6 +2757,7 @@ document.addEventListener('DOMContentLoaded', () => {
   switchStep(targetStep, true);
  }
  restoreActiveStepOnLoad();
+  initDatabaseSync();
 
  let chartInstance = null;
  const htmlRoot = document.documentElement;
@@ -2849,10 +2856,112 @@ document.addEventListener('DOMContentLoaded', () => {
  const btnConfirmNewProject = document.getElementById('btn-confirm-new-project');
  const inputNewProjectName = document.getElementById('input-new-project-name');
 
+  // ================= CAMADA DE PERSISTÃŠNCIA CENTRALIZADA (POSTGRESQL + LOCALSTORAGE FALLBACK) =================
+ let isServerDatabaseActive = false;
+
+ async function initDatabaseSync() {
+  const dbPill = document.getElementById('db-status-pill');
+  const dbDot = document.getElementById('db-status-dot');
+  const dbText = document.getElementById('db-status-text');
+
+  try {
+   const res = await fetch('/api/status', { cache: 'no-store' });
+   if (res.ok) {
+    const data = await res.json();
+    if (data.dbConnected) {
+     isServerDatabaseActive = true;
+     if (dbDot) {
+      dbDot.style.background = '#00f59b';
+      dbDot.style.boxShadow = '0 0 8px rgba(0,245,155,0.6)';
+     }
+     if (dbText) dbText.textContent = 'PostgreSQL Conectado';
+     if (dbPill) dbPill.title = 'Banco de Dados PostgreSQL operacional via Easypanel.';
+
+     // Carrega projetos salvos no PostgreSQL
+     try {
+      const pRes = await fetch('/api/projects');
+      if (pRes.ok) {
+       const pData = await pRes.json();
+       if (pData.projects && pData.projects.length > 0) {
+        const serverIds = new Set(pData.projects.map(p => p.id));
+        const localOnly = projectsList.filter(p => !serverIds.has(p.id));
+        projectsList = [...pData.projects, ...localOnly];
+        try {
+         localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projectsList));
+        } catch (e) {}
+        renderProjectsGrid();
+       } else if (projectsList.length > 0) {
+        // Envia projetos locais para popular o PostgreSQL pela primeira vez
+        syncProjectsListWithServer();
+       }
+      }
+     } catch (e) {}
+
+     // Carrega estado global do PostgreSQL
+     try {
+      const sRes = await fetch('/api/state');
+      if (sRes.ok) {
+       const sData = await sRes.json();
+       if (sData.state && typeof sData.state === 'object') {
+        appState = { ...appState, ...sData.state };
+        try {
+         localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        } catch (e) {}
+        updateProgressUI();
+       }
+      }
+     } catch (e) {}
+     return;
+    }
+   }
+  } catch (e) {}
+
+  // Fallback quando operando offline ou antes de configurar o PostgreSQL no Easypanel
+  isServerDatabaseActive = false;
+  if (dbDot) {
+   dbDot.style.background = '#829a94';
+   dbDot.style.boxShadow = 'none';
+  }
+  if (dbText) dbText.textContent = 'Armazenamento Local';
+  if (dbPill) dbPill.title = 'Operando via armazenamento local do navegador. Quando conectar o PostgreSQL no Easypanel, a sincronizaÃ§Ã£o serÃ¡ automÃ¡tica.';
+ }
+
+ async function syncProjectsListWithServer() {
+  if (!isServerDatabaseActive || !projectsList || projectsList.length === 0) return;
+  for (const proj of projectsList) {
+   try {
+    await fetch('/api/projects', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify(proj)
+    });
+   } catch (e) {}
+  }
+ }
+
+ async function deleteProjectFromServer(projId) {
+  if (!isServerDatabaseActive || !projId) return;
+  try {
+   await fetch(`/api/projects/${projId}`, { method: 'DELETE' });
+  } catch (e) {}
+ }
+
+ async function syncStateWithServer() {
+  if (!isServerDatabaseActive) return;
+  try {
+   await fetch('/api/state', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(appState)
+   });
+  } catch (e) {}
+ }
+
  function saveProjectsToStorage() {
   try {
    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projectsList));
   } catch (e) {}
+  syncProjectsListWithServer();
  }
 
  function renderProjectsGrid() {
@@ -2902,6 +3011,7 @@ document.addEventListener('DOMContentLoaded', () => {
      e.stopPropagation();
      if (confirm(`Tem certeza que deseja excluir o projeto "${proj.name}"?`)) {
       projectsList = projectsList.filter(p => p.id !== proj.id);
+      deleteProjectFromServer(proj.id);
       saveProjectsToStorage();
       renderProjectsGrid();
      }
@@ -3098,6 +3208,7 @@ document.addEventListener('DOMContentLoaded', () => {
    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
   } catch (e) {}
   updateProgressUI();
+  syncStateWithServer();
  }
 
  function updateProgressUI() {
