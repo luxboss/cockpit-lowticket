@@ -2687,18 +2687,35 @@ input:focus, select:focus, textarea:focus {
  };
 document.addEventListener('DOMContentLoaded', () => {
 
- // ================= 1. NAVEGAÃ‡ÃƒO ENTRE ABAS (DECLARADO NO TOPO PARA EVITAR REFERENCE ERROR) =================
+  // ================= 1. NAVEGAÃ‡ÃƒO ENTRE ABAS COM PERSISTÃŠNCIA COMPLETA (F5) =================
  const navBtns = document.querySelectorAll('.nav-step-item');
  const panes = document.querySelectorAll('.step-content-pane');
+ const ACTIVE_STEP_KEY = 'cockpit_active_step';
+ const VALID_STEPS = ['nicho', 'plataforma', 'mineracao', 'lucro', 'copy', 'criativos', 'video', 'metricas'];
 
- function switchStep(stepKey) {
-  if (!stepKey) return;
+ function switchStep(stepKey, pushState = true) {
+  if (!stepKey || !VALID_STEPS.includes(stepKey)) return;
   navBtns.forEach(btn => {
    btn.classList.toggle('active', btn.dataset.step === String(stepKey));
   });
   panes.forEach(pane => {
    pane.classList.toggle('active', pane.id === `pane-step-${stepKey}`);
   });
+
+  // Salva a aba ativa no localStorage para manter apÃ³s o F5
+  try {
+   localStorage.setItem(ACTIVE_STEP_KEY, String(stepKey));
+  } catch (e) {}
+
+  // Atualiza a URL com o hash correspondente sem recarregar a pÃ¡gina
+  if (pushState) {
+   try {
+    history.replaceState(null, '', '#' + stepKey);
+   } catch (e) {
+    window.location.hash = '#' + stepKey;
+   }
+  }
+
   if (stepKey === 'mineracao' && typeof window.filterAdheartAds === 'function') {
    window.filterAdheartAds();
   }
@@ -2712,7 +2729,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
  });
 
- // VariÃ¡vel do grÃ¡fico declarada no escopo superior para evitar TDZ
+ // Listener para navegaÃ§Ã£o por voltar/avanÃ§ar no navegador ou troca de hash
+ window.addEventListener('hashchange', () => {
+  const currentHash = window.location.hash.replace('#', '').trim();
+  if (currentHash && VALID_STEPS.includes(currentHash)) {
+   switchStep(currentHash, false);
+  }
+ });
+
+ // Restaura imediatamente a aba ativa no F5 ou abertura do app
+ function restoreActiveStepOnLoad() {
+  const hash = window.location.hash ? window.location.hash.replace('#', '').trim() : '';
+  const savedStep = localStorage.getItem(ACTIVE_STEP_KEY);
+  let targetStep = 'nicho';
+
+  if (hash && VALID_STEPS.includes(hash)) {
+   targetStep = hash;
+  } else if (savedStep && VALID_STEPS.includes(savedStep)) {
+   targetStep = savedStep;
+  }
+  switchStep(targetStep, true);
+ }
+ restoreActiveStepOnLoad();
+
  let chartInstance = null;
  const htmlRoot = document.documentElement;
  const THEME_STORAGE_KEY = 'lowticket_active_theme';
@@ -4821,7 +4860,11 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
 
  let activeUploadedMediaFile = null;
 
- function activateStudioTab(target) {
+ const STUDIO_SUBTAB_KEY = 'cockpit_studio_subtab';
+function activateStudioTab(target) {
+  try {
+    localStorage.setItem(STUDIO_SUBTAB_KEY, target);
+  } catch (e) {}
   if (target === 'transcribe') {
    if (paneSubTranscribe) paneSubTranscribe.style.display = 'block';
    if (paneSubRemodel) paneSubRemodel.style.display = 'none';
@@ -4862,6 +4905,12 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
 
  if (tabBtnTranscribe) tabBtnTranscribe.addEventListener('click', () => activateStudioTab('transcribe'));
  if (tabBtnRemodel) tabBtnRemodel.addEventListener('click', () => activateStudioTab('remodel'));
+
+  // Restaura sub-aba do estÃºdio salva no F5
+  const savedStudioSubtab = localStorage.getItem('cockpit_studio_subtab');
+  if (savedStudioSubtab) {
+    activateStudioTab(savedStudioSubtab);
+  }
 
  // Upload Drag & Drop
  if (videoDropzone && videoUploadInput) {
