@@ -3269,17 +3269,25 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
           if (text) {
             generatedData = JSON.parse(text);
           }
+        } else if (response.status === 402) {
+          console.warn('Google Gemini API Error 402: Prepayment credits depleted.');
+          const notice = document.createElement('div');
+          notice.style.cssText = 'background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; padding:10px 16px; border-radius:8px; margin:12px 0; font-size:0.86rem; display:flex; align-items:center; justify-content:space-between;';
+          notice.innerHTML = `<span>⚠️ <strong>Aviso da Google Cloud API:</strong> Seus créditos pré-pagos estão esgotados (Erro 402). O Cockpit acionou a <strong>Engine Estratégica Contextual</strong>. Você pode adicionar uma nova chave gratuita em Configurações (⚙️ no topo).</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fef08a;cursor:pointer;font-weight:bold;margin-left:12px;">✕</button>`;
+          if (offerBumpsResult && offerBumpsResult.parentNode) {
+            offerBumpsResult.parentNode.insertBefore(notice, offerBumpsResult);
+          }
         }
       } catch (err) {
         console.warn('Erro ao consultar Gemini, acionando gerador contextual local:', err);
       }
     }
 
-    // Fallback contextual de alta performance para qualquer nicho digitado
+    // Engine Estratégica Contextual Inteligente (Garante geração rica e especializada para qualquer nicho)
     if (!generatedData) {
       const lower = rawNiche.toLowerCase();
-      let mainTitle = `Guia Definitivo de ${rawNiche} em PDF`;
-      let mainDesc = `Material digital completo e ilustrado em PDF pronto para imprimir ou visualizar no celular. Reúne o método passo a passo mais direto e prático para dominar ${rawNiche} sem complicação.`;
+      let mainTitle = `Método Prático de ${rawNiche} em PDF`;
+      let mainDesc = `Material digital completo e ilustrado em PDF pronto para imprimir ou visualizar no celular. Reúne o passo a passo validado para dominar ${rawNiche} com rapidez e clareza.`;
       let b1Title = `Caderno Prático de Exercícios & Aplicação`;
       let b1Desc = `PDF complementar com atividades guiadas passo a passo para colocar em prática todo o conteúdo do produto principal imediatamente.`;
       let b2Title = `Manual de Atalhos & Modelos Prontos`;
@@ -3287,7 +3295,17 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
       let b3Title = `Checklist Rápido de Execução Diária`;
       let b3Desc = `Ficha em PDF de 1 página para imprimir e acompanhar o progresso diário com foco e clareza total.`;
 
-      if (lower.includes('confeit') || lower.includes('bolo') || lower.includes('doce')) {
+      // Nicho: Emagrecimento / Fitness / Queima de Gordura / Secar
+      if (lower.includes('gordur') || lower.includes('emagrec') || lower.includes('secar') || lower.includes('peso') || lower.includes('dieta') || lower.includes('treino') || lower.includes('fitness') || lower.includes('calor')) {
+        mainTitle = `Protocolo Queima Gordura em 21 Dias (Guia Ilustrado em PDF)`;
+        mainDesc = `Método prático de déficit calórico inteligente e acelerado sem passar fome. Contém cardápios acessíveis, rotinas de 15 minutos em casa e guia de compras no mercado para desinchar na primeira semana.`;
+        b1Title = `Cardápio Semanal de Secagem Rápida (15 Dias de Refeições)`;
+        b1Desc = `PDF complementar com planejamento diário de café, almoço e jantar econômico para secar a barriga sem cozinhar por horas.`;
+        b2Title = `Guia de Shots Termogênicos & Chás Noturnos Desinchantes`;
+        b2Desc = `Receitas práticas de 3 minutos em PDF para acelerar o metabolismo pela manhã e diminuir a retenção líquida.`;
+        b3Title = `Rastreador de Medidas & Checklist de Execução Diária`;
+        b3Desc = `Ficha imprimível de 1 página para monitorar a perda de medidas e manter a disciplina diária no piloto automático.`;
+      } else if (lower.includes('confeit') || lower.includes('bolo') || lower.includes('doce')) {
         mainTitle = `Apostila Confeitaria Lucrativa (50 Receitas Fáceis)`;
         mainDesc = `Livro de receitas digital em PDF com medidas exatas em gramas e xícaras, passo a passo ilustrado e cálculo de custo por porção para lucrar já na primeira semana.`;
         b1Title = `Guia de Precificação & Ficha Técnica Automática`;
@@ -3305,6 +3323,24 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
         b2Desc = `Ilustrações práticas para corrigir a postura sentado e na cama enquanto dorme.`;
         b3Title = `Tabela de Registro de Evolução e Alívio da Dor`;
         b3Desc = `Diário imprimível para registrar a redução dos incômodos ao longo dos dias.`;
+      } else if (lower.includes('renda') || lower.includes('dinheiro') || lower.includes('finan') || lower.includes('invest') || lower.includes('venda') || lower.includes('afiliad')) {
+        mainTitle = `Manual do Primeiro Lucro Digital (Passo a Passo em PDF)`;
+        mainDesc = `Plano de ação em PDF para criar uma fonte de renda rápida na internet com produtos de baixo valor, estratégias de tráfego direto e conversão no WhatsApp.`;
+        b1Title = `Roteiros Prontos de Fechamento de Vendas no 1 a 1`;
+        b1Desc = `Scripts validados de mensagens para quebrar objeções e receber comprovantes Pix na hora.`;
+        b2Title = `Guia das Melhores Ferramentas Gratuitas para Operar`;
+        b2Desc = `Lista comentada de plataformas, editores e links para economizar nos custos iniciais.`;
+        b3Title = `Planilha Imprimível de Metas & Controle Financeiro Diário`;
+        b3Desc = `Ficha de acompanhamento financeiro para reinvestir com inteligência e escalar resultados.`;
+      } else if (lower.includes('artesanat') || lower.includes('croch') || lower.includes('costur') || lower.includes('resin')) {
+        mainTitle = `Apostila 60 Moldes & Peças Mais Vendidas em PDF`;
+        mainDesc = `Catálogo ilustrado com moldes em tamanho real para imprimir, listas de materiais acessíveis e técnicas de acabamento perfeito para encantar clientes.`;
+        b1Title = `Guia Secreto de Fornecedores de Materiais com Desconto`;
+        b1Desc = `Lista com os melhores contatos de atacado para comprar insumos até 40% mais baratos.`;
+        b2Title = `Manual de Fotos com Celular que Vendem no Instagram`;
+        b2Desc = `Técnicas de iluminação e ângulos simples para valorizar as fotos das suas peças.`;
+        b3Title = `Checklist de Embalagem & Envio sem Danos`;
+        b3Desc = `Orientações passo a passo para enviar encomendas pelos Correios com segurança e mimos.`;
       }
 
       generatedData = {
@@ -3411,7 +3447,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
 
       if (typeof updateAOV === 'function') updateAOV();
 
-      alert(`Produto Principal "${main.name}" e os Order Bumps foram aplicados ao seu projeto com sucesso!`);
+      switchStep('copy');
+      alert(`Produto Principal "${main.name}" e os Order Bumps foram aplicados ao seu projeto! Redirecionando para o Estúdio de Copy.`);
     });
   }
 
@@ -4796,12 +4833,31 @@ Retorne um JSON com:
         }
       }
 
-      // Fallback estruturado de alta resposta direta
+      // Fallback estruturado de alta resposta direta dinâmico e contextual
       setTimeout(() => {
-        outPrimaryText.textContent = `Se você tem mãe ou pai em casa que passa horas na frente da TV sem ânimo... você precisa ver isso. 👵 mente precisa de estímulo diário para continuar lúcida e ativa. Foi pensando nisso que especialistas reuniram o ${prodName}.\n\n✅ Letras ampliadas (não cansa a vista)\n✅ Exercícios nostálgicos de memória e raciocínio\n✅ Formato PDF pronto para imprimir em casa quantas vezes quiser\n\nMais de 2.400 famílias já estão usando. Clique no botão abaixo e garanta o seu hoje por apenas ${prodPrice}!`;
-        outHeadline.textContent = `${prodName} • Letras Grandes`;
-        outDescription.textContent = `Mais de 2.400 famílias já aprovaram • ${prodPrice}`;
-        outHooks.innerHTML = `• "Se você tem idoso em casa que passa o dia na TV... veja isso."<br>• "O melhor remédio para a memória não vende em farmácia."<br>• "Eu achei a solução para os esquecimentos por menos de R$ 30."`;
+        const lowerNiche = (niche + ' ' + pain + ' ' + prodName).toLowerCase();
+        let copyIntro = `Se você sofre com ${pain.toLowerCase()} e já tentou de tudo sem resultado... você precisa conhecer o ${prodName}.`;
+        let hook1 = `Se você quer se livrar de ${pain.toLowerCase().slice(0, 45)}... veja isso.`;
+        let hook2 = `O método mais simples e direto para ter resultados com ${niche.slice(0, 35)}.`;
+
+        if (lowerNiche.includes('gordur') || lowerNiche.includes('emagrec') || lowerNiche.includes('secar') || lowerNiche.includes('peso') || lowerNiche.includes('calor')) {
+          copyIntro = `Se você está cansada de dietas restritivas que só te deixam frustrada e com o metabolismo travado... você precisa ver isso. Secar a barriga de verdade não exige passar fome, e sim aplicar uma rotina estratégica simples no dia a dia. Conheça o ${prodName}.`;
+          hook1 = "O segredo para queimar gordura sem passar fome e sem academia cara.";
+          hook2 = "Se você tem mais de 25 anos e sente o metabolismo lento... veja esse método.";
+        } else if (lowerNiche.includes('renda') || lowerNiche.includes('dinheiro') || lowerNiche.includes('lucro') || lowerNiche.includes('afiliad') || lowerNiche.includes('venda')) {
+          copyIntro = `Se você quer colocar uma renda extra no bolso todos os dias trabalhando pelo celular nas horas vagas... pare o que está fazendo e veja isso. Conheça o passo a passo completo do ${prodName}.`;
+          hook1 = "Como fazer suas primeiras vendas no Pix ainda essa semana pelo celular.";
+          hook2 = "O passo a passo que destrava vendas no automático por menos de R$ 30.";
+        } else if (lowerNiche.includes('idoso') || lowerNiche.includes('memoria') || lowerNiche.includes('cognit')) {
+          copyIntro = `Se você tem mãe, pai ou familiar em casa que passa horas na frente da TV sem ânimo... você precisa ver isso. A mente precisa de estímulo diário para continuar lúcida e ativa. Conheça o ${prodName}.`;
+          hook1 = "Se você tem idoso em casa que passa o dia na TV... veja isso.";
+          hook2 = "O melhor estímulo para a memória não vende em farmácia.";
+        }
+
+        outPrimaryText.textContent = `${copyIntro}\n\n✅ 100% Prático, direto ao ponto e sem enrolação\n✅ Passo a passo ilustrado e validado para aplicar hoje mesmo\n✅ Formato digital em PDF com acesso imediato no seu e-mail e WhatsApp\n\n🎯 Pare de perder tempo com métodos complicados. Toque no botão abaixo e garanta o seu acesso exclusivo por apenas ${prodPrice}!`;
+        outHeadline.textContent = `${prodName} • Acesso Imediato`;
+        outDescription.textContent = `Guia Prático em PDF • Apenas ${prodPrice}`;
+        outHooks.innerHTML = `• "${hook1}"<br>• "${hook2}"<br>• "Você não precisa gastar rios de dinheiro: garanta seu acesso hoje por apenas ${prodPrice}."`;
       }, 500);
     });
   }
