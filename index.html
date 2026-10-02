@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR" data-theme="green">
 <head>
   <meta charset="UTF-8">
@@ -1436,16 +1436,14 @@ input:focus, select:focus, textarea:focus {
       <section class="step-content-pane active" id="pane-step-nicho">
         <div class="pane-header">
           <div>
-            <span class="badge-step">ETAPA 01</span>
             <h2>Oferta + Order Bump</h2>
-            <p class="pane-desc">Digite qualquer nicho ou ideia que vocÃª pensou. A IA analisa o mercado e gera o nome do produto principal (PDF Low Ticket) com sua descriÃ§Ã£o, alÃ©m de 3 Order Bumps complementares com ideias prÃ¡ticas de PDFs para vender no checkout.</p>
           </div>
         </div>
 
         <!-- Input da Ideia de Nicho -->
         <div class="card mb-4">
           <label style="font-weight:600; font-size:0.86rem; margin-bottom:8px; display:block;">
-            Digite o Nicho ou a Ideia que vocÃª tem em mente:
+            Digite o Nicho ou a Ideia que você tem em mente:
           </label>
           <div class="search-hero-bar">
             <span class="search-hero-icon">
@@ -1454,7 +1452,7 @@ input:focus, select:focus, textarea:focus {
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
             </span>
-            <input type="text" id="niche-search-input" class="search-hero-input" placeholder="Ex: Atividades para Idosos, Confeitaria SaudÃ¡vel, Alongamento 50+, CrochÃª, EducaÃ§Ã£o Infantil..." value="Atividades Cognitivas para Idosos">
+            <input type="text" id="niche-search-input" class="search-hero-input" placeholder="Digite o nicho ou ideia que você tem em mente..." value="">
             <button class="btn btn-primary" id="btn-generate-offer-bumps" type="button" style="display:inline-flex; align-items:center; gap:8px; font-weight:700; white-space:nowrap;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -1462,30 +1460,25 @@ input:focus, select:focus, textarea:focus {
               <span>Gerar Oferta + 3 Order Bumps com IA</span>
             </button>
           </div>
-          <small class="text-muted block mt-2">
-            ðŸ’¡ <strong>EstratÃ©gia Low Ticket:</strong> A IA cria a estrutura perfeita de infoprodutos digitais em <strong>PDF</strong> (PreÃ§o de entrada acessÃ­vel + 3 Order Bumps que multiplicam o faturamento no checkout).
-          </small>
         </div>
 
         <!-- Loading Animado -->
         <div id="offer-bumps-loading" class="note-box mb-4" style="display:none; text-align:center; padding:22px;">
           <div class="spinner-custom" style="width:34px; height:34px; border:3px solid rgba(16,185,129,0.2); border-top-color:var(--theme-accent); border-radius:50%; animation:spinAnim 1s linear infinite; margin:0 auto 10px auto;"></div>
-          <strong style="color:#fff; font-size:0.95rem;">A InteligÃªncia Artificial estÃ¡ analisando o nicho...</strong>
+          <strong style="color:#fff; font-size:0.95rem;">A Inteligência Artificial está analisando o nicho...</strong>
           <p style="margin:4px 0 0 0; font-size:0.82rem; color:var(--text-muted);">
-            Estruturando o produto principal em PDF e 3 Order Bumps de alta conversÃ£o para o checkout.
+            Estruturando o produto principal e os 3 Order Bumps de alta conversão para o checkout.
           </p>
         </div>
 
         <!-- Container do Resultado -->
-        <div id="offer-bumps-result" style="display:block;">
+        <div id="offer-bumps-result" style="display:none;">
           <!-- 1. Produto Principal em Destaque -->
           <div class="card mb-4" style="border:1px solid var(--theme-accent); background:linear-gradient(180deg, rgba(16,185,129,0.06) 0%, rgba(10,18,14,0.6) 100%);">
             <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
               <div>
-                <span class="badge-step" style="margin-bottom:6px; display:inline-block;">PRODUTO PRINCIPAL (PDF DIGITAL LOW TICKET)</span>
-                <h3 id="res-main-prod-name" style="margin:0 0 6px 0; font-size:1.45rem; font-weight:800; color:#fff;">
-                  Caderno Mente Ativa (100 Atividades com Letras Grandes)
-                </h3>
+                <span class="badge-step" style="margin-bottom:6px; display:inline-block;">PRODUTO PRINCIPAL</span>
+                <h3 id="res-main-prod-name" style="margin:0 0 6px 0; font-size:1.45rem; font-weight:800; color:#fff;"></h3>
               </div>
               <div style="display:flex; align-items:center; gap:10px;">
                 <span class="badge-tag green" id="res-main-prod-price" style="font-size:0.9rem; font-weight:800; padding:6px 14px;">
@@ -1505,10 +1498,10 @@ input:focus, select:focus, textarea:focus {
 
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
               <span style="font-size:0.8rem; color:var(--text-muted);">
-                âœ¨ Formato: <strong>Arquivo Digital em PDF</strong> com entrega imediata por e-mail e WhatsApp.
+                ✨ Formato: <strong>Arquivo Digital</strong> com entrega imediata por e-mail e WhatsApp.
               </span>
               <button class="btn btn-primary btn-sm" id="btn-apply-main-to-project" type="button" style="padding:8px 18px; font-weight:700;">
-                Aplicar Oferta e Bumps no Meu Projeto âž”
+                Aplicar Oferta e Bumps no Meu Projeto ➔
               </button>
             </div>
           </div>
@@ -1517,7 +1510,7 @@ input:focus, select:focus, textarea:focus {
           <div style="margin-bottom:16px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
               <h3 style="margin:0; font-size:1.15rem; font-weight:700; color:#fff;">
-                3 Order Bumps EstratÃ©gicos Recomendados (PDFs Complementares)
+                3 Order Bumps Estratégicos Recomendados
               </h3>
               <span style="font-size:0.78rem; color:var(--text-muted);">
                 Caixinhas de 1 clique para adicionar no checkout
@@ -3385,7 +3378,10 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrÃ£o:
     }
 
     if (offerBumpsLoading) offerBumpsLoading.style.display = 'none';
-    if (offerBumpsResult) offerBumpsResult.style.opacity = '1';
+    if (offerBumpsResult) {
+      offerBumpsResult.style.display = 'block';
+      offerBumpsResult.style.opacity = '1';
+    }
     if (btnGenerateOfferBumps) btnGenerateOfferBumps.disabled = false;
   }
 
