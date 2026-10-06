@@ -92,6 +92,16 @@ async function initDatabase() {
         value       JSONB NOT NULL,
         updated_at  TIMESTAMPTZ DEFAULT NOW()
       );
+      -- Migracao idempotente (soft delete + LWW): so adiciona, nunca remove
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS client_updated_at BIGINT NOT NULL DEFAULT 0;
+      CREATE INDEX IF NOT EXISTS idx_projects_deleted_at ON projects (deleted_at);
+      -- Backfill idempotente: linhas legadas herdam a versao de data.updatedAt (so inteiro valido, so onde ainda e 0, sem tombstones)
+      UPDATE projects
+         SET client_updated_at = CASE WHEN data->>'updatedAt' ~ '^[0-9]{1,15}$' THEN (data->>'updatedAt')::bigint ELSE 0 END
+       WHERE client_updated_at = 0
+         AND deleted_at IS NULL
+         AND data->>'updatedAt' ~ '^[0-9]{1,15}$';
     `);
   } finally {
     client.release();
@@ -132,6 +142,17 @@ if (pg && DATABASE_URL) {
     isDbConnected = false;
     dbErrorMsg = err.message;
     connectWithRetry();
+  });
+  // Clientes retirados do pool nao tem listener do pool: sem este handler, um 'error' (ex.: ECONNRESET)
+  // derruba o processo. So dispara reconexao na transicao online -> offline (sem cascata).
+  pool.on('connect', (client) => {
+    client.on('error', (err) => {
+      console.error('[PostgreSQL] Erro em conexao do pool:', err.message);
+      const wasConnected = isDbConnected;
+      isDbConnected = false;
+      dbErrorMsg = err.message;
+      if (wasConnected) connectWithRetry();
+    });
   });
   connectWithRetry();
 
@@ -217,17 +238,33 @@ function normalizeProject(raw) {
   const { id, name, niche, ...extra } = raw;
   if (typeof id !== 'string' || !ID_REGEX.test(id)) return null;
   if (typeof name !== 'string' || !name.trim() || name.length > 255) return null;
-  return { id, name: name.trim(), niche: typeof niche === 'string' ? niche.slice(0, 255) : '', extra };
+  // updatedAt do cliente (epoch ms): numero finito >= 0, senao 0. Continua tambem dentro de data.
+  const u = extra.updatedAt;
+  const updatedAt = typeof u === 'number' && Number.isFinite(u) && u >= 0 && u <= Number.MAX_SAFE_INTEGER ? Math.floor(u) : 0;
+  return { id, name: name.trim(), niche: typeof niche === 'string' ? niche.slice(0, 255) : '', extra, updatedAt };
 }
 
+// Upsert condicional (LWW): so aplica se nao ha tombstone e a versao recebida nao e mais antiga.
+// RETURNING id lista apenas as linhas aplicadas.
 const UPSERT_PROJECT_SQL = `
-  INSERT INTO projects (id, name, niche, data, updated_at)
-  VALUES ($1, $2, $3, $4, NOW())
+  INSERT INTO projects (id, name, niche, data, client_updated_at, updated_at)
+  VALUES ($1, $2, $3, $4, $5, NOW())
   ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     niche = EXCLUDED.niche,
     data = EXCLUDED.data,
-    updated_at = NOW()`;
+    client_updated_at = EXCLUDED.client_updated_at,
+    updated_at = NOW()
+  WHERE projects.deleted_at IS NULL
+    AND projects.client_updated_at <= EXCLUDED.client_updated_at
+  RETURNING id`;
+
+// Soft delete: tombstone final, cria a linha se o id nao existir e preserva o deleted_at original.
+const DELETE_PROJECT_SQL = `
+  INSERT INTO projects (id, name, deleted_at, client_updated_at)
+  VALUES ($1, '[excluido]', NOW(), $2)
+  ON CONFLICT (id) DO UPDATE SET deleted_at = COALESCE(projects.deleted_at, NOW())
+  RETURNING deleted_at`;
 
 // ---------------------------------------------------------------------------
 // Proxy de IA (Gemini): a chave fica so no servidor, enviada no header x-goog-api-key
@@ -326,9 +363,17 @@ async function handleApi(req, res, pathname) {
     // ---- /api/projects ----
     if (pathname === '/api/projects') {
       if (method === 'GET') {
-        const result = await pool.query('SELECT id, name, niche, data FROM projects ORDER BY updated_at DESC');
-        const projects = result.rows.map((row) => ({ ...(row.data || {}), id: row.id, name: row.name, niche: row.niche }));
-        return sendJson(res, 200, { ok: true, projects });
+        const result = await pool.query('SELECT id, name, niche, data, client_updated_at, deleted_at FROM projects ORDER BY updated_at DESC');
+        const projects = [];
+        const tombstones = [];
+        for (const row of result.rows) {
+          if (row.deleted_at) {
+            tombstones.push({ id: row.id, deletedAt: new Date(row.deleted_at).getTime() });
+          } else {
+            projects.push({ ...(row.data || {}), id: row.id, name: row.name, niche: row.niche, updatedAt: Number(row.client_updated_at) });
+          }
+        }
+        return sendJson(res, 200, { ok: true, projects, tombstones });
       }
       if (method === 'POST') {
         const payload = await readJsonBody(req);
@@ -338,10 +383,24 @@ async function handleApi(req, res, pathname) {
           return sendJson(res, 400, { ok: false, error: 'Projeto invalido: id (A-Z, 0-9, _ . -) e name sao obrigatorios.' });
         }
         const client = await pool.connect();
+        let saved = 0;
+        const skipped = [];
         try {
           await client.query('BEGIN');
+          const notApplied = [];
           for (const p of normalized) {
-            await client.query(UPSERT_PROJECT_SQL, [p.id, p.name, p.niche, JSON.stringify(p.extra)]);
+            const r = await client.query(UPSERT_PROJECT_SQL, [p.id, p.name, p.niche, JSON.stringify(p.extra), String(p.updatedAt)]);
+            if (r.rowCount > 0) saved++; else notApplied.push(p.id);
+          }
+          if (notApplied.length) {
+            // Classifica os nao aplicados: tombstone ('deleted') ou versao antiga ('stale')
+            const cls = await client.query('SELECT id, deleted_at, client_updated_at FROM projects WHERE id = ANY($1)', [notApplied]);
+            const byId = new Map(cls.rows.map((row) => [row.id, row]));
+            for (const id of notApplied) {
+              const row = byId.get(id);
+              if (row && row.deleted_at) skipped.push({ id, reason: 'deleted' });
+              else skipped.push({ id, reason: 'stale', serverUpdatedAt: row ? Number(row.client_updated_at) : 0 });
+            }
           }
           await client.query('COMMIT');
         } catch (err) {
@@ -350,7 +409,7 @@ async function handleApi(req, res, pathname) {
         } finally {
           client.release();
         }
-        return sendJson(res, 200, { ok: true, saved: normalized.length });
+        return sendJson(res, 200, { ok: true, saved, skipped });
       }
       return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
     }
@@ -360,8 +419,9 @@ async function handleApi(req, res, pathname) {
       const id = decodeURIComponent(pathname.slice('/api/projects/'.length));
       if (!ID_REGEX.test(id)) return sendJson(res, 400, { ok: false, error: 'id invalido' });
       if (method === 'DELETE') {
-        await pool.query('DELETE FROM projects WHERE id = $1', [id]);
-        return sendJson(res, 200, { ok: true, deleted: id });
+        // Soft delete: statement unico (atomico), idempotente
+        const del = await pool.query(DELETE_PROJECT_SQL, [id, String(Date.now())]);
+        return sendJson(res, 200, { ok: true, deleted: id, deletedAt: new Date(del.rows[0].deleted_at).getTime() });
       }
       return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
     }
