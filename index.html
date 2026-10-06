@@ -2669,18 +2669,10 @@ input:focus, select:focus, textarea:focus {
    </div>
    
    <p class="text-muted" style="font-size:0.84rem;margin-bottom:16px;line-height:1.5;">
-    Insira sua chave de API do Google Cloud / Google AI Studio para ativar as pesquisas de nicho, plataformas e criativos com inteligência artificial:
+    As pesquisas de nicho, plataformas e criativos com inteligência artificial usam a chave Gemini configurada no servidor. Nenhuma chave é guardada no navegador.
    </p>
 
-   <div class="form-group" style="margin-bottom:18px;">
-    <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;">Chave de API (Gemini / Google Cloud):</label>
-    <input type="text" id="gemini-api-key" placeholder="AIzaSy..." style="width:100%;padding:12px 14px;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-family:inherit;font-size:0.9rem;">
-   </div>
-
-   <div class="flex-between" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-    <button class="btn btn-outline" id="btn-clear-key" type="button">Remover Chave</button>
-    <button class="btn btn-primary" id="btn-save-key" type="button">Salvar Chave</button>
-   </div>
+   <p id="ai-status-text" style="font-size:0.9rem;font-weight:600;margin-bottom:6px;color:#fbbf24;">IA: indisponivel (configure GEMINI_API_KEY e APP_TOKEN no servidor)</p>
   </div>
  </div>
 
@@ -2875,6 +2867,27 @@ document.addEventListener('DOMContentLoaded', () => {
    return fetch(url, Object.assign({}, opts, { headers: headers }));
   }
 
+  // IA via proxy do servidor (BE-001): a chave Gemini fica so no backend.
+  let aiServerReady = false;
+
+  function aiGenerate(body, opts) {
+   return apiFetch('/api/ai/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: opts && opts.signal
+   });
+  }
+
+  function renderAiStatus() {
+   const el = document.getElementById('ai-status-text');
+   if (!el) return;
+   el.textContent = aiServerReady
+    ? 'IA: configurada no servidor'
+    : 'IA: indisponivel (configure GEMINI_API_KEY e APP_TOKEN no servidor)';
+   el.style.color = aiServerReady ? '#4ade80' : '#fbbf24';
+  }
+
   function setDbPill(mode) {
    dbMode = mode;
    const dbPill = document.getElementById('db-status-pill');
@@ -2923,6 +2936,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res.status === 401) { markDbAuth(); return; }
     if (res.ok) {
      const data = await res.json();
+     aiServerReady = !!data.aiConfigured;
+     renderAiStatus();
      if (data.dbConnected) {
       const pRes = await apiFetch('/api/projects', { cache: 'no-store' });
       if (pRes.status === 401) { markDbAuth(); return; }
@@ -3254,12 +3269,10 @@ document.addEventListener('DOMContentLoaded', () => {
  if (headerActiveProject) headerActiveProject.style.display = 'none';
 
  // ================= 3. ESTADO E PERSISTÊNCIA =================
- const DEFAULT_GOOGLE_API_KEY = atob('QVEuQWI4Uk42TGVnNHA1NEJBRmYxaVZnUmMtYTdYbENhSVFSaTd2cDNpVWtjOXpRWDlsb1E=');
  const STORAGE_KEY = 'lowticket_cockpit_state_v4';
  let appState = {
   completedSteps: {},
-  tasks: {},
-  googleApiKey: DEFAULT_GOOGLE_API_KEY
+  tasks: {}
  };
 
  try {
@@ -3267,8 +3280,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (saved) {
    appState = Object.assign(appState, JSON.parse(saved));
   }
-  if (!appState.googleApiKey || appState.googleApiKey.includes('fzfA')) {
-   appState.googleApiKey = DEFAULT_GOOGLE_API_KEY;
+  // Purga a chave legada que versoes antigas guardavam no navegador.
+  if ('googleApiKey' in appState) {
+   delete appState.googleApiKey;
    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
   }
  } catch (e) {
@@ -3347,22 +3361,16 @@ document.addEventListener('DOMContentLoaded', () => {
    platSearchStatus.style.display = 'block';
    platSearchStatus.innerHTML = `<span>⏱ Consultando mercado brasileiro e dados de antifraude com IA...</span>`;
    
-   const apiKey = appState.googleApiKey;
-
-   if (apiKey) {
+   if (aiServerReady) {
     try {
      const prompt = `Analise as 5 melhores plataformas de checkout para venda de infoprodutos Low Ticket (R$ 10 a R$ 29) no Brasil hoje.
 Destaque: Kiwify, Pepper, Greenn, Hotmart e PerfectPay.
 Avalie para cada uma: taxa de transação, taxa de aprovação de Pix, risco de falso alerta de fraude no cartão e velocidade do checkout no mobile.
 Retorne estritamente um JSON com array de 5 objetos: [{"name": "...", "badge": "...", "rate": "...", "desc": "...", "pix": "...", "fraudRisk": "...", "conversion": "...", "retention": "..."}]`;
 
-     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-       contents: [{ parts: [{ text: prompt }] }],
-       generationConfig: { responseMimeType: "application/json" }
-      })
+     const response = await aiGenerate({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: "application/json" }
      });
 
      if (response.ok) {
@@ -3421,9 +3429,7 @@ Retorne estritamente um JSON com array de 5 objetos: [{"name": "...", "badge": "
    nicheLoadingBox.style.display = 'block';
    nicheLoadingBox.innerHTML = `<span>⏱ A Inteligência Artificial está minerando o nicho <strong>"${nicheQuery}"</strong> e extraindo 3 subnichos lucrativos...</span>`;
 
-   const apiKey = appState.googleApiKey;
-
-   if (apiKey) {
+   if (aiServerReady) {
     try {
      const prompt = `Você é um especialista em infoprodutos Low Ticket (R$ 10 a R$ 29) no mercado brasileiro.
 O usuário quer minerar o seguinte Nicho Principal: "${nicheQuery}".
@@ -3453,13 +3459,9 @@ Retorne estritamente um JSON no seguinte formato:
  }
 ]`;
 
-     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-       contents: [{ parts: [{ text: prompt }] }],
-       generationConfig: { responseMimeType: "application/json" }
-      })
+     const response = await aiGenerate({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: "application/json" }
      });
 
      if (response.ok) {
@@ -3593,10 +3595,9 @@ Retorne estritamente um JSON no seguinte formato:
   if (offerBumpsResult) offerBumpsResult.style.opacity = '0.5';
   if (btnGenerateOfferBumps) btnGenerateOfferBumps.disabled = true;
 
-  const apiKey = appState.googleApiKey;
   let generatedData = null;
 
-  if (apiKey) {
+  if (aiServerReady) {
    try {
     const prompt = `Você é o maior especialista em infoprodutos Low Ticket e tráfego direto no Brasil.
 O usuário quer vender infoprodutos digitais em formato de ARQUIVO PDF (e-books, cadernos de exercícios, apostilas, planners, guias práticos, fichas imprimíveis) com preço baixo de entrada (R$ 19,90 a R$ 29,90) e alavancar o lucro com 3 Order Bumps também em PDF (R$ 9,90 a R$ 17,90) na página de checkout.
@@ -3633,14 +3634,15 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
  ]
 }`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-     method: 'POST',
-     headers: { 'Content-Type': 'application/json' },
-     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json" }
-     })
+    const response = await aiGenerate({
+     contents: [{ parts: [{ text: prompt }] }],
+     generationConfig: { responseMimeType: "application/json" }
     });
+
+    let upstreamStatus = 0;
+    if (!response.ok) {
+     try { upstreamStatus = (await response.json()).upstreamStatus || 0; } catch (e) {}
+    }
 
     if (response.ok) {
      const resJson = await response.json();
@@ -3648,11 +3650,11 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      if (text) {
       generatedData = JSON.parse(text);
      }
-    } else if (response.status === 402) {
+    } else if (response.status === 502 && upstreamStatus === 402) {
      console.warn('Google Gemini API Error 402: Prepayment credits depleted.');
      const notice = document.createElement('div');
      notice.style.cssText = 'background:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; padding:10px 16px; border-radius:8px; margin:12px 0; font-size:0.86rem; display:flex; align-items:center; justify-content:space-between;';
-     notice.innerHTML = `<span> <strong>Aviso da Google Cloud API:</strong> Seus créditos pré-pagos estão esgotados (Erro 402). O Cockpit acionou a <strong>Engine Estratégica Contextual</strong>. Você pode adicionar uma nova chave gratuita em Configurações (™ no topo).</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fef08a;cursor:pointer;font-weight:bold;margin-left:12px;">•</button>`;
+     notice.innerHTML = `<span> <strong>Aviso da Google Cloud API:</strong> A cota de IA do servidor está esgotada (Erro 402). O Cockpit acionou a <strong>Engine Estratégica Contextual</strong>. Peça ao administrador para renovar os créditos da chave Gemini do servidor.</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fef08a;cursor:pointer;font-weight:bold;margin-left:12px;">•</button>`;
      if (offerBumpsResult && offerBumpsResult.parentNode) {
       offerBumpsResult.parentNode.insertBefore(notice, offerBumpsResult);
      }
@@ -5239,9 +5241,8 @@ function activateStudioTab(target) {
      if (videoUploadInput) videoUploadInput.click();
      return;
     }
-    const apiKey = appState.googleApiKey;
-    if (!apiKey) {
-     alert('Configure a chave da API Google na aba Configura\u00e7\u00f5es antes de transcrever.');
+    if (!aiServerReady) {
+     alert('IA indispon\u00edvel: configure GEMINI_API_KEY e APP_TOKEN no servidor antes de transcrever.');
      return;
     }
 
@@ -5254,16 +5255,15 @@ function activateStudioTab(target) {
      const media = await prepareMediaForGemini(activeUploadedMediaFile);
      const base64Data = await blobToBase64(media.blob);
      const prompt = 'Voce e um transcritor profissional de audio especializado em anuncios de alta conversao (Meta Ads, TikTok e VSLs). Transcreva com maxima precisao todo o audio falado. Organize em paragrafos naturais respeitando pausas e ritmo do locutor. Retorne exclusivamente o texto da fala em portugues do Brasil, sem explicacoes extras.';
-     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + apiKey, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: ctrl.signal,
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: media.mime, data: base64Data } }] }] })
-     });
+     const response = await aiGenerate(
+      { contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: media.mime, data: base64Data } }] }] },
+      { signal: ctrl.signal }
+     );
+     if (response.status === 413) throw new Error('Arquivo grande demais para o servidor (limite 20 MB). Use um arquivo menor.');
      if (!response.ok) {
       let detail = '';
-      try { const ej = await response.json(); detail = (ej.error && ej.error.message) || ''; } catch (e) {}
-      throw new Error('Gemini HTTP ' + response.status + (detail ? ': ' + detail : ''));
+      try { const ej = await response.json(); detail = ej.detail || ej.error || ''; } catch (e) {}
+      throw new Error('IA HTTP ' + response.status + (detail ? ': ' + detail : ''));
      }
      const data = await response.json();
      const text = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) || '';
@@ -5342,10 +5342,9 @@ function activateStudioTab(target) {
    if (remodelLoading) remodelLoading.style.display = 'block';
    if (remodelStatusBadge) remodelStatusBadge.style.display = 'none';
 
-   const apiKey = appState.googleApiKey;
    let remodeledText = '';
 
-   if (apiKey) {
+   if (aiServerReady) {
     try {
      const prompt = `Você é o maior especialista em Direct Response Copywriting e Remodelagem de Criativos Vencedores de Tráfego Direto (Low Ticket estilo Brasil).
 Sua missão é REMODELAR a copy transcrita de um anúncio vencedor para um NOVO produto, mantendo rigorosamente a mesma psicologia, ritmo de quebra de padrão, ganchos de retenção e chamadas para ação.
@@ -5369,12 +5368,8 @@ DIRETRIZES DA REMODELAGEM:
 5. Inclua marcações visuais de cena entre colchetes [CENA: ...] e texto falado em [LOCUÇÃO / FALADO: ...] para facilitar a gravação do criativo.
 6. Entregue o roteiro completo pronto para gravação em Português do Brasil.`;
 
-     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-       contents: [{ parts: [{ text: prompt }] }]
-      })
+     const response = await aiGenerate({
+      contents: [{ parts: [{ text: prompt }] }]
      });
 
      if (!response.ok) { throw new Error('HTTP ' + response.status); }
@@ -5387,7 +5382,7 @@ DIRETRIZES DA REMODELAGEM:
 
     // Sem resposta valida da IA: aborta sem fabricar conteudo
     if (!remodeledText) {
-     if (!apiKey) alert('Configure a chave da API Google na aba Configura\u00e7\u00f5es antes de remodelar.');
+     if (!aiServerReady) alert('IA indispon\u00edvel: configure GEMINI_API_KEY e APP_TOKEN no servidor antes de remodelar.');
      if (remodelLoading) remodelLoading.style.display = 'none';
      btnRemodelSend.disabled = false;
      return;
@@ -5500,9 +5495,7 @@ DIRETRIZES DA REMODELAGEM:
    outHeadline.innerHTML = '<em>Gerando título...</em>';
    outDescription.innerHTML = '<em>Gerando descrição...</em>';
 
-   const apiKey = appState.googleApiKey;
-
-   if (apiKey) {
+   if (aiServerReady) {
     try {
      const prompt = `Você é o copywriter de elite de resposta direta no Brasil.
 Crie a estrutura de anúncio para o Facebook Ads:
@@ -5519,13 +5512,9 @@ Retorne um JSON com:
  "hooks": "Lista de 3 ganchos para os primeiros 3 segundos"
 }`;
 
-     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-       contents: [{ parts: [{ text: prompt }] }],
-       generationConfig: { responseMimeType: "application/json" }
-      })
+     const response = await aiGenerate({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: "application/json" }
      });
 
      if (response.ok) {
@@ -5914,14 +5903,9 @@ Retorne um JSON com:
    btnAiPromptImg.disabled = true;
    btnAiPromptImg.textContent = '⏳ Gerando...';
    try {
-    const apiKey = appState.googleApiKey;
-    if (apiKey) {
+    if (aiServerReady) {
      const prompt = `Crie um prompt visual fotorrealista e ultra-detalhado (em português) para um criativo de alta conversão de anúncio do Facebook/Instagram para o produto: "${prod}" (Nicho: "${niche}"). Descreva a cena, iluminação, composição fotográfica e elementos principais. Retorne apenas o parágrafo descritivo do prompt, direto ao ponto, sem introduções.`;
-     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-     });
+     const res = await aiGenerate({ contents: [{ parts: [{ text: prompt }] }] });
      if (res.ok) {
       const data = await res.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -6205,14 +6189,9 @@ Retorne um JSON com:
    btnAiPromptVid.disabled = true;
    btnAiPromptVid.textContent = '⏳ Gerando...';
    try {
-    const apiKey = appState.googleApiKey;
-    if (apiKey) {
+    if (aiServerReady) {
      const prompt = `Crie um roteiro/prompt cinemático de vídeo para o Google Veo 3.1 para um anúncio de alta conversão no Instagram/Reels para o produto: "${prod}" (Nicho: "${niche}"). Descreva o ângulo da câmera (POV ou close-up dinâmico), os movimentos nos 3 primeiros segundos e a ação de demonstração do material. Retorne apenas a descrição da cena, direta ao ponto.`;
-     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-     });
+     const res = await aiGenerate({ contents: [{ parts: [{ text: prompt }] }] });
      if (res.ok) {
       const data = await res.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -6435,16 +6414,13 @@ Retorne um JSON com:
  const btnOpenSettings = document.getElementById('btn-open-settings');
  const settingsModal = document.getElementById('settings-modal');
  const settingsClose = document.getElementById('settings-close');
- const geminiApiKeyInput = document.getElementById('gemini-api-key');
- const btnSaveKey = document.getElementById('btn-save-key');
- const btnClearKey = document.getElementById('btn-clear-key');
 
- if (geminiApiKeyInput && appState.googleApiKey) {
-  geminiApiKeyInput.value = appState.googleApiKey;
- }
+ // A chave Gemini fica so no servidor; o modal mostra apenas o estado da IA.
+ renderAiStatus();
 
  if (btnOpenSettings) {
   btnOpenSettings.addEventListener('click', () => {
+   renderAiStatus();
    settingsModal.classList.add('active');
   });
  }
@@ -6455,23 +6431,6 @@ Retorne um JSON com:
   });
  }
 
- if (btnSaveKey) {
-  btnSaveKey.addEventListener('click', () => {
-   appState.googleApiKey = geminiApiKeyInput.value.trim();
-   saveState();
-   settingsModal.classList.remove('active');
-   alert('Chave do Google Cloud / Gemini salva com sucesso! Os motores de IA agora usarão sua cota.');
-  });
- }
-
- if (btnClearKey) {
-  btnClearKey.addEventListener('click', () => {
-   geminiApiKeyInput.value = '';
-   appState.googleApiKey = '';
-   saveState();
-   alert('Chave removida. Usando motores internos integrados.');
-  });
- }
 
  // Botão Rodar /automatico
  const btnRunAutomatico = document.getElementById('btn-run-automatico');

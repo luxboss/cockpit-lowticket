@@ -8,6 +8,10 @@
  *   APP_TOKEN            (recomendado) token de acesso da API. Se vazio, a API fica aberta.
  *   PGSSL=true           forca SSL no banco (so use se o banco exigir; o Postgres interno do Easypanel NAO usa SSL)
  *   PGSSL_REJECT_UNAUTHORIZED=true   valida o certificado quando PGSSL=true
+ *   GEMINI_API_KEY       (proxy de IA) chave da API Gemini; so existe no servidor. Sem ela: 503 ai_not_configured
+ *   GEMINI_MODEL         (proxy de IA) modelo usado (padrao gemini-3.8-flash); o cliente nao escolhe
+ *   GEMINI_BASE_URL      (proxy de IA) URL base da API (padrao https://generativelanguage.googleapis.com/v1beta)
+ *   O proxy POST /api/ai/generate exige APP_TOKEN definido (senao 503 ai_requires_app_token).
  */
 const http = require('http');
 const fs = require('fs');
@@ -27,6 +31,11 @@ const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
 const APP_TOKEN = process.env.APP_TOKEN || '';
 const ROOT = __dirname;
 const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB
+const AI_MAX_BODY_BYTES = 20 * 1024 * 1024; // 20 MB (somente /api/ai/generate)
+const AI_TIMEOUT_MS = 120000; // 120 s
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -160,14 +169,14 @@ function sendJson(res, status, data) {
   res.end(body);
 }
 
-function readJsonBody(req) {
+function readJsonBody(req, maxBytes = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
     let tooBig = false;
     req.on('data', (chunk) => {
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) { tooBig = true; return; }
+      if (size > maxBytes) { tooBig = true; return; }
       chunks.push(chunk);
     });
     req.on('end', () => {
@@ -221,6 +230,70 @@ const UPSERT_PROJECT_SQL = `
     updated_at = NOW()`;
 
 // ---------------------------------------------------------------------------
+// Proxy de IA (Gemini): a chave fica so no servidor, enviada no header x-goog-api-key
+// ---------------------------------------------------------------------------
+/** Remove a chave de qualquer texto antes de expor (defesa extra). */
+function scrubKey(text) {
+  const s = String(text == null ? '' : text);
+  return GEMINI_API_KEY ? s.split(GEMINI_API_KEY).join('[redigido]') : s;
+}
+
+async function handleAiGenerate(req, res) {
+  if (!APP_TOKEN) return sendJson(res, 503, { ok: false, error: 'ai_requires_app_token' });
+  if (!isAuthorized(req)) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+  if (!GEMINI_API_KEY) return sendJson(res, 503, { ok: false, error: 'ai_not_configured' });
+  if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+
+  let payload;
+  try {
+    payload = await readJsonBody(req, AI_MAX_BODY_BYTES);
+  } catch (err) {
+    if (err.status) return sendJson(res, err.status, { ok: false, error: err.message });
+    return sendJson(res, 400, { ok: false, error: 'JSON invalido' });
+  }
+  if (!payload || typeof payload !== 'object' || !Array.isArray(payload.contents) || payload.contents.length === 0) {
+    return sendJson(res, 400, { ok: false, error: 'contents deve ser um array nao vazio' });
+  }
+
+  // Somente contents/generationConfig seguem adiante; modelo e chave nunca vem do cliente.
+  const outbound = { contents: payload.contents };
+  if (payload.generationConfig && typeof payload.generationConfig === 'object') {
+    outbound.generationConfig = payload.generationConfig;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try {
+    const url = `${GEMINI_BASE_URL}/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
+    const upstream = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+      body: JSON.stringify(outbound),
+      signal: controller.signal
+    });
+    const text = await upstream.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (e) { /* resposta nao JSON */ }
+    if (!upstream.ok || data === null) {
+      const detail = data && data.error && data.error.message ? data.error.message : 'resposta invalida do upstream';
+      return sendJson(res, 502, {
+        ok: false,
+        error: 'ai_upstream_error',
+        upstreamStatus: upstream.status,
+        detail: scrubKey(detail).slice(0, 500)
+      });
+    }
+    return sendJson(res, 200, data);
+  } catch (err) {
+    if (err && err.name === 'AbortError') return sendJson(res, 504, { ok: false, error: 'ai_timeout' });
+    console.error('[IA] Falha ao contatar o upstream:', scrubKey(err && err.message));
+    return sendJson(res, 502, { ok: false, error: 'ai_upstream_unreachable' });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------
 async function handleApi(req, res, pathname) {
@@ -232,9 +305,13 @@ async function handleApi(req, res, pathname) {
       driver: 'postgresql',
       dbConnected: isDbConnected,
       authRequired: !!APP_TOKEN,
+      aiConfigured: !!GEMINI_API_KEY && !!APP_TOKEN,
       message: isDbConnected ? 'PostgreSQL conectado' : 'Banco indisponivel ou nao configurado'
     });
   }
+
+  // Rota de IA: faz as proprias checagens e nao depende do banco.
+  if (pathname === '/api/ai/generate') return handleAiGenerate(req, res);
 
   if (!isAuthorized(req)) {
     return sendJson(res, 401, { ok: false, error: 'unauthorized' });
