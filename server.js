@@ -12,6 +12,8 @@
  *   GEMINI_MODEL         (proxy de IA) modelo usado (padrao gemini-3.8-flash); o cliente nao escolhe
  *   GEMINI_BASE_URL      (proxy de IA) URL base da API (padrao https://generativelanguage.googleapis.com/v1beta)
  *   O proxy POST /api/ai/generate exige APP_TOKEN definido (senao 503 ai_requires_app_token).
+ *   MINER_ENRICH_ENABLED=0 desliga o worker de enriquecimento; MINER_ENRICH_INTERVAL_MS (padrao 60000); MINER_ENRICH_HOST_INTERVAL_MS (padrao 10000).
+ *   MINER_ENRICH_TEST_LOOPBACK=1 so vale com NODE_ENV=test (testes com mock local).
  *   Minerador: POST /api/miner/ingest, GET /api/miner/offers[/:domain] (Bearer APP_TOKEN + banco; sem APP_TOKEN: 503 miner_requires_app_token; sem banco: 503 db_offline).
  */
 const http = require('http');
@@ -19,6 +21,9 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
+const https = require('https');
+const dns = require('dns');
+const net = require('net');
 
 let pg = null;
 try {
@@ -56,7 +61,31 @@ const MINER_SCORE_DISTINCT_WEIGHT = 1.5;
 const MINER_SCORE_DAYS_WEIGHT = 0.5;
 const MINER_SCORE_DAYS_CAP = 60;
 const MINER_SCORE_GROWTH_WEIGHT = 3;
-const MIME_TYPES = {
+
+// Minerador fase 2a: enriquecimento da landing page (checkout e preco)
+const MINER_ENRICH_ENABLED = process.env.MINER_ENRICH_ENABLED !== '0';
+const MINER_ENRICH_INTERVAL_MS = parseInt(process.env.MINER_ENRICH_INTERVAL_MS, 10) || 60000;
+const MINER_ENRICH_HOST_INTERVAL_MS = Number.isFinite(parseInt(process.env.MINER_ENRICH_HOST_INTERVAL_MS, 10)) ? parseInt(process.env.MINER_ENRICH_HOST_INTERVAL_MS, 10) : 10000; // 1 pedido por host a cada 10 s
+const MINER_ENRICH_BATCH = 5;            // dominios reservados por ciclo
+const MINER_ENRICH_CONCURRENCY = 2;
+const MINER_ENRICH_TIMEOUT_MS = 10000;   // tempo total (todos os saltos)
+const MINER_ENRICH_MAX_BYTES = 1.5 * 1024 * 1024;
+const MINER_ENRICH_MAX_REDIRECTS = 5;
+const MINER_ENRICH_USER_AGENT = 'CockpitLowTicket-Miner/1.0';
+const MINER_ENRICH_RESERVE_MINUTES = 15; // reserva da linha enquanto processa
+const MINER_ENRICH_OK_DAYS = 7;          // proximo ciclo apos sucesso
+const MINER_ENRICH_BACKOFF_HOURS = [1, 6, 24, 24]; // falhas 1..4; a 5a em diante usa MINER_ENRICH_OK_DAYS
+const MINER_ENRICH_MAX_ATTEMPTS = 5;
+const MINER_PRICE_MIN = 1;
+const MINER_PRICE_MAX = 10000;
+const MINER_PRICES_MAX = 10;
+// Loopback no enriquecimento so com NODE_ENV=test (para os testes com mock local); nunca em producao.
+const MINER_TEST_LOOPBACK = process.env.NODE_ENV === 'test' && process.env.MINER_ENRICH_TEST_LOOPBACK === '1';
+if (process.env.MINER_ENRICH_TEST_LOOPBACK === '1') {
+  console.warn(MINER_TEST_LOOPBACK
+    ? '[Minerador] AVISO: MINER_ENRICH_TEST_LOOPBACK ativo (NODE_ENV=test): loopback permitido no enriquecimento.'
+    : '[Minerador] MINER_ENRICH_TEST_LOOPBACK ignorado fora de NODE_ENV=test: loopback continua bloqueado.');
+}const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
@@ -152,6 +181,23 @@ async function initDatabase() {
       );
       CREATE INDEX IF NOT EXISTS idx_miner_snapshots_domain ON miner_snapshots (landing_domain, day);
       -- Pronto para SaaS (ADR-002 M1.1): quem contribuiu com cada anuncio e o log de lotes
+      -- Fase 2a: enriquecimento da landing page por dominio (global)
+      CREATE TABLE IF NOT EXISTS miner_domains (
+        landing_domain    VARCHAR(255) PRIMARY KEY,
+        sample_url        TEXT NOT NULL DEFAULT '',
+        final_url         TEXT,
+        http_status       INTEGER,
+        page_title        VARCHAR(255),
+        checkout_platform VARCHAR(30),
+        checkout_url      TEXT,
+        prices            JSONB NOT NULL DEFAULT '[]'::jsonb,
+        price_min         NUMERIC(12,2),
+        enriched_at       TIMESTAMPTZ,
+        next_enrich_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        attempts          INTEGER NOT NULL DEFAULT 0,
+        last_error        VARCHAR(100)
+      );
+      CREATE INDEX IF NOT EXISTS idx_miner_domains_next_enrich_at ON miner_domains (next_enrich_at);
       CREATE TABLE IF NOT EXISTS miner_ad_sources (
         ad_archive_id      VARCHAR(30) NOT NULL,
         submitter_id       VARCHAR(100) NOT NULL,
@@ -434,7 +480,7 @@ function minerUrlList(v, maxItems) {
 }
 
 /** Hostname do destino em minusculas sem "www."; desembrulha redirecionadores da Meta; invalido -> null. */
-function extractLandingDomain(linkUrl) {
+function extractLandingTarget(linkUrl) {
   let url = typeof linkUrl === 'string' ? linkUrl.trim() : '';
   for (let hop = 0; hop < 3 && url; hop++) {
     let u;
@@ -446,9 +492,14 @@ function extractLandingDomain(linkUrl) {
       continue;
     }
     const clean = host.replace(/\.$/, '').replace(/^www\./, '');
-    return HOSTNAME_REGEX.test(clean) ? clean : null;
+    return HOSTNAME_REGEX.test(clean) ? { domain: clean, url: u.href } : null;
   }
   return null;
+}
+
+function extractLandingDomain(linkUrl) {
+  const t = extractLandingTarget(linkUrl);
+  return t ? t.domain : null;
 }
 
 /** Valida e normaliza um MinerAd. Retorna { ad } ou { error }. */
@@ -470,6 +521,7 @@ function normalizeMinerAd(raw) {
     }
   }
   const linkUrl = minerText(raw.linkUrl, 2000);
+  const target = extractLandingTarget(linkUrl);
   return {
     ad: {
       adArchiveId: raw.adArchiveId,
@@ -487,7 +539,8 @@ function normalizeMinerAd(raw) {
       caption: minerText(raw.caption, 500),
       ctaText: minerText(raw.ctaText, 500),
       linkUrl,
-      landingDomain: extractLandingDomain(linkUrl),
+      landingDomain: target ? target.domain : null,
+      landingUrl: target ? target.url : null,
       media: { images: minerUrlList(raw.images, MINER_MAX_IMAGES), videos }
     }
   };
@@ -574,6 +627,7 @@ async function handleMinerIngest(req, res) {
   try {
     await client.query('BEGIN');
     const domains = new Set();
+    const samples = new Map(); // dominio -> link do ad ativo mais recente do lote (ja desembrulhado)
     for (const { ad } of byId.values()) {
       const r = await client.query(MINER_UPSERT_AD_SQL, [
         ad.adArchiveId, ad.pageId, ad.pageName, ad.isActive, String(ad.startDate), ad.endDate === null ? null : String(ad.endDate),
@@ -582,8 +636,13 @@ async function handleMinerIngest(req, res) {
         countries, queries
       ]);
       if (r.rows[0].inserted) inserted++; else updated++;
-      if (ad.landingDomain) domains.add(ad.landingDomain);
-    }
+      if (ad.landingDomain) {
+        domains.add(ad.landingDomain);
+        const prev = samples.get(ad.landingDomain);
+        if (!prev || (ad.isActive && !prev.isActive) || (ad.isActive === prev.isActive && ad.startDate > prev.startDate)) {
+          samples.set(ad.landingDomain, { url: ad.landingUrl, isActive: ad.isActive, startDate: ad.startDate });
+        }
+      }    }
     if (byId.size > 0) {
       // Contribuicoes por utilizador (SaaS): um upsert so para o lote inteiro.
       await client.query(
@@ -595,7 +654,16 @@ async function handleMinerIngest(req, res) {
       );
     }
     if (domains.size > 0) await client.query(MINER_SNAPSHOT_SQL, [Array.from(domains)]);
-    await client.query(
+    if (samples.size > 0) {
+      // Fase 2a: dominio novo entra na fila de enriquecimento; existente so atualiza o sample_url.
+      await client.query(
+        `INSERT INTO miner_domains (landing_domain, sample_url, next_enrich_at)
+         SELECT t.d, t.u, NOW() FROM UNNEST($1::text[], $2::text[]) AS t(d, u)
+         ON CONFLICT (landing_domain) DO UPDATE SET sample_url = EXCLUDED.sample_url
+           WHERE miner_domains.sample_url IS DISTINCT FROM EXCLUDED.sample_url`,
+        [Array.from(samples.keys()), Array.from(samples.values(), (s) => s.url)]
+      );
+    }    await client.query(
       `INSERT INTO miner_ingest_batches (submitter_id, ext_version, received, inserted, updated, rejected, context)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [submitterId, extVersion, payload.ads.length, inserted, updated, rejected.length, JSON.stringify(context)]
@@ -635,6 +703,7 @@ async function handleMinerOffers(req, res, searchParams) {
   const countryRaw = (searchParams.get('country') || '').trim();
   const mediaType = (searchParams.get('mediaType') || 'ALL').toUpperCase();
   const sortKey = searchParams.get('sort') || 'score';
+  const platformRaw = (searchParams.get('platform') || '').trim().toLowerCase();
   if (minAds === null) return sendJson(res, 400, { ok: false, error: 'invalid_min_ads' });
   if (minDays === null) return sendJson(res, 400, { ok: false, error: 'invalid_min_days' });
   if (limit === null) return sendJson(res, 400, { ok: false, error: 'invalid_limit' });
@@ -642,7 +711,9 @@ async function handleMinerOffers(req, res, searchParams) {
   if (countryRaw && !/^[A-Za-z]{2,3}$/.test(countryRaw)) return sendJson(res, 400, { ok: false, error: 'invalid_country' });
   if (!['ALL', 'IMAGE', 'VIDEO'].includes(mediaType)) return sendJson(res, 400, { ok: false, error: 'invalid_media_type' });
   if (!Object.prototype.hasOwnProperty.call(MINER_SORTS, sortKey)) return sendJson(res, 400, { ok: false, error: 'invalid_sort' });
-
+  if (platformRaw && platformRaw !== 'unknown' && !Object.prototype.hasOwnProperty.call(MINER_CHECKOUT_PATTERNS, platformRaw)) {
+    return sendJson(res, 400, { ok: false, error: 'invalid_platform' });
+  }
   // Filtros por anuncio (todos parametrizados). Base: ativos, com dominio, vistos nos ultimos 7 dias.
   const params = [MINER_OFFER_WINDOW_DAYS];
   const where = ['is_active', 'landing_domain IS NOT NULL', "last_seen_at >= NOW() - ($1::int * INTERVAL '1 day')"];
@@ -661,6 +732,8 @@ async function handleMinerOffers(req, res, searchParams) {
   params.push(minAds, minDays);
   const pMinAds = `$${params.length - 1}`;
   const pMinDays = `$${params.length}`;
+  let platformWhere = '';
+  if (platformRaw) { params.push(platformRaw); platformWhere = `WHERE md.checkout_platform = $${params.length}`; }
 
   // growth7d = active_ads da fotografia mais recente (hoje) - fotografia mais proxima de 7 dias atras (anterior a ela).
   const offersCte = `
@@ -689,10 +762,13 @@ async function handleMinerOffers(req, res, searchParams) {
            WHERE s.landing_domain = a.landing_domain AND s.day < cur.day
            ORDER BY ABS(s.day - ((NOW() AT TIME ZONE 'America/Sao_Paulo')::date - 7)), s.day DESC LIMIT 1) base ON TRUE
     ), offers AS (
-      SELECT g.*,
+      SELECT g.*, md.checkout_platform AS c_platform, md.checkout_url AS c_url, md.prices AS c_prices, md.price_min AS c_price_min,
+             md.page_title AS c_title, md.enriched_at AS c_enriched_at,
              ROUND((g.active_ads * ${pA} + g.distinct_creatives * ${pD} + LEAST(g.max_days_running, ${pC}) * ${pW}
                     + GREATEST(g.growth7d, 0) * ${pG})::numeric, 2)::float8 AS score
         FROM grown g
+        LEFT JOIN miner_domains md ON md.landing_domain = g.landing_domain
+        ${platformWhere}
     )`;
   const orderBy = `${MINER_SORTS[sortKey]} DESC, landing_domain ASC`;
 
@@ -705,7 +781,7 @@ async function handleMinerOffers(req, res, searchParams) {
   const domains = pageRes.rows.map((r) => r.landing_domain);
   const samplesByDomain = new Map();
   if (domains.length) {
-    const sampleParams = params.slice(0, params.length - 7);
+    const sampleParams = params.slice(0, params.length - (7 + (platformRaw ? 1 : 0)));
     sampleParams.push(domains);
     const samples = await pool.query(
       `SELECT * FROM (
@@ -736,6 +812,7 @@ async function handleMinerOffers(req, res, searchParams) {
     growth7d: r.growth7d,
     score: r.score,
     lastSeenAt: r.last_seen_at,
+    checkout: r.c_enriched_at ? minerEnrichmentToJson({ checkout_platform: r.c_platform, checkout_url: r.c_url, prices: r.c_prices, price_min: r.c_price_min, page_title: r.c_title, enriched_at: r.c_enriched_at }) : null,
     sampleAds: samplesByDomain.get(r.landing_domain) || []
   }));
   return sendJson(res, 200, { ok: true, total: countRes.rows[0].total, offers });
@@ -769,12 +846,447 @@ async function handleMinerOfferDetail(req, res, rawDomain) {
        FROM miner_snapshots
       WHERE landing_domain = $1 AND day >= (NOW() AT TIME ZONE 'America/Sao_Paulo')::date - ${MINER_SNAPSHOT_DAYS - 1}
       ORDER BY day ASC`, [domain]);
+  const dom = await pool.query('SELECT * FROM miner_domains WHERE landing_domain = $1', [domain]);
+  const d = dom.rows[0];
   return sendJson(res, 200, {
     ok: true,
     domain,
+    enrichment: d ? {
+      ...minerEnrichmentToJson(d), sampleUrl: d.sample_url, finalUrl: d.final_url, httpStatus: d.http_status,
+      nextEnrichAt: d.next_enrich_at, attempts: d.attempts, lastError: d.last_error
+    } : null,
     ads: ads.rows.map(minerAdToJson),
     snapshots: snaps.rows.map((s) => ({ day: s.day, activeAds: s.active_ads, distinctCreatives: s.distinct_creatives }))
   });
+}
+
+// ---------------------------------------------------------------------------
+// Minerador fase 2a: enriquecimento da landing page (checkout e preco) com protecao SSRF
+// ---------------------------------------------------------------------------
+// Mapa de padroes de checkout: id -> sufixos de host (host igual ou subdominio). Facil de estender.
+const MINER_CHECKOUT_PATTERNS = {
+  kiwify: ['kiwify.com.br', 'kiwify.app', 'kiwify.com'],
+  hotmart: ['hotmart.com', 'hotmart.com.br', 'hotmart.net', 'hotm.art'],
+  eduzz: ['eduzz.com', 'eduzz.com.br', 'eduzz.net'],
+  monetizze: ['monetizze.com.br', 'monetizze.com'],
+  perfectpay: ['perfectpay.com.br', 'perfectpay.com'],
+  greenn: ['greenn.com.br', 'greenn.com'],
+  ticto: ['ticto.com.br', 'ticto.app', 'ticto.com'],
+  braip: ['braip.com', 'braip.com.br'],
+  cakto: ['cakto.com.br', 'cakto.com'],
+  lastlink: ['lastlink.com', 'lastlink.com.br'],
+  pepper: ['pepper.com.br', 'pepper.com'],
+  yampi: ['yampi.com.br', 'yampi.io'],
+  shopify: ['myshopify.com', 'shopify.com', 'shop.app']
+};
+
+// Faixas IPv4 bloqueadas: [base, prefixo]. O loopback so abre no modo teste (MINER_TEST_LOOPBACK).
+const MINER_BLOCKED_V4 = [
+  ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12],
+  ['192.0.0.0', 24], ['192.0.2.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['198.51.100.0', 24],
+  ['203.0.113.0', 24], ['224.0.0.0', 4], ['240.0.0.0', 4]
+];
+// Faixas IPv6 bloqueadas (BigInt): ::/96 (inclui :: e ::1), NAT64, 6to4, Teredo, doc, ULA, link-local, site-local, multicast.
+const MINER_BLOCKED_V6 = [
+  ['::', 96], ['64:ff9b::', 96], ['100::', 64], ['2001::', 32], ['2001:db8::', 32], ['2002::', 16],
+  ['fc00::', 7], ['fe80::', 10], ['fec0::', 10], ['ff00::', 8]
+];
+
+function ipv4ToInt(s) {
+  const p = String(s).split('.');
+  if (p.length !== 4) return null;
+  let n = 0;
+  for (const part of p) {
+    if (!/^[0-9]{1,3}$/.test(part)) return null;
+    const v = parseInt(part, 10);
+    if (v > 255) return null;
+    n = n * 256 + v;
+  }
+  return n;
+}
+
+function ipv6ToBigInt(ip) {
+  let s = String(ip).split('%')[0];
+  const m = /^(.*:)(\d+\.\d+\.\d+\.\d+)$/.exec(s);
+  if (m) {
+    const v4 = ipv4ToInt(m[2]);
+    if (v4 === null) return null;
+    s = m[1] + Math.floor(v4 / 65536).toString(16) + ':' + (v4 % 65536).toString(16);
+  }
+  const dbl = s.split('::');
+  if (dbl.length > 2) return null;
+  const head = dbl[0] ? dbl[0].split(':') : [];
+  const rest = dbl.length === 2 && dbl[1] ? dbl[1].split(':') : [];
+  let groups;
+  if (dbl.length === 2) {
+    const fill = 8 - head.length - rest.length;
+    if (fill < 1) return null;
+    groups = [...head, ...Array(fill).fill('0'), ...rest];
+  } else groups = head;
+  if (groups.length !== 8) return null;
+  let n = 0n;
+  for (const g of groups) {
+    if (!/^[0-9a-fA-F]{1,4}$/.test(g)) return null;
+    n = (n << 16n) | BigInt(parseInt(g, 16));
+  }
+  return n;
+}
+
+function v4Blocked(n) {
+  for (const [base, prefix] of MINER_BLOCKED_V4) {
+    const size = 2 ** (32 - prefix);
+    const b = ipv4ToInt(base);
+    if (n >= b && n < b + size) {
+      if (MINER_TEST_LOOPBACK && base === '127.0.0.0') return false;
+      return true;
+    }
+  }
+  return false;
+}
+
+/** true so se o IP (literal v4/v6) e publico. Formato desconhecido -> false. */
+function isPublicIp(ip) {
+  const s = String(ip);
+  if (net.isIPv4(s)) return !v4Blocked(ipv4ToInt(s));
+  if (!net.isIPv6(s)) return false;
+  const n = ipv6ToBigInt(s);
+  if (n === null) return false;
+  if ((n >> 32n) === 0xffffn) return !v4Blocked(Number(n & 0xffffffffn)); // ::ffff:a.b.c.d
+  if (MINER_TEST_LOOPBACK && n === 1n) return true; // ::1 so no modo teste
+  for (const [base, prefix] of MINER_BLOCKED_V6) {
+    const b = ipv6ToBigInt(base);
+    if ((n >> BigInt(128 - prefix)) === (b >> BigInt(128 - prefix))) return false;
+  }
+  return true;
+}
+
+/** Valida uma URL de saida: http/https, porta 80/443, sem credenciais, IP literal publico. */
+function validateOutboundUrl(str) {
+  let u;
+  try { u = new URL(str); } catch (e) { return { ok: false, error: 'invalid_url' }; }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return { ok: false, error: 'ssrf_blocked' };
+  if (u.username || u.password) return { ok: false, error: 'ssrf_blocked' };
+  const host = u.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (!host) return { ok: false, error: 'invalid_url' };
+  // Portas 80/443 (ou padrao). No modo teste, porta livre so para o loopback (mock local).
+  const portOk = u.port === '' || u.port === '80' || u.port === '443' || (MINER_TEST_LOOPBACK && (host === '127.0.0.1' || host === '::1'));
+  if (!portOk) return { ok: false, error: 'ssrf_blocked' };
+  // O WHATWG URL ja normaliza formas como 2130706433 e 0x7f.1 para 127.0.0.1.
+  if (net.isIP(host) && !isPublicIp(host)) return { ok: false, error: 'ssrf_blocked' };
+  return { ok: true, url: u, host };
+}
+
+function minerError(code, extra) {
+  return Object.assign(new Error(code), { minerCode: code }, extra || {});
+}
+
+/** lookup para http(s).request: resolve e recusa qualquer IP nao publico NO MOMENTO DA CONEXAO (anti DNS rebinding). */
+function makeSafeLookup(resolver) {
+  const resolve = resolver || ((host, opts, cb) => dns.lookup(host, opts, cb));
+  return function safeLookup(hostname, options, callback) {
+    if (typeof options === 'function') { callback = options; options = {}; }
+    const opts = typeof options === 'number' ? { family: options } : (options || {});
+    resolve(hostname, { all: true, family: opts.family || 0, hints: opts.hints }, (err, addrs) => {
+      if (err) return callback(err);
+      if (!Array.isArray(addrs)) addrs = addrs ? [{ address: addrs, family: net.isIPv6(addrs) ? 6 : 4 }] : [];
+      if (addrs.length === 0) return callback(Object.assign(new Error('sem enderecos'), { code: 'ENOTFOUND' }));
+      if (addrs.some((a) => !isPublicIp(a.address))) return callback(Object.assign(new Error('ssrf_blocked'), { code: 'SSRF_BLOCKED' }));
+      if (opts.all) return callback(null, addrs);
+      return callback(null, addrs[0].address, addrs[0].family);
+    });
+  };
+}
+
+// Educacao com o host: 1 pedido por host a cada MINER_ENRICH_HOST_INTERVAL_MS (reserva o proximo horario).
+const minerHostNext = new Map();
+async function minerHostThrottle(key) {
+  const now = Date.now();
+  const at = Math.max(now, minerHostNext.get(key) || 0);
+  minerHostNext.set(key, at + MINER_ENRICH_HOST_INTERVAL_MS);
+  if (minerHostNext.size > 2000) for (const [k, v] of minerHostNext) if (v < now) minerHostNext.delete(k);
+  if (at > now) await new Promise((r) => setTimeout(r, at - now));
+  return at - now;
+}
+
+/** Um GET (sem seguir redirecionamento). Resolve {redirect,status} ou {status,body}; rejeita com minerCode. */
+function minerRequestOnce(u, timeoutMs, resolver) {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    let req = null;
+    const timer = setTimeout(() => { if (req) req.destroy(); finish(reject, minerError('timeout')); }, timeoutMs);
+    function finish(fn, value) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      fn(value);
+    }
+    const lib = u.protocol === 'https:' ? https : http;
+    const hasBrotli = typeof zlib.createBrotliDecompress === 'function';
+    try {
+      req = lib.request({
+        protocol: u.protocol,
+        hostname: u.hostname.replace(/^\[|\]$/g, ''),
+        port: u.port || undefined,
+        path: u.pathname + u.search,
+        method: 'GET',
+        agent: false,
+        lookup: makeSafeLookup(resolver),
+        headers: {
+          'User-Agent': MINER_ENRICH_USER_AGENT,
+          'Accept': 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.1',
+          'Accept-Encoding': hasBrotli ? 'gzip, deflate, br' : 'gzip, deflate',
+          'Connection': 'close'
+        }
+      }, (res) => {
+        const status = res.statusCode;
+        if (status >= 300 && status < 400) {
+          res.destroy();
+          const loc = res.headers.location;
+          return loc ? finish(resolve, { redirect: String(loc), status }) : finish(reject, minerError('bad_redirect', { httpStatus: status }));
+        }
+        if (status >= 400 || status < 200) { res.destroy(); return finish(reject, minerError('http_' + status, { httpStatus: status })); }
+        if (!/^(text\/html|application\/xhtml\+xml)\b/i.test(String(res.headers['content-type'] || ''))) {
+          res.destroy();
+          return finish(reject, minerError('not_html', { httpStatus: status }));
+        }
+        const enc = String(res.headers['content-encoding'] || 'identity').toLowerCase();
+        let stream = res;
+        if (enc === 'gzip' || enc === 'x-gzip') stream = res.pipe(zlib.createGunzip());
+        else if (enc === 'deflate') stream = res.pipe(zlib.createInflate());
+        else if (enc === 'br' && hasBrotli) stream = res.pipe(zlib.createBrotliDecompress());
+        else if (enc !== 'identity') { res.destroy(); return finish(reject, minerError('unsupported_encoding', { httpStatus: status })); }
+        const chunks = [];
+        let size = 0;
+        let raw = 0;
+        const abort = (code) => { res.destroy(); if (stream !== res) stream.destroy(); finish(reject, minerError(code, { httpStatus: status })); };
+        res.on('data', (c) => { raw += c.length; if (raw > MINER_ENRICH_MAX_BYTES) abort('too_large'); });
+        stream.on('data', (c) => {
+          size += c.length;
+          if (size > MINER_ENRICH_MAX_BYTES) return abort('too_large');
+          chunks.push(c);
+        });
+        stream.on('end', () => finish(resolve, { status, body: Buffer.concat(chunks) }));
+        stream.on('error', () => abort('decode_error'));
+        res.on('error', () => abort('network_error'));
+      });
+    } catch (e) {
+      return finish(reject, minerError('invalid_url'));
+    }
+    req.on('error', (e) => finish(reject, e && e.code === 'SSRF_BLOCKED' ? minerError('ssrf_blocked') : minerError('network_error')));
+    req.end();
+  });
+}
+
+/** GET da landing seguindo ate MINER_ENRICH_MAX_REDIRECTS redirecionamentos, revalidando CADA salto. */
+async function minerFetchLanding(startUrl, opts) {
+  const resolver = opts && opts.resolver;
+  let current = startUrl;
+  let redirects = 0;
+  let lastKey = null;
+  let deadline = null;
+  for (;;) {
+    const v = validateOutboundUrl(current);
+    if (!v.ok) throw minerError(v.error);
+    const key = v.host + ':' + (v.url.port || (v.url.protocol === 'https:' ? '443' : '80'));
+    let waited = 0;
+    if (key !== lastKey) waited = await minerHostThrottle(key);
+    lastKey = key;
+    if (deadline === null) deadline = Date.now() + MINER_ENRICH_TIMEOUT_MS;
+    else deadline += waited;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw minerError('timeout');
+    const r = await minerRequestOnce(v.url, remaining, resolver);
+    if (r.redirect !== undefined) {
+      if (++redirects > MINER_ENRICH_MAX_REDIRECTS) throw minerError('too_many_redirects');
+      try { current = new URL(r.redirect, v.url).href; } catch (e) { throw minerError('invalid_url'); }
+      continue;
+    }
+    return { finalUrl: v.url.href, status: r.status, html: r.body.toString('utf8') };
+  }
+}
+
+function decodeHtmlEntities(s) {
+  return s
+    .replace(/&#x([0-9a-f]{1,6});/gi, (m, h) => { const c = parseInt(h, 16); return c > 0 && c <= 0x10ffff ? String.fromCodePoint(c) : ' '; })
+    .replace(/&#([0-9]{1,7});/g, (m, d) => { const c = parseInt(d, 10); return c > 0 && c <= 0x10ffff ? String.fromCodePoint(c) : ' '; })
+    .replace(/&nbsp;/gi, ' ').replace(/&quot;/gi, '"').replace(/&apos;/gi, "'").replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&amp;/gi, '&');
+}
+
+function htmlAttr(tag, name) {
+  const m = new RegExp('\\b' + name + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>]+))', 'i').exec(tag);
+  return m ? (m[1] !== undefined ? m[1] : m[2] !== undefined ? m[2] : m[3]) : '';
+}
+
+/** Varredura linear do HTML (sem regex global sobre o documento): titulo, texto visivel, hrefs/actions e srcs. */
+function parseLanding(html, baseUrl) {
+  const lower = html.toLowerCase();
+  const hrefs = [];
+  const srcs = [];
+  const text = [];
+  let title = '';
+  let gtCache = -1;
+  const addLink = (list, raw) => {
+    if (!raw || list.length >= 2000) return;
+    try {
+      const u = new URL(decodeHtmlEntities(raw.trim()), baseUrl);
+      if (u.protocol === 'http:' || u.protocol === 'https:') list.push(u.href);
+    } catch (e) { /* link invalido */ }
+  };
+  const len = html.length;
+  let i = 0;
+  while (i < len) {
+    const lt = html.indexOf('<', i);
+    if (lt === -1) { text.push(html.slice(i)); break; }
+    if (lt > i) text.push(html.slice(i, lt));
+    if (lower.startsWith('<!--', lt)) {
+      const e = html.indexOf('-->', lt + 4);
+      if (e === -1) break;
+      i = e + 3;
+      continue;
+    }
+    const m = /^<(\/?)([a-z][a-z0-9]*)/.exec(lower.substr(lt, 12));
+    if (!m) { text.push('<'); i = lt + 1; continue; }
+    if (gtCache < lt) { gtCache = html.indexOf('>', lt); if (gtCache === -1) break; }
+    const gt = gtCache;
+    const closing = m[1] === '/';
+    const name = m[2];
+    const raw = gt - lt <= 5000 ? html.slice(lt, gt + 1) : '';
+    if (!closing && (name === 'script' || name === 'style')) {
+      if (name === 'script') addLink(srcs, htmlAttr(raw, 'src'));
+      const e = lower.indexOf('</' + name, gt);
+      if (e === -1) break;
+      const end = html.indexOf('>', e);
+      if (end === -1) break;
+      i = end + 1;
+      continue;
+    }
+    if (!closing) {
+      if (name === 'a') addLink(hrefs, htmlAttr(raw, 'href'));
+      else if (name === 'form') addLink(hrefs, htmlAttr(raw, 'action'));
+      else if (name === 'iframe' || name === 'img' || name === 'source' || name === 'embed') addLink(srcs, htmlAttr(raw, 'src'));
+      else if (name === 'title' && !title) {
+        const e = lower.indexOf('</title', gt);
+        if (e !== -1) { title = html.slice(gt + 1, e); i = e; continue; }
+      }
+    }
+    text.push(' ');
+    i = gt + 1;
+  }
+  const pageTitle = decodeHtmlEntities(title).replace(/\u0000/g, '').replace(/\s+/g, ' ').trim().slice(0, 255);
+  return { pageTitle, text: decodeHtmlEntities(text.join('')), hrefs, srcs };
+}
+
+/** Precos BRL do texto visivel: 'R$ 24,90', 'R$24,90', 'R$ 1.234,56', 'R$ 97'. Distintos, ordenados, ate 10. */
+function extractPrices(text) {
+  const re = /R\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{2}))?/g;
+  const set = new Set();
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const v = parseFloat(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2] : ''));
+    if (Number.isFinite(v) && v >= MINER_PRICE_MIN && v <= MINER_PRICE_MAX) set.add(v);
+  }
+  return Array.from(set).sort((a, b) => a - b).slice(0, MINER_PRICES_MAX);
+}
+
+function checkoutPlatformOfUrl(str) {
+  let host;
+  try { host = new URL(str).hostname.toLowerCase(); } catch (e) { return null; }
+  for (const [id, suffixes] of Object.entries(MINER_CHECKOUT_PATTERNS)) {
+    if (suffixes.some((s) => host === s || host.endsWith('.' + s))) return id;
+  }
+  return null;
+}
+
+/** Prioridade: host final > hrefs/actions (ordem do documento) > srcs. Nenhum -> unknown. */
+function detectCheckout(finalUrl, hrefs, srcs) {
+  for (const candidate of [[finalUrl], hrefs, srcs]) {
+    for (const url of candidate) {
+      const platform = checkoutPlatformOfUrl(url);
+      if (platform) return { platform, url };
+    }
+  }
+  return { platform: 'unknown', url: null };
+}
+
+const MINER_ENRICH_RESERVE_SQL = `
+  UPDATE miner_domains SET next_enrich_at = NOW() + ($2::int * INTERVAL '1 minute')
+   WHERE landing_domain IN (
+     SELECT d.landing_domain FROM miner_domains d
+      WHERE d.next_enrich_at <= NOW() AND d.sample_url <> ''
+      ORDER BY (SELECT COUNT(*) FROM miner_ads a WHERE a.landing_domain = d.landing_domain AND a.is_active) DESC, d.next_enrich_at ASC
+      LIMIT $1
+      FOR UPDATE OF d SKIP LOCKED)
+  RETURNING landing_domain, sample_url, attempts`;
+
+async function enrichOneDomain(row) {
+  let page = null;
+  let failure = null;
+  try {
+    page = await minerFetchLanding(row.sample_url);
+  } catch (err) {
+    failure = { code: String((err && err.minerCode) || 'error').slice(0, 100), httpStatus: (err && err.httpStatus) || null };
+  }
+  if (failure) {
+    const n = row.attempts + 1;
+    const hours = n >= MINER_ENRICH_MAX_ATTEMPTS ? MINER_ENRICH_OK_DAYS * 24 : MINER_ENRICH_BACKOFF_HOURS[Math.min(n, MINER_ENRICH_BACKOFF_HOURS.length) - 1];
+    await pool.query(
+      `UPDATE miner_domains SET attempts = $2, last_error = $3, http_status = $4, next_enrich_at = NOW() + ($5::int * INTERVAL '1 hour')
+        WHERE landing_domain = $1`,
+      [row.landing_domain, n, failure.code, failure.httpStatus, hours]);
+    return;
+  }
+  const parsed = parseLanding(page.html, page.finalUrl);
+  const checkout = detectCheckout(page.finalUrl, parsed.hrefs, parsed.srcs);
+  const prices = extractPrices(parsed.text);
+  await pool.query(
+    `UPDATE miner_domains SET final_url = $2, http_status = $3, page_title = $4, checkout_platform = $5, checkout_url = $6,
+            prices = $7, price_min = $8, enriched_at = NOW(), attempts = 0, last_error = NULL,
+            next_enrich_at = NOW() + ($9::int * INTERVAL '1 day')
+      WHERE landing_domain = $1`,
+    [row.landing_domain, page.finalUrl.slice(0, 2000), page.status, parsed.pageTitle || null, checkout.platform, checkout.url,
+      JSON.stringify(prices), prices.length ? prices[0] : null, MINER_ENRICH_OK_DAYS]);
+}
+
+let minerEnrichRunning = false;
+/** Um ciclo do worker: reserva ate MINER_ENRICH_BATCH dominios vencidos e processa com concorrencia limitada. */
+async function minerEnrichTick() {
+  if (minerEnrichRunning || !MINER_ENRICH_ENABLED || !isDbConnected || !pool) return;
+  minerEnrichRunning = true;
+  try {
+    const reserved = await pool.query(MINER_ENRICH_RESERVE_SQL, [MINER_ENRICH_BATCH, MINER_ENRICH_RESERVE_MINUTES]);
+    const queue = reserved.rows;
+    const lanes = Array.from({ length: MINER_ENRICH_CONCURRENCY }, async () => {
+      while (queue.length) {
+        const row = queue.shift();
+        try { await enrichOneDomain(row); } catch (err) { console.error('[Minerador] Enriquecimento falhou:', row.landing_domain, err && err.message); }
+      }
+    });
+    await Promise.all(lanes);
+  } catch (err) {
+    console.error('[Minerador] Ciclo do worker falhou:', err && err.message);
+  } finally {
+    minerEnrichRunning = false;
+  }
+}
+
+function minerEnrichmentToJson(r) {
+  return {
+    platform: r.checkout_platform, checkoutUrl: r.checkout_url, prices: r.prices || [],
+    priceMin: r.price_min === null ? null : Number(r.price_min), pageTitle: r.page_title, enrichedAt: r.enriched_at
+  };
+}
+
+async function handleMinerDomainEnrich(req, res, rest) {
+  if (!getRequestUserId(req)) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+  const m = /^([^/]+)\/enrich$/.exec(rest);
+  if (!m) return sendJson(res, 404, { ok: false, error: 'not_found' });
+  if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+  let domain;
+  try { domain = decodeURIComponent(m[1]).toLowerCase(); } catch (e) { domain = ''; }
+  if (!HOSTNAME_REGEX.test(domain)) return sendJson(res, 400, { ok: false, error: 'invalid_domain' });
+  const r = await pool.query('UPDATE miner_domains SET next_enrich_at = NOW(), attempts = 0 WHERE landing_domain = $1 RETURNING landing_domain', [domain]);
+  if (r.rowCount === 0) return sendJson(res, 404, { ok: false, error: 'not_found' });
+  return sendJson(res, 202, { ok: true, domain, scheduled: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -896,6 +1408,7 @@ async function handleApi(req, res, pathname, searchParams) {
     if (pathname === '/api/miner/ingest') return await handleMinerIngest(req, res);
     if (pathname === '/api/miner/offers') return await handleMinerOffers(req, res, searchParams);
     if (pathname.startsWith('/api/miner/offers/')) return await handleMinerOfferDetail(req, res, pathname.slice('/api/miner/offers/'.length));
+    if (pathname.startsWith('/api/miner/domains/')) return await handleMinerDomainEnrich(req, res, pathname.slice('/api/miner/domains/'.length));
 
     return sendJson(res, 404, { ok: false, error: 'not_found' });
   } catch (err) {
@@ -1014,6 +1527,11 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`[Cockpit Low Ticket] HTTP na porta ${PORT} | PostgreSQL: ${pool ? 'conectando...' : 'desativado'} | Auth: ${APP_TOKEN ? 'ativa' : 'ABERTA'}`);
 });
 
+// Worker de enriquecimento (fase 2a): so roda com banco; um ciclo nunca derruba o processo.
+if (pool && MINER_ENRICH_ENABLED) {
+  setInterval(() => { minerEnrichTick().catch((err) => console.error('[Minerador] worker:', err && err.message)); }, MINER_ENRICH_INTERVAL_MS).unref();
+}
+
 // Encerramento limpo (docker stop / redeploy do Easypanel)
 function shutdown(signal) {
   console.log(`[Cockpit Low Ticket] ${signal} recebido, encerrando...`);
@@ -1028,3 +1546,6 @@ function shutdown(signal) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err && err.message ? err.message : err));
+
+// Funcoes internas expostas para os testes unitarios (o servidor roda como script principal).
+module.exports = { __minerTest: { isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS } };
