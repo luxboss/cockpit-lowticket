@@ -2915,6 +2915,56 @@ document.addEventListener('DOMContentLoaded', () => {
  // ================= 3. GERENCIADOR DE PROJETOS LOW TICKET =================
  const PROJECTS_STORAGE_KEY = 'lowticket_projects_hub_v1';
  const ACTIVE_PROJECT_ID_KEY = 'lowticket_active_project_id_v1';
+ const TOMBSTONES_STORAGE_KEY = 'lowticket_projects_tombstones_v1';
+
+ function touchProject(proj) {
+  if (proj) {
+   proj.updatedAt = Date.now();
+  }
+  return proj;
+ }
+
+ function loadTombstones() {
+  try {
+   const raw = localStorage.getItem(TOMBSTONES_STORAGE_KEY);
+   if (!raw) return {};
+   const parsed = JSON.parse(raw);
+   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return parsed;
+   }
+  } catch (e) {
+   console.warn('Erro ao ler tombstones do localStorage:', e);
+  }
+  return {};
+ }
+
+ function saveTombstones(map) {
+  try {
+   localStorage.setItem(TOMBSTONES_STORAGE_KEY, JSON.stringify(map || {}));
+  } catch (e) {
+   console.warn('Erro ao salvar tombstones no localStorage:', e);
+  }
+ }
+
+ function recordTombstone(id, deletedAt, synced) {
+  if (!id) return;
+  const map = loadTombstones();
+  const existing = map[id];
+  const dAt = (typeof deletedAt === 'number' && Number.isFinite(deletedAt)) ? deletedAt : Date.now();
+  map[id] = {
+   deletedAt: (existing && typeof existing.deletedAt === 'number' && Number.isFinite(existing.deletedAt))
+    ? Math.min(existing.deletedAt, dAt)
+    : dAt,
+   synced: !!synced
+  };
+  saveTombstones(map);
+ }
+
+ function hasTombstone(id) {
+  if (!id) return false;
+  const map = loadTombstones();
+  return !!map[id];
+ }
 
  let projectsList = [];
  let activeProjectId = null;
@@ -2923,6 +2973,7 @@ document.addEventListener('DOMContentLoaded', () => {
   id: 'proj_default_1',
   name: '100 Atividades para Idosos',
   createdAt: 'Hoje',
+  updatedAt: 0,
   state: {
    nicheInput: 'Exercícios cognitivos e estimulação de memória para idosos',
    copyProdName: '100 Atividades para Idosos',
@@ -2937,15 +2988,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
  try {
   const savedProjects = localStorage.getItem(PROJECTS_STORAGE_KEY);
-  if (savedProjects) {
-   projectsList = JSON.parse(savedProjects);
-  }
-  if (!Array.isArray(projectsList) || projectsList.length === 0) {
-   projectsList = [defaultInitialProject];
-   localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projectsList));
+  if (savedProjects !== null) {
+   const parsed = JSON.parse(savedProjects);
+   if (Array.isArray(parsed)) {
+    projectsList = parsed;
+   }
   }
  } catch (e) {
-  projectsList = [defaultInitialProject];
+  projectsList = [];
+ }
+
+ const initialTombstones = loadTombstones();
+ if (localStorage.getItem(PROJECTS_STORAGE_KEY) === null) {
+  if (!initialTombstones['proj_default_1']) {
+   touchProject(defaultInitialProject);
+   projectsList = [defaultInitialProject];
+   try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projectsList)); } catch (e) {}
+  } else {
+   projectsList = [];
+   try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projectsList)); } catch (e) {}
+  }
+ } else {
+  projectsList = projectsList.filter(p => p && p.id && !initialTombstones[p.id]);
  }
 
  const viewProjects = document.getElementById('view-projects');
@@ -3041,6 +3105,32 @@ document.addEventListener('DOMContentLoaded', () => {
    setDbPill('auth');
   }
 
+  async function deleteProjectFromServer(projId) {
+   if (!projId) return false;
+   try {
+    const r = await apiFetch('/api/projects/' + encodeURIComponent(projId), { method: 'DELETE' });
+    if (r.status === 401) { markDbAuth(); return false; }
+    if (r.status === 200) {
+     recordTombstone(projId, Date.now(), true);
+     return true;
+    }
+   } catch (e) {}
+   return false;
+  }
+
+  async function syncPendingDeletions() {
+   const map = loadTombstones();
+   const unsyncedIds = Object.keys(map).filter(id => !map[id].synced);
+   for (const id of unsyncedIds) {
+    try {
+     const ok = await deleteProjectFromServer(id);
+     if (!ok && !isServerDatabaseActive) break;
+    } catch (e) {}
+   }
+  }
+
+  let isHandlingStaleSync = false;
+
   async function initDatabaseSync() {
    if (dbRetryTimer) { clearTimeout(dbRetryTimer); dbRetryTimer = null; }
    setDbPill(dbMode);
@@ -3053,25 +3143,75 @@ document.addEventListener('DOMContentLoaded', () => {
      aiServerReady = !!data.aiConfigured;
      renderAiStatus();
      if (data.dbConnected) {
-      const pRes = await apiFetch('/api/projects', { cache: 'no-store' });
-      if (pRes.status === 401) { markDbAuth(); return; }
       isServerDatabaseActive = true;
       setDbPill('ok');
 
+      // Reenvia todos os DELETE com synced:false antes do push
+      await syncPendingDeletions();
+
+      const pRes = await apiFetch('/api/projects', { cache: 'no-store' });
+      if (pRes.status === 401) { markDbAuth(); return; }
+
       if (pRes.ok) {
        const pData = await pRes.json();
-       const serverList = Array.isArray(pData.projects) ? pData.projects : [];
+       
+       // Tombstones do servidor sao gravados localmente como synced:true
+       const serverTombstones = Array.isArray(pData.tombstones) ? pData.tombstones : [];
+       serverTombstones.forEach(st => {
+        if (st && st.id) {
+         recordTombstone(st.id, st.deletedAt || Date.now(), true);
+        }
+       });
+
+       const allTombstones = loadTombstones();
+
+       // (1) uniao de tombstones locais e do servidor remove ids da lista
+       const serverList = (Array.isArray(pData.projects) ? pData.projects : [])
+        .filter(sp => sp && sp.id && !allTombstones[sp.id]);
+
        const localById = {};
-       projectsList.forEach(p => { localById[p.id] = p; });
+       projectsList.forEach(p => {
+        if (p && p.id && !allTombstones[p.id]) {
+         localById[p.id] = p;
+        }
+       });
+
        const merged = [];
        const seen = {};
+
+       // (2) mesmo id dos dois lados vence o maior updatedAt (empate: local); (4) so servidor e adicionado
        serverList.forEach(sp => {
-        const lp = localById[sp.id];
         seen[sp.id] = true;
-        if (lp && (lp.updatedAt || 0) >= (sp.updatedAt || 0)) merged.push(lp); else merged.push(sp);
+        const lp = localById[sp.id];
+        if (lp) {
+         const lpUpdated = (typeof lp.updatedAt === 'number' && Number.isFinite(lp.updatedAt)) ? lp.updatedAt : 0;
+         const spUpdated = (typeof sp.updatedAt === 'number' && Number.isFinite(sp.updatedAt)) ? sp.updatedAt : 0;
+         if (lpUpdated >= spUpdated) {
+          merged.push(lp);
+         } else {
+          merged.push(sp);
+         }
+        } else {
+         merged.push(sp);
+        }
        });
-       projectsList.forEach(lp => { if (!seen[lp.id]) merged.push(lp); });
+
+       // (3) so local sem tombstone permanece
+       Object.keys(localById).forEach(id => {
+        if (!seen[id]) {
+         merged.push(localById[id]);
+        }
+       });
+
        projectsList = merged;
+
+       // AC-06: Se o projeto ativo for removido por tombstone (merge ou skipped), chamar goToHome() e limpar ACTIVE_PROJECT_ID_KEY
+       if (activeProjectId && (allTombstones[activeProjectId] || !projectsList.some(p => p.id === activeProjectId))) {
+        activeProjectId = null;
+        try { localStorage.removeItem(ACTIVE_PROJECT_ID_KEY); } catch (e) {}
+        goToHome();
+       }
+
        try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projectsList)); } catch (e) {}
        renderProjectsGrid();
        syncProjectsListWithServer();
@@ -3100,31 +3240,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function pushProjectsNow() {
    if (!isServerDatabaseActive || !projectsList || projectsList.length === 0) return;
-   const valid = projectsList.filter(p => p && SERVER_ID_REGEX.test(String(p.id)));
+   const tombstones = loadTombstones();
+   const valid = projectsList.filter(p => p && p.id && SERVER_ID_REGEX.test(String(p.id)) && !tombstones[p.id]);
    if (valid.length === 0) return;
+
    try {
     const r = await apiFetch('/api/projects', {
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({ projects: valid })
     });
-    if (r.status === 401) markDbAuth();
-    else if (r.status === 503) markDbOffline();
-   } catch (e) { markDbOffline(); }
+    if (r.status === 401) { markDbAuth(); return; }
+    if (r.status === 503) { markDbOffline(); return; }
+    if (r.ok) {
+     const data = await r.json();
+     if (data && Array.isArray(data.skipped) && data.skipped.length > 0) {
+      let needsReRender = false;
+      let hasStale = false;
+      data.skipped.forEach(skip => {
+       if (skip && skip.id) {
+        if (skip.reason === 'deleted') {
+         recordTombstone(skip.id, Date.now(), true);
+         projectsList = projectsList.filter(p => p.id !== skip.id);
+         needsReRender = true;
+         if (activeProjectId === skip.id) {
+          activeProjectId = null;
+          try { localStorage.removeItem(ACTIVE_PROJECT_ID_KEY); } catch (e) {}
+          goToHome();
+         }
+        } else if (skip.reason === 'stale') {
+         hasStale = true;
+        }
+       }
+      });
+      if (needsReRender) {
+       try { localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projectsList)); } catch (e) {}
+       renderProjectsGrid();
+      }
+      if (hasStale && !isHandlingStaleSync) {
+       isHandlingStaleSync = true;
+       setTimeout(async () => {
+        try {
+         await initDatabaseSync();
+        } finally {
+         isHandlingStaleSync = false;
+        }
+       }, 50);
+      }
+     }
+    }
+   } catch (e) {
+    markDbOffline();
+   }
   }
 
   function syncProjectsListWithServer() {
    if (!isServerDatabaseActive) return;
    clearTimeout(projSyncTimer);
    projSyncTimer = setTimeout(pushProjectsNow, 800);
-  }
-
-  async function deleteProjectFromServer(projId) {
-   if (!isServerDatabaseActive || !projId) return;
-   try {
-    const r = await apiFetch('/api/projects/' + encodeURIComponent(projId), { method: 'DELETE' });
-    if (r.status === 401) markDbAuth();
-   } catch (e) {}
   }
 
   function syncStateWithServer() {
@@ -3262,9 +3435,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (pendingProjectToDelete && pendingProjectToDelete.id) {
    const projId = pendingProjectToDelete.id;
    projectsList = projectsList.filter(p => p.id !== projId);
-   deleteProjectFromServer(projId);
+   recordTombstone(projId, Date.now(), false);
+   if (activeProjectId === projId) {
+    activeProjectId = null;
+    try { localStorage.removeItem(ACTIVE_PROJECT_ID_KEY); } catch (e) {}
+    goToHome();
+   }
    saveProjectsToStorage();
    renderProjectsGrid();
+   deleteProjectFromServer(projId);
   }
   window.closeDeleteProjectModal();
  };
@@ -3337,7 +3516,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const proj = projectsList.find(p => p.id === activeProjectId);
   if (!proj) return;
 
-  proj.updatedAt = Date.now(); if (!proj.state) proj.state = {};
+  const stateBefore = JSON.stringify(proj.state || {});
+  if (!proj.state) proj.state = {};
   const copyNameInput = document.getElementById('ai-prod-name');
   if (copyNameInput) proj.state.copyProdName = copyNameInput.value;
 
@@ -3356,7 +3536,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const nicheInput = document.getElementById('niche-search-input');
   if (nicheInput) proj.state.nicheInput = nicheInput.value;
 
-  saveProjectsToStorage();
+  const stateAfter = JSON.stringify(proj.state);
+  if (stateBefore !== stateAfter) {
+   touchProject(proj);
+   saveProjectsToStorage();
+  }
  }
 
  window.goToHome = function() {
@@ -3405,6 +3589,7 @@ document.addEventListener('DOMContentLoaded', () => {
     imgCta: 'GARANTIR POR R$ 24,90'
    }
   };
+  touchProject(newProject);
 
   projectsList.unshift(newProject);
   saveProjectsToStorage();
@@ -3982,6 +4167,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    if (activeProjectId) {
     const proj = projectsList.find(p => p.id === activeProjectId);
     if (proj) {
+     touchProject(proj);
      if (!proj.state) proj.state = {};
      proj.state.copyProdName = main.name;
      proj.state.copyProdPrice = main.price;
