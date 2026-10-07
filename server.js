@@ -12,6 +12,7 @@
  *   GEMINI_MODEL         (proxy de IA) modelo usado (padrao gemini-3.8-flash); o cliente nao escolhe
  *   GEMINI_BASE_URL      (proxy de IA) URL base da API (padrao https://generativelanguage.googleapis.com/v1beta)
  *   O proxy POST /api/ai/generate exige APP_TOKEN definido (senao 503 ai_requires_app_token).
+ *   Pontuacao materializada: MINER_SCORE_REFRESH_MS (600000) refresh completo; MINER_SCORE_REFRESH_ENABLED=0 desliga o periodico (o incremental por lote e o preenchimento no boot continuam).
  *   Coleta Apify: APIFY_TOKEN (so no servidor), MINER_APIFY_ACTOR, MINER_APIFY_BASE_URL, MINER_COLLECT_ENABLED=0 desliga o worker, MINER_COLLECT_INTERVAL_MS (300000),
  *   MINER_COLLECT_RUN_TIMEOUT_MS (900000), MINER_COLLECT_DAILY_AD_LIMIT (3000), MINER_COLLECT_POLL_MS (10000). Rotas: /api/miner/searches[/:id[/run]], /api/miner/collect/runs.
  *   Dashboard: GET /api/miner/ads (feed com cursor), /api/miner/stats, /api/miner/filters; MINER_SCALED_SCORE (padrao 20) define oferta escalada.
@@ -125,6 +126,14 @@ const MINER_COLLECT_INGEST_BATCH = 200;  // anuncios por lote de ingestao (= MIN
 const MINER_COLLECT_OK_HOURS = 24;       // proxima coleta apos sucesso
 const MINER_COLLECT_DEFAULT_MAX_ADS = 300;
 const MINER_COLLECT_MAX_ADS = 1000;
+
+// Pontuacao materializada por dominio (BE-009)
+const MINER_SCORE_REFRESH_ENABLED = process.env.MINER_SCORE_REFRESH_ENABLED !== '0';
+const MINER_SCORE_REFRESH_MS = parseInt(process.env.MINER_SCORE_REFRESH_MS, 10) || 600000; // refresh completo periodico
+const MINER_SCORE_LOCK_KEY = 7202610;                  // chave do pg_try_advisory_lock do refresh completo
+const MINER_SCORE_STATE_KEY = 'miner_scores_refresh';  // app_state: {at, ms} do ultimo refresh completo
+const MINER_SCORE_CHUNK = 1000;                         // dominios por bloco no refresh completo (cada bloco e 1 statement/commit)
+
 // Loopback no enriquecimento so com NODE_ENV=test (para os testes com mock local); nunca em producao.
 const MINER_TEST_LOOPBACK = process.env.NODE_ENV === 'test' && process.env.MINER_ENRICH_TEST_LOOPBACK === '1';
 if (process.env.MINER_ENRICH_TEST_LOOPBACK === '1') {
@@ -315,7 +324,23 @@ async function initDatabase() {
         day DATE PRIMARY KEY,
         ads INTEGER NOT NULL DEFAULT 0
       );
-      CREATE TABLE IF NOT EXISTS miner_ad_sources (
+      -- Pontuacao materializada por dominio (BE-009): mesma formula do ranking, atualizada por lote e periodicamente
+      CREATE TABLE IF NOT EXISTS miner_domain_scores (
+        landing_domain     VARCHAR(255) PRIMARY KEY,
+        active_ads         INTEGER NOT NULL DEFAULT 0,
+        distinct_creatives INTEGER NOT NULL DEFAULT 0,
+        max_days_running   INTEGER NOT NULL DEFAULT 0,
+        growth7d           INTEGER NOT NULL DEFAULT 0,
+        score              DOUBLE PRECISION NOT NULL DEFAULT 0,
+        page_names         TEXT[],
+        last_seen_at       TIMESTAMPTZ,
+        computed_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_miner_domain_scores_score ON miner_domain_scores (score DESC);
+      CREATE INDEX IF NOT EXISTS idx_miner_domain_scores_computed_at ON miner_domain_scores (computed_at);
+      CREATE INDEX IF NOT EXISTS idx_miner_domain_scores_active_ads ON miner_domain_scores (active_ads DESC, landing_domain ASC);
+      CREATE INDEX IF NOT EXISTS idx_miner_domain_scores_max_days ON miner_domain_scores (max_days_running DESC, landing_domain ASC);
+      CREATE INDEX IF NOT EXISTS idx_miner_domain_scores_growth ON miner_domain_scores (growth7d DESC, landing_domain ASC);      CREATE TABLE IF NOT EXISTS miner_ad_sources (
         ad_archive_id      VARCHAR(30) NOT NULL,
         submitter_id       VARCHAR(100) NOT NULL,
         first_submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -348,6 +373,7 @@ async function initDatabase() {
   isDbConnected = true;
   dbErrorMsg = '';
   console.log('[PostgreSQL] Conectado. Tabelas verificadas (projects, app_state).');
+  minerScoresBootFill(); // tabela de pontuacoes vazia + ha anuncios -> refresh completo (nao bloqueia o boot)
 }
 
 /** Tenta conectar com backoff. Resolve o caso do app subir antes do banco estar pronto. */
@@ -746,6 +772,7 @@ async function ingestMinerBatch(submitterId, contextRaw, ads, meta) {
   const queries = context.q ? [context.q] : [];
   let inserted = 0;
   let updated = 0;
+  let touchedDomains = [];
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -793,6 +820,7 @@ async function ingestMinerBatch(submitterId, contextRaw, ads, meta) {
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [submitterId, extVersion, ads.length, inserted, updated, rejected.length, JSON.stringify(logContext)]
     );
+    touchedDomains = Array.from(domains);
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
@@ -800,6 +828,8 @@ async function ingestMinerBatch(submitterId, contextRaw, ads, meta) {
   } finally {
     client.release();
   }
+  // Pontuacao materializada: recalcula so os dominios do lote (erro aqui nao muda a resposta da ingestao).
+  await minerScoresRefreshDomains(touchedDomains);
   return { received: ads.length, inserted, updated, rejected };
 }
 
@@ -851,7 +881,8 @@ async function handleMinerOffers(req, res, searchParams) {
   const priceMinRaw = parseNonNegNumber(searchParams.get('priceMin'));
   const priceMaxRaw = parseNonNegNumber(searchParams.get('priceMax'));
   const minScoreRaw = parseNonNegNumber(searchParams.get('minScore'));
-  const pageIdRaw = (searchParams.get('pageId') || '').trim();  if (minAds === null) return sendJson(res, 400, { ok: false, error: 'invalid_min_ads' });
+  const pageIdRaw = (searchParams.get('pageId') || '').trim();
+  if (minAds === null) return sendJson(res, 400, { ok: false, error: 'invalid_min_ads' });
   if (minDays === null) return sendJson(res, 400, { ok: false, error: 'invalid_min_days' });
   if (limit === null) return sendJson(res, 400, { ok: false, error: 'invalid_limit' });
   if (offset === null) return sendJson(res, 400, { ok: false, error: 'invalid_offset' });
@@ -867,9 +898,12 @@ async function handleMinerOffers(req, res, searchParams) {
   if (priceMaxRaw === null) return sendJson(res, 400, { ok: false, error: 'invalid_price_max' });
   if (minScoreRaw === null) return sendJson(res, 400, { ok: false, error: 'invalid_min_score' });
   if (priceMinRaw !== undefined && priceMaxRaw !== undefined && priceMinRaw > priceMaxRaw) return sendJson(res, 400, { ok: false, error: 'invalid_price_range' });
-  if (pageIdRaw && !/^[A-Za-z0-9_.-]{1,100}$/.test(pageIdRaw)) return sendJson(res, 400, { ok: false, error: 'invalid_page_id' });  // Filtros por anuncio (todos parametrizados). Base: ativos, com dominio, vistos nos ultimos 7 dias.
-  const params = [MINER_OFFER_WINDOW_DAYS];
-  const where = ['is_active', 'landing_domain IS NOT NULL', "last_seen_at >= NOW() - ($1::int * INTERVAL '1 day')"];
+  if (pageIdRaw && !/^[A-Za-z0-9_.-]{1,100}$/.test(pageIdRaw)) return sendJson(res, 400, { ok: false, error: 'invalid_page_id' });
+
+  // Filtros por anuncio (todos parametrizados). Base: ativos, com dominio, vistos nos ultimos 7 dias.
+  const adLevel = !!(q || countryRaw || pageIdRaw || mediaType !== 'ALL');
+  const params = [];
+  const where = [MINER_SCORE_ACTIVE_WHERE];
   if (q) {
     params.push('%' + escapeLike(q) + '%');
     const n = params.length;
@@ -880,9 +914,6 @@ async function handleMinerOffers(req, res, searchParams) {
   if (mediaType !== 'ALL') { params.push(mediaType); where.push(`display_format = $${params.length}`); }
   const baseWhere = where.join(' AND ');
 
-  // Pontuacao (SPEC-004): activeAds*2 + distinct*1.5 + min(dias,60)*0.5 + max(growth7d,0)*3
-  params.push(MINER_SCORE_ACTIVE_WEIGHT, MINER_SCORE_DISTINCT_WEIGHT, MINER_SCORE_DAYS_WEIGHT, MINER_SCORE_DAYS_CAP, MINER_SCORE_GROWTH_WEIGHT);
-  const [pA, pD, pW, pC, pG] = [1, 2, 3, 4, 5].map((i) => `$${params.length - 5 + i}::float8`);
   params.push(minAds, minDays);
   const pMinAds = `$${params.length - 1}`;
   const pMinDays = `$${params.length}`;
@@ -892,72 +923,79 @@ async function handleMinerOffers(req, res, searchParams) {
   if (formatRaw) { params.push(formatRaw); postConds.push(`ma.format = $${params.length}`); }
   if (priceMinRaw !== undefined) { params.push(priceMinRaw); postConds.push(`md.price_min >= $${params.length}`); }
   if (priceMaxRaw !== undefined) { params.push(priceMaxRaw); postConds.push(`md.price_min <= $${params.length}`); }
-  if (minScoreRaw !== undefined) {
-    params.push(minScoreRaw);
-    postConds.push(`ROUND((g.active_ads * ${pA} + g.distinct_creatives * ${pD} + LEAST(g.max_days_running, ${pC}) * ${pW} + GREATEST(g.growth7d, 0) * ${pG})::numeric, 2)::float8 >= $${params.length}`);
-  }
-  const platformWhere = postConds.length ? 'WHERE ' + postConds.join(' AND ') : '';
+  if (minScoreRaw !== undefined) { params.push(minScoreRaw); postConds.push(`g.score >= $${params.length}`); }
 
-  // growth7d = active_ads da fotografia mais recente (hoje) - fotografia mais proxima de 7 dias atras (anterior a ela).
-  const offersCte = `
-    WITH agg AS (
-      SELECT landing_domain,
-             (ARRAY_AGG(DISTINCT page_name) FILTER (WHERE page_name <> ''))[1:10] AS page_names,
-             COUNT(*)::int AS active_ads,
-             COUNT(DISTINCT COALESCE(collation_id, ad_archive_id))::int AS distinct_creatives,
-             GREATEST(FLOOR((EXTRACT(EPOCH FROM NOW()) - MIN(start_date)) / 86400), 0)::int AS max_days_running,
-             MAX(last_seen_at) AS last_seen_at
-        FROM miner_ads
-       WHERE ${baseWhere}
-       GROUP BY landing_domain
-      HAVING COUNT(*) >= ${pMinAds}
-         AND GREATEST(FLOOR((EXTRACT(EPOCH FROM NOW()) - MIN(start_date)) / 86400), 0) >= ${pMinDays}
-    ), grown AS (
-      SELECT a.*,
-             CASE WHEN cur.day IS NULL OR base.day IS NULL THEN 0 ELSE cur.active_ads - base.active_ads END AS growth7d
-        FROM agg a
-        LEFT JOIN LATERAL (
-          SELECT day, active_ads FROM miner_snapshots s
-           WHERE s.landing_domain = a.landing_domain AND s.day <= (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-           ORDER BY s.day DESC LIMIT 1) cur ON TRUE
-        LEFT JOIN LATERAL (
-          SELECT day, active_ads FROM miner_snapshots s
-           WHERE s.landing_domain = a.landing_domain AND s.day < cur.day
-           ORDER BY ABS(s.day - ((NOW() AT TIME ZONE 'America/Sao_Paulo')::date - 7)), s.day DESC LIMIT 1) base ON TRUE
-    ), offers AS (
-      SELECT g.*, md.checkout_platform AS c_platform, md.checkout_url AS c_url, md.prices AS c_prices, md.price_min AS c_price_min,
-             md.page_title AS c_title, md.enriched_at AS c_enriched_at, ma.result AS ai_result, ma.classified_at AS ai_classified_at,
-             ROUND((g.active_ads * ${pA} + g.distinct_creatives * ${pD} + LEAST(g.max_days_running, ${pC}) * ${pW}
-                    + GREATEST(g.growth7d, 0) * ${pG})::numeric, 2)::float8 AS score
-        FROM grown g
-        LEFT JOIN miner_domains md ON md.landing_domain = g.landing_domain
-        LEFT JOIN miner_ai ma ON ma.landing_domain = g.landing_domain
-        ${platformWhere}
-    )`;
+  // A pontuacao vem da definicao unica (minerScoredCte). Sem filtros por anuncio le a tabela materializada; com eles calcula
+  // so os dominios dos anuncios filtrados (o activeAds conta so os anuncios filtrados).
+  const offerCols = `SELECT g.*, md.checkout_platform AS c_platform, md.checkout_url AS c_url, md.prices AS c_prices, md.price_min AS c_price_min,
+             md.page_title AS c_title, md.enriched_at AS c_enriched_at, ma.result AS ai_result, ma.classified_at AS ai_classified_at`;
+  const offerJoins = `LEFT JOIN miner_domains md ON md.landing_domain = g.landing_domain
+        LEFT JOIN miner_ai ma ON ma.landing_domain = g.landing_domain`;
+
   const orderBy = `${MINER_SORTS[sortKey]} DESC, landing_domain ASC`;
+  const postWhere = postConds.length ? 'WHERE ' + postConds.join(' AND ') : '';
 
-  const [pageRes, countRes] = await Promise.all([
-    pool.query(`${offersCte} SELECT * FROM offers ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset}`, params),
-    pool.query(`${offersCte} SELECT COUNT(*)::int AS total FROM offers`, params)
-  ]);
+  let pageRows;
+  let total;
+  if (adLevel) {
+    // Com filtro de anuncio: agrega so os anuncios filtrados. growth7d vem da tabela (depende so das fotografias do dominio),
+    // page_names so para os dominios da pagina e o total sai da mesma consulta (COUNT OVER). Sem filtro de dominio, md/ma entram
+    // so nas linhas da pagina.
+    const cte = minerScoredCte(baseWhere, { minAds: pMinAds, minDays: pMinDays, growthFromTable: true, skipPageNames: true });
+    const sql = postConds.length
+      ? `WITH ${cte}, offers AS (${offerCols}, COUNT(*) OVER () AS total_count FROM scored g ${offerJoins} ${postWhere})
+         SELECT * FROM offers ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset}`
+      : `WITH ${cte}, top AS (SELECT g.*, COUNT(*) OVER () AS total_count FROM scored g ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset})
+         ${offerCols} FROM top g ${offerJoins} ORDER BY ${orderBy}`;
+    const r = await pool.query(sql, params);
+    pageRows = r.rows;
+    total = pageRows.length ? Number(pageRows[0].total_count) : 0;
+    if (!pageRows.length && offset > 0) { // pagina alem do fim: o total precisa de uma consulta propria
+      const c = await pool.query(`WITH ${cte} SELECT COUNT(*)::int AS total FROM scored g ${postConds.length ? offerJoins + ' ' + postWhere : ''}`, params);
+      total = c.rows[0].total;
+    }
+  } else {
+    // Sem filtro de anuncio: le a pontuacao materializada.
+    const offersCte = `WITH offers AS (${offerCols} FROM miner_domain_scores g ${offerJoins}
+        WHERE g.active_ads >= ${pMinAds} AND g.max_days_running >= ${pMinDays}${postConds.length ? ' AND ' + postConds.join(' AND ') : ''})`;
+    const [pageRes, countRes] = await Promise.all([
+      pool.query(`${offersCte} SELECT * FROM offers ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset}`, params),
+      pool.query(`${offersCte} SELECT COUNT(*)::int AS total FROM offers`, params)
+    ]);
+    pageRows = pageRes.rows;
+    total = countRes.rows[0].total;
+  }
 
-  // Ate 3 anuncios de amostra por dominio da pagina (mesmos filtros): mais repetidos primeiro, depois os mais antigos.
-  const domains = pageRes.rows.map((r) => r.landing_domain);
+  // Para os dominios da pagina, em paralelo: ate 3 anuncios de amostra (mesmos filtros; mais repetidos primeiro, depois os mais
+  // antigos), sparkline (active_ads das fotografias dos ultimos MINER_SPARKLINE_DAYS dias, so dias com fotografia) e page_names.
+  const domains = pageRows.map((r) => r.landing_domain);
   const samplesByDomain = new Map();
+  const sparkByDomain = new Map();
+  const namesByDomain = new Map();
   if (domains.length) {
-    const sampleParams = params.slice(0, params.length - (7 + postConds.length));
+    const sampleParams = params.slice(0, params.length - (2 + postConds.length));
     sampleParams.push(domains);
-    const samples = await pool.query(
-      `SELECT * FROM (
-         SELECT ad_archive_id, title, body, display_format, link_url, start_date, landing_domain,
-                COALESCE(media->'images'->>0, media->'videos'->0->>'preview') AS image,
-                ROW_NUMBER() OVER (PARTITION BY landing_domain ORDER BY collation_count DESC, start_date ASC, ad_archive_id) AS rn
-           FROM miner_ads
-          WHERE ${baseWhere} AND landing_domain = ANY($${sampleParams.length})
-       ) t WHERE rn <= ${MINER_SAMPLE_ADS}
-       ORDER BY landing_domain, rn`,
-      sampleParams
-    );
+    const dIdx = `$${sampleParams.length}`;
+    const [samples, spk, names] = await Promise.all([
+      pool.query(
+        `SELECT * FROM (
+           SELECT ad_archive_id, title, body, display_format, link_url, start_date, landing_domain,
+                  COALESCE(media->'images'->>0, media->'videos'->0->>'preview') AS image,
+                  ROW_NUMBER() OVER (PARTITION BY landing_domain ORDER BY collation_count DESC, start_date ASC, ad_archive_id) AS rn
+             FROM miner_ads
+            WHERE ${baseWhere} AND landing_domain = ANY(${dIdx})
+         ) t WHERE rn <= ${MINER_SAMPLE_ADS}
+         ORDER BY landing_domain, rn`, sampleParams),
+      pool.query(
+        `SELECT landing_domain, TO_CHAR(day, 'YYYY-MM-DD') AS day, active_ads FROM miner_snapshots
+          WHERE landing_domain = ANY($1::text[]) AND day >= (NOW() AT TIME ZONE 'America/Sao_Paulo')::date - ${MINER_SPARKLINE_DAYS - 1}
+          ORDER BY landing_domain, day ASC`, [domains]),
+      adLevel
+        ? pool.query(
+          `SELECT landing_domain, (ARRAY_AGG(DISTINCT page_name) FILTER (WHERE page_name <> ''))[1:10] AS page_names
+             FROM miner_ads WHERE ${baseWhere} AND landing_domain = ANY(${dIdx}) GROUP BY landing_domain`, sampleParams)
+        : Promise.resolve(null)
+    ]);
     for (const s of samples.rows) {
       if (!samplesByDomain.has(s.landing_domain)) samplesByDomain.set(s.landing_domain, []);
       samplesByDomain.get(s.landing_domain).push({
@@ -965,23 +1003,16 @@ async function handleMinerOffers(req, res, searchParams) {
         image: s.image || null, linkUrl: s.link_url, startDate: Number(s.start_date)
       });
     }
-  }
-
-  // Sparkline: active_ads das fotografias diarias dos ultimos MINER_SPARKLINE_DAYS dias (so dias com fotografia).
-  const sparkByDomain = new Map();
-  if (domains.length) {
-    const spk = await pool.query(
-      `SELECT landing_domain, TO_CHAR(day, 'YYYY-MM-DD') AS day, active_ads FROM miner_snapshots
-        WHERE landing_domain = ANY($1::text[]) AND day >= (NOW() AT TIME ZONE 'America/Sao_Paulo')::date - ${MINER_SPARKLINE_DAYS - 1}
-        ORDER BY landing_domain, day ASC`, [domains]);
     for (const s of spk.rows) {
       if (!sparkByDomain.has(s.landing_domain)) sparkByDomain.set(s.landing_domain, []);
       sparkByDomain.get(s.landing_domain).push({ day: s.day, activeAds: s.active_ads });
     }
+    if (names) for (const n of names.rows) namesByDomain.set(n.landing_domain, n.page_names || []);
   }
 
-  const offers = pageRes.rows.map((r) => ({    domain: r.landing_domain,
-    pageNames: r.page_names || [],
+  const offers = pageRows.map((r) => ({
+    domain: r.landing_domain,
+    pageNames: adLevel ? (namesByDomain.get(r.landing_domain) || []) : (r.page_names || []),
     activeAds: r.active_ads,
     distinctCreatives: r.distinct_creatives,
     maxDaysRunning: r.max_days_running,
@@ -993,7 +1024,7 @@ async function handleMinerOffers(req, res, searchParams) {
     sparkline: sparkByDomain.get(r.landing_domain) || [],
     sampleAds: samplesByDomain.get(r.landing_domain) || []
   }));
-  return sendJson(res, 200, { ok: true, total: countRes.rows[0].total, offers });
+  return sendJson(res, 200, { ok: true, total, offers });
 }
 
 function minerAdToJson(r) {
@@ -1834,33 +1865,132 @@ function minerCursorDecode(str, sort) {
   return { v: o.v, i: o.i };
 }
 
+// Anuncios que contam para a pontuacao: ativos, com dominio e vistos na janela (mesma base do ranking de ofertas).
+const MINER_SCORE_ACTIVE_WHERE = `is_active AND landing_domain IS NOT NULL AND last_seen_at >= NOW() - INTERVAL '${MINER_OFFER_WINDOW_DAYS} days'`;
+
 /**
- * CTEs agg+ds com a pontuacao por dominio (mesma formula do ranking de ofertas, SPEC-004).
- * domainFilter: '' (todos) ou 'AND landing_domain = ANY($n::text[])'. Constantes numericas inline (nao vem do cliente).
+ * DEFINICAO UNICA do calculo por dominio (SPEC-004/005): CTEs agg (agregacao dos anuncios) e scored (growth7d e score).
+ * baseWhere: condicao sobre miner_ads (pode ter filtros por anuncio, ja parametrizados).
+ * opts.minAds / opts.minDays: placeholders ($n) do HAVING por quantidade de anuncios e dias no ar; opts.skipPageNames: nao agrega page_names (NULL).
+ * opts.growthFromTable: o growth7d (que so depende das fotografias do dominio) vem de miner_domain_scores (0 se ausente) em vez dos 2 LATERAL por dominio.
+ * scored: landing_domain, page_names, active_ads, distinct_creatives, max_days_running, last_seen_at, growth7d, score.
+ * Usada pelo ranking dinamico (com filtros por anuncio), pelo refresh completo e pelo incremental. Constantes numericas inline.
  */
-function minerScoreCte(domainFilter) {
+function minerScoredCte(baseWhere, opts) {
+  const o = opts || {};
+  const having = o.minAds ? `HAVING COUNT(*) >= ${o.minAds} AND GREATEST(FLOOR((EXTRACT(EPOCH FROM NOW()) - MIN(start_date)) / 86400), 0) >= ${o.minDays}` : '';
+  const pageNames = o.skipPageNames ? 'NULL::text[] AS page_names' : "(ARRAY_AGG(DISTINCT page_name) FILTER (WHERE page_name <> ''))[1:10] AS page_names";
+  const growth = opts && opts.growthFromTable
+    ? { expr: 'COALESCE(gs.growth7d, 0)', join: 'LEFT JOIN miner_domain_scores gs ON gs.landing_domain = a.landing_domain' }
+    : {
+      expr: 'CASE WHEN cur.day IS NULL OR base.day IS NULL THEN 0 ELSE cur.active_ads - base.active_ads END',
+      join: `LEFT JOIN LATERAL (
+              SELECT day, active_ads FROM miner_snapshots sn
+               WHERE sn.landing_domain = a.landing_domain AND sn.day <= (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+               ORDER BY sn.day DESC LIMIT 1) cur ON TRUE
+            LEFT JOIN LATERAL (
+              SELECT day, active_ads FROM miner_snapshots sn
+               WHERE sn.landing_domain = a.landing_domain AND sn.day < cur.day
+               ORDER BY ABS(sn.day - ((NOW() AT TIME ZONE 'America/Sao_Paulo')::date - 7)), sn.day DESC LIMIT 1) base ON TRUE`
+    };
   return `agg AS (
-      SELECT landing_domain, COUNT(*)::int AS active_ads,
+      SELECT landing_domain,
+             ${pageNames},
+             COUNT(*)::int AS active_ads,
              COUNT(DISTINCT COALESCE(collation_id, ad_archive_id))::int AS distinct_creatives,
-             GREATEST(FLOOR((EXTRACT(EPOCH FROM NOW()) - MIN(start_date)) / 86400), 0)::int AS max_days_running
+             GREATEST(FLOOR((EXTRACT(EPOCH FROM NOW()) - MIN(start_date)) / 86400), 0)::int AS max_days_running,
+             MAX(last_seen_at) AS last_seen_at
         FROM miner_ads
-       WHERE is_active AND landing_domain IS NOT NULL AND last_seen_at >= NOW() - INTERVAL '${MINER_OFFER_WINDOW_DAYS} days' ${domainFilter}
-       GROUP BY landing_domain
-    ), ds AS (
-      SELECT a.landing_domain, a.active_ads,
-             ROUND((a.active_ads * ${MINER_SCORE_ACTIVE_WEIGHT} + a.distinct_creatives * ${MINER_SCORE_DISTINCT_WEIGHT}
-                    + LEAST(a.max_days_running, ${MINER_SCORE_DAYS_CAP}) * ${MINER_SCORE_DAYS_WEIGHT}
-                    + GREATEST(CASE WHEN cur.day IS NULL OR base.day IS NULL THEN 0 ELSE cur.active_ads - base.active_ads END, 0) * ${MINER_SCORE_GROWTH_WEIGHT})::numeric, 2)::float8 AS score
-        FROM agg a
-        LEFT JOIN LATERAL (
-          SELECT day, active_ads FROM miner_snapshots s
-           WHERE s.landing_domain = a.landing_domain AND s.day <= (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-           ORDER BY s.day DESC LIMIT 1) cur ON TRUE
-        LEFT JOIN LATERAL (
-          SELECT day, active_ads FROM miner_snapshots s
-           WHERE s.landing_domain = a.landing_domain AND s.day < cur.day
-           ORDER BY ABS(s.day - ((NOW() AT TIME ZONE 'America/Sao_Paulo')::date - 7)), s.day DESC LIMIT 1) base ON TRUE
+       WHERE ${baseWhere}
+       GROUP BY landing_domain ${having}
+    ), scored AS (
+      SELECT s.*,
+             ROUND((s.active_ads * ${MINER_SCORE_ACTIVE_WEIGHT} + s.distinct_creatives * ${MINER_SCORE_DISTINCT_WEIGHT}
+                    + LEAST(s.max_days_running, ${MINER_SCORE_DAYS_CAP}) * ${MINER_SCORE_DAYS_WEIGHT}
+                    + GREATEST(s.growth7d, 0) * ${MINER_SCORE_GROWTH_WEIGHT})::numeric, 2)::float8 AS score
+        FROM (
+          SELECT a.*, ${growth.expr} AS growth7d
+            FROM agg a
+            ${growth.join}
+        ) s
     )`;
+}
+
+// ---- Pontuacao materializada (miner_domain_scores): mesma formula, atualizada por lote e periodicamente.
+/** Upsert da pontuacao: domainFilter '' (todos os dominios) ou 'landing_domain = ANY($1::text[])'. Ordenado para evitar deadlock. */
+function minerScoresUpsertSql(domainFilter) {
+  return `WITH ${minerScoredCte(MINER_SCORE_ACTIVE_WHERE + (domainFilter ? ' AND ' + domainFilter : ''))}
+    INSERT INTO miner_domain_scores (landing_domain, active_ads, distinct_creatives, max_days_running, growth7d, score, page_names, last_seen_at, computed_at)
+    SELECT landing_domain, active_ads, distinct_creatives, max_days_running, growth7d, score, page_names, last_seen_at, NOW() FROM scored ORDER BY landing_domain
+    ON CONFLICT (landing_domain) DO UPDATE SET
+      active_ads = EXCLUDED.active_ads, distinct_creatives = EXCLUDED.distinct_creatives, max_days_running = EXCLUDED.max_days_running,
+      growth7d = EXCLUDED.growth7d, score = EXCLUDED.score, page_names = EXCLUDED.page_names, last_seen_at = EXCLUDED.last_seen_at, computed_at = NOW()`;
+}
+/** Remove da tabela os dominios sem anuncios ativos na janela (todos ou so os do filtro). */
+function minerScoresPruneSql(domainFilter) {
+  return `DELETE FROM miner_domain_scores s
+           WHERE ${domainFilter ? 's.' + domainFilter + ' AND ' : ''}NOT EXISTS (
+             SELECT 1 FROM miner_ads a WHERE a.landing_domain = s.landing_domain AND a.is_active
+                AND a.last_seen_at >= NOW() - INTERVAL '${MINER_OFFER_WINDOW_DAYS} days')`;
+}
+const MINER_SCORES_PRUNE_ALL_SQL = minerScoresPruneSql('');
+const MINER_SCORES_BATCH_SQL = minerScoresUpsertSql('landing_domain = ANY($1::text[])');
+const MINER_SCORES_PRUNE_BATCH_SQL = minerScoresPruneSql('landing_domain = ANY($1::text[])');
+
+/** Incremental: recalcula so os dominios do lote (apos o commit da ingestao). Erro nao afeta a ingestao. */
+async function minerScoresRefreshDomains(domains) {
+  if (!domains.length) return;
+  try {
+    await pool.query(MINER_SCORES_BATCH_SQL, [domains]);
+    await pool.query(MINER_SCORES_PRUNE_BATCH_SQL, [domains]);
+  } catch (err) {
+    console.error('[Minerador] refresh incremental das pontuacoes falhou:', String(err && err.message).slice(0, 120));
+  }
+}
+
+let minerScoresRefreshing = false;
+/** Completo: recalcula todos os dominios (em blocos) e remove os sem anuncios ativos. Uma instancia por vez (pg_try_advisory_lock). Nunca lanca. */
+async function minerScoresRefreshFull() {
+  if (minerScoresRefreshing || !isDbConnected || !pool) return;
+  minerScoresRefreshing = true;
+  const t0 = Date.now();
+  let client = null;
+  let broken = false;
+  try {
+    client = await pool.connect();
+    const got = (await client.query('SELECT pg_try_advisory_lock($1::bigint) AS got', [MINER_SCORE_LOCK_KEY])).rows[0].got;
+    if (!got) return; // outra instancia esta atualizando
+    try {
+      // Blocos de MINER_SCORE_CHUNK dominios (mesmo SQL do incremental): cada bloco confirma sozinho, entao o lock das linhas
+      // dura poucos ms e uma ingestao concorrente nao espera o refresh inteiro. Depois remove os dominios sem anuncios ativos.
+      const list = await client.query(`SELECT DISTINCT landing_domain FROM miner_ads WHERE ${MINER_SCORE_ACTIVE_WHERE} ORDER BY landing_domain`);
+      const all = list.rows.map((r) => r.landing_domain);
+      for (let i = 0; i < all.length; i += MINER_SCORE_CHUNK) await client.query(MINER_SCORES_BATCH_SQL, [all.slice(i, i + MINER_SCORE_CHUNK)]);
+      await client.query(MINER_SCORES_PRUNE_ALL_SQL);
+      await client.query(
+        `INSERT INTO app_state (key, value, updated_at) VALUES ($1, $2, NOW())
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+        [MINER_SCORE_STATE_KEY, JSON.stringify({ at: new Date().toISOString(), ms: Date.now() - t0, domains: all.length })]);
+    } finally {
+      await client.query('SELECT pg_advisory_unlock($1::bigint)', [MINER_SCORE_LOCK_KEY]).catch(() => { broken = true; });
+    }
+  } catch (err) {
+    broken = true;
+    console.error('[Minerador] refresh completo das pontuacoes falhou:', String(err && err.message).slice(0, 120));
+  } finally {
+    if (client) client.release(broken);
+    minerScoresRefreshing = false;
+  }
+}
+
+/** No boot: tabela vazia e ha anuncios -> preenche (refresh completo). */
+async function minerScoresBootFill() {
+  try {
+    const r = await pool.query('SELECT NOT EXISTS (SELECT 1 FROM miner_domain_scores) AS empty, EXISTS (SELECT 1 FROM miner_ads) AS has_ads');
+    if (r.rows[0].empty && r.rows[0].has_ads) await minerScoresRefreshFull();
+  } catch (err) {
+    console.error('[Minerador] preenchimento inicial das pontuacoes falhou:', String(err && err.message).slice(0, 120));
+  }
 }
 
 // Condicao de "anuncio ativo" do dashboard: igual a base do ranking de ofertas (ativo e visto na janela).
@@ -1879,10 +2009,9 @@ async function minerOffersByDomain(domains) {
   const map = new Map();
   if (!domains.length) return map;
   const r = await pool.query(
-    `WITH ${minerScoreCte('AND landing_domain = ANY($1::text[])')}
-     SELECT d.landing_domain, ds.score, md.checkout_platform, md.price_min, ma.niche
+    `SELECT d.landing_domain, ds.score, md.checkout_platform, md.price_min, ma.niche
        FROM UNNEST($1::text[]) AS d(landing_domain)
-       LEFT JOIN ds ON ds.landing_domain = d.landing_domain
+       LEFT JOIN miner_domain_scores ds ON ds.landing_domain = d.landing_domain
        LEFT JOIN miner_domains md ON md.landing_domain = d.landing_domain
        LEFT JOIN miner_ai ma ON ma.landing_domain = d.landing_domain`, [domains]);
   for (const x of r.rows) {
@@ -1892,6 +2021,54 @@ async function minerOffersByDomain(domains) {
     });
   }
   return map;
+}
+
+/**
+ * Feed por pontuacao SEM filtros por anuncio (so activeOnly e, opcionalmente, platform/niche/format): percorre os dominios pelo
+ * indice de score da tabela e busca os anuncios de cada um (LATERAL), parando no limite, em vez de ordenar todos os anuncios.
+ * Mesma ordem do caminho geral: score desc e ad_archive_id desc; anuncios sem pontuacao (score -1) vem por ultimo.
+ * Retorna {rows}: anuncios completos (+ days_running, fs_text, sort_score) na ordem da pagina.
+ */
+async function minerScoreFeedRows(o) {
+  const n = o.limit + 1;
+  const params = [];
+  const P = (v) => { params.push(v); return '$' + params.length; };
+  const joins = [];
+  const dw = [];
+  if (o.platformRaw) { joins.push('JOIN miner_domains md ON md.landing_domain = ds.landing_domain'); dw.push(`md.checkout_platform = ${P(o.platformRaw)}`); }
+  if (o.nicheRaw || o.formatRaw) {
+    joins.push('JOIN miner_ai ma ON ma.landing_domain = ds.landing_domain');
+    if (o.nicheRaw) dw.push(`ma.niche = ${P(o.nicheRaw)}`);
+    if (o.formatRaw) dw.push(`ma.format = ${P(o.formatRaw)}`);
+  }
+  if (o.cursor) {
+    const v = P(o.cursor.v); const i = P(o.cursor.i);
+    dw.push(`ds.score <= ${v}::float8`, `(ds.score, x.ad_archive_id) < (${v}::float8, ${i}::text)`); // o <= usa o indice de score
+  }
+  const active = o.activeOnly ? ` AND ${MINER_ACTIVE_AD_SQL}` : '';
+  const scored = await pool.query(
+    `SELECT x.ad_archive_id, ds.score AS sort_score FROM miner_domain_scores ds ${joins.join(' ')}
+       CROSS JOIN LATERAL (SELECT a.ad_archive_id FROM miner_ads a WHERE a.landing_domain = ds.landing_domain${active} ORDER BY a.ad_archive_id DESC) x
+      ${dw.length ? 'WHERE ' + dw.join(' AND ') : ''}
+      ORDER BY ds.score DESC, x.ad_archive_id DESC LIMIT ${n}`, params);
+  const picked = scored.rows.map((r) => ({ id: r.ad_archive_id, score: r.sort_score }));
+  // Sem pontuacao (sem dominio ou dominio sem anuncios ativos): so entram quando nao ha filtro de dominio (platform/niche/format).
+  if (picked.length < n && !o.platformRaw && !o.nicheRaw && !o.formatRaw) {
+    const p2 = [];
+    const P2 = (v) => { p2.push(v); return '$' + p2.length; };
+    const cw = o.cursor ? ` AND (-1::float8, a.ad_archive_id) < (${P2(o.cursor.v)}::float8, ${P2(o.cursor.i)}::text)` : '';
+    const rest = await pool.query(
+      `SELECT a.ad_archive_id FROM miner_ads a
+        WHERE (a.landing_domain IS NULL OR NOT EXISTS (SELECT 1 FROM miner_domain_scores s WHERE s.landing_domain = a.landing_domain))${active}${cw}
+        ORDER BY a.ad_archive_id DESC LIMIT ${n - picked.length}`, p2);
+    for (const r of rest.rows) picked.push({ id: r.ad_archive_id, score: -1 });
+  }
+  if (!picked.length) return { rows: [] };
+  const full = await pool.query(
+    `SELECT a.*, GREATEST(FLOOR((EXTRACT(EPOCH FROM NOW()) - a.start_date) / 86400), 0)::int AS days_running, a.first_seen_at::text AS fs_text
+       FROM miner_ads a WHERE a.ad_archive_id = ANY($1::text[])`, [picked.map((x) => x.id)]);
+  const byId = new Map(full.rows.map((r) => [r.ad_archive_id, r]));
+  return { rows: picked.filter((x) => byId.has(x.id)).map((x) => { const row = byId.get(x.id); row.sort_score = x.score; return row; }) };
 }
 
 async function handleMinerAds(req, res, sp) {
@@ -1985,13 +2162,13 @@ async function handleMinerAds(req, res, sp) {
   if (pageIdRaw) where.push(`a.page_id = ${P(pageIdRaw)}`);
   if (cta) where.push(`a.cta_text = ${P(cta)}`);
   const cfg = MINER_ADS_SORT_SQL[sort];
-  if (sort === 'score') joins.push('LEFT JOIN ds ON ds.landing_domain = a.landing_domain');
+  if (sort === 'score') joins.push('LEFT JOIN miner_domain_scores ds ON ds.landing_domain = a.landing_domain');
   if (cursor) where.push(cfg.cmp.replace('$V', () => P(cursor.v)).replace('$I', () => P(cursor.i)));
   const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
   const daysSel = `GREATEST(FLOOR((EXTRACT(EPOCH FROM NOW()) - a.start_date) / 86400), 0)::int AS days_running, a.first_seen_at::text AS fs_text`;
   // Por pontuacao: ordena so as chaves (sem carregar as linhas largas) e busca os anuncios da pagina depois.
   const sql = sort === 'score'
-    ? `WITH ${minerScoreCte('')}, page AS (
+    ? `WITH page AS (
          SELECT a.ad_archive_id, COALESCE(ds.score, -1)::float8 AS sort_score
            FROM miner_ads a ${joins.join(' ')} ${whereSql}
           ORDER BY ${cfg.order} LIMIT ${limit + 1})
@@ -1999,7 +2176,10 @@ async function handleMinerAds(req, res, sp) {
          FROM page p JOIN miner_ads a ON a.ad_archive_id = p.ad_archive_id
         ORDER BY p.sort_score DESC, a.ad_archive_id DESC`
     : `SELECT a.*, ${daysSel} FROM miner_ads a ${joins.join(' ')} ${whereSql} ORDER BY ${cfg.order} LIMIT ${limit + 1}`;
-  const r = await pool.query(sql, params);
+  // Por pontuacao e sem filtros por anuncio: caminho rapido pelo indice de score da tabela (resultado identico ao geral).
+  const lightScore = sort === 'score' && !q && !countryRaw && !placements && mediaType === 'ALL' && minDays === undefined && maxDays === undefined
+    && !startFrom && !startTo && !domainRaw && !pageIdRaw && !cta;
+  const r = lightScore ? await minerScoreFeedRows({ activeOnly, platformRaw, nicheRaw, formatRaw, cursor, limit }) : await pool.query(sql, params);
   const hasMore = r.rows.length > limit;
   const rows = hasMore ? r.rows.slice(0, limit) : r.rows;
   const offers = await minerOffersByDomain(Array.from(new Set(rows.map((x) => x.landing_domain).filter(Boolean))));
@@ -2016,36 +2196,37 @@ async function handleMinerAds(req, res, sp) {
 async function handleMinerStats(req, res) {
   if (!getRequestUserId(req)) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
   if (req.method !== 'GET') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
-  const activeDomains = `SELECT DISTINCT a.landing_domain FROM miner_ads a WHERE ${MINER_ACTIVE_AD_SQL} AND a.landing_domain IS NOT NULL`;
-  const [counts, scaled, niches, checkouts, last, coll] = await Promise.all([
+  const [counts, scaled, niches, checkouts, last, coll, scoresState] = await Promise.all([
+    // Anuncios: contagens diretas. Ofertas ativas = linhas da tabela de pontuacoes (dominios com anuncio ativo na janela).
     pool.query(
       `SELECT COUNT(*) FILTER (WHERE ${MINER_ACTIVE_AD_SQL})::int AS active_ads,
-              COUNT(DISTINCT a.landing_domain) FILTER (WHERE ${MINER_ACTIVE_AD_SQL} AND a.landing_domain IS NOT NULL)::int AS active_offers,
               COUNT(*) FILTER (WHERE a.first_seen_at >= NOW() - INTERVAL '24 hours')::int AS new_ads_24h
          FROM miner_ads a`),
-    pool.query(`WITH ${minerScoreCte('')} SELECT COUNT(*)::int AS n FROM ds WHERE score >= $1`, [MINER_SCALED_SCORE]),
+    pool.query('SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE score >= $1)::int AS scaled FROM miner_domain_scores', [MINER_SCALED_SCORE]),
     pool.query(
-      `SELECT m.niche AS id, COUNT(*)::int AS count FROM miner_ai m
-        WHERE m.niche IS NOT NULL AND m.classified_at IS NOT NULL AND m.landing_domain IN (${activeDomains})
+      `SELECT m.niche AS id, COUNT(*)::int AS count FROM miner_ai m JOIN miner_domain_scores s ON s.landing_domain = m.landing_domain
+        WHERE m.niche IS NOT NULL AND m.classified_at IS NOT NULL
         GROUP BY m.niche ORDER BY count DESC, id ASC LIMIT ${MINER_TOP_N}`),
     pool.query(
-      `SELECT d.checkout_platform AS id, COUNT(*)::int AS count FROM miner_domains d
-        WHERE d.checkout_platform IS NOT NULL AND d.checkout_platform <> 'unknown' AND d.enriched_at IS NOT NULL AND d.landing_domain IN (${activeDomains})
+      `SELECT d.checkout_platform AS id, COUNT(*)::int AS count FROM miner_domains d JOIN miner_domain_scores s ON s.landing_domain = d.landing_domain
+        WHERE d.checkout_platform IS NOT NULL AND d.checkout_platform <> 'unknown' AND d.enriched_at IS NOT NULL
         GROUP BY d.checkout_platform ORDER BY count DESC, id ASC LIMIT ${MINER_TOP_N}`),
     pool.query('SELECT MAX(created_at) AS at FROM miner_ingest_batches'),
     pool.query(
       `SELECT COALESCE((SELECT ads FROM miner_collect_usage WHERE day = ${MINER_SP_TODAY_SQL}), 0)::int AS today_ads,
               (SELECT MAX(finished_at) FROM miner_collect_runs) AS last_run_at,
-              (SELECT COUNT(*) FROM miner_searches WHERE active)::int AS active_searches`)
+              (SELECT COUNT(*) FROM miner_searches WHERE active)::int AS active_searches`),
+    pool.query('SELECT value FROM app_state WHERE key = $1', [MINER_SCORE_STATE_KEY])
   ]);
   const c = counts.rows[0];
   return sendJson(res, 200, {
-    ok: true, activeAds: c.active_ads, activeOffers: c.active_offers, scaledOffers: scaled.rows[0].n, newAds24h: c.new_ads_24h,
+    ok: true, activeAds: c.active_ads, activeOffers: scaled.rows[0].total, scaledOffers: scaled.rows[0].scaled, newAds24h: c.new_ads_24h,
     topNiches: niches.rows, topCheckouts: checkouts.rows, lastIngestAt: last.rows[0].at,
     collect: {
       configured: minerCollectConfigured(), actor: MINER_APIFY_ACTOR, todayAds: coll.rows[0].today_ads, dailyLimit: MINER_COLLECT_DAILY_AD_LIMIT,
       lastRunAt: coll.rows[0].last_run_at, activeSearches: coll.rows[0].active_searches
-    }
+    },
+    scoresComputedAt: scoresState.rows[0] && scoresState.rows[0].value && scoresState.rows[0].value.at ? scoresState.rows[0].value.at : null
   });
 }
 
@@ -2783,6 +2964,11 @@ if (pool && minerCollectConfigured() && MINER_COLLECT_ENABLED) {
   setInterval(() => { minerCollectTick().catch((err) => console.error('[Coleta] worker:', scrubKey(err && err.message))); }, MINER_COLLECT_INTERVAL_MS).unref();
 }
 
+// Refresh completo periodico da pontuacao materializada (BE-009): MINER_SCORE_REFRESH_ENABLED=0 desliga.
+if (pool && MINER_SCORE_REFRESH_ENABLED) {
+  setInterval(() => { minerScoresRefreshFull().catch((err) => console.error('[Minerador] refresh das pontuacoes:', String(err && err.message).slice(0, 120))); }, MINER_SCORE_REFRESH_MS).unref();
+}
+
 // Encerramento limpo (docker stop / redeploy do Easypanel)
 function shutdown(signal) {
   console.log(`[Cockpit Low Ticket] ${signal} recebido, encerrando...`);
@@ -2799,4 +2985,4 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err && err.message ? err.message : err));
 
 // Funcoes internas expostas para os testes unitarios (o servidor roda como script principal).
-module.exports = { __minerTest: { isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS, mapApifyAdItem, toEpochSeconds, plainText, minerAdLibraryUrl, MINER_APIFY_ADAPTERS, normalizeMinerAd, scrubKey, minerCursorEncode, minerCursorDecode, parseIsoDate, parseNonNegNumber, validateAiResult, buildAiInput, buildAiRequest, aiInputHash, canonicalJson, aiClean, MINER_AI_RESPONSE_SCHEMA, MINER_AI_NICHES, MINER_AI_FORMATS, MINER_AI_ANGLES, MINER_AI_LANGUAGES } };
+module.exports = { __minerTest: { isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS, minerScoredCte, minerScoresUpsertSql, minerScoresPruneSql, MINER_SCORES_BATCH_SQL, MINER_SCORE_CHUNK, MINER_SCORE_LOCK_KEY, mapApifyAdItem, toEpochSeconds, plainText, minerAdLibraryUrl, MINER_APIFY_ADAPTERS, normalizeMinerAd, scrubKey, minerCursorEncode, minerCursorDecode, parseIsoDate, parseNonNegNumber, validateAiResult, buildAiInput, buildAiRequest, aiInputHash, canonicalJson, aiClean, MINER_AI_RESPONSE_SCHEMA, MINER_AI_NICHES, MINER_AI_FORMATS, MINER_AI_ANGLES, MINER_AI_LANGUAGES } };
