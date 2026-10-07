@@ -12,6 +12,8 @@
  *   GEMINI_MODEL         (proxy de IA) modelo usado (padrao gemini-3.8-flash); o cliente nao escolhe
  *   GEMINI_BASE_URL      (proxy de IA) URL base da API (padrao https://generativelanguage.googleapis.com/v1beta)
  *   O proxy POST /api/ai/generate exige APP_TOKEN definido (senao 503 ai_requires_app_token).
+ *   Coleta Apify: APIFY_TOKEN (so no servidor), MINER_APIFY_ACTOR, MINER_APIFY_BASE_URL, MINER_COLLECT_ENABLED=0 desliga o worker, MINER_COLLECT_INTERVAL_MS (300000),
+ *   MINER_COLLECT_RUN_TIMEOUT_MS (900000), MINER_COLLECT_DAILY_AD_LIMIT (3000), MINER_COLLECT_POLL_MS (10000). Rotas: /api/miner/searches[/:id[/run]], /api/miner/collect/runs.
  *   Dashboard: GET /api/miner/ads (feed com cursor), /api/miner/stats, /api/miner/filters; MINER_SCALED_SCORE (padrao 20) define oferta escalada.
  *   Minerador IA (fase 3): MINER_AI_ENABLED=0 desliga o worker; MINER_AI_INTERVAL_MS (120000); MINER_AI_DAILY_LIMIT (200); MINER_AI_MODEL (padrao GEMINI_MODEL); MINER_AI_TIMEOUT_MS (60000).
  *   MINER_ENRICH_ENABLED=0 desliga o worker de enriquecimento; MINER_ENRICH_INTERVAL_MS (padrao 60000); MINER_ENRICH_HOST_INTERVAL_MS (padrao 10000).
@@ -107,6 +109,22 @@ const MINER_TOP_N = 5;                   // topNiches e topCheckouts
 const MINER_TOP_CTAS = 30;               // CTAs mais frequentes em /api/miner/filters
 const MINER_SPARKLINE_DAYS = 14;         // historico por oferta em /api/miner/offers
 
+// Coleta automatica via Apify (SPEC-006). O token so existe no servidor e so vai no header Authorization.
+const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
+const MINER_APIFY_ACTOR = process.env.MINER_APIFY_ACTOR || 'apify~facebook-ads-scraper'; // padrao a confirmar na avaliacao comparativa
+const MINER_APIFY_BASE_URL = (process.env.MINER_APIFY_BASE_URL || 'https://api.apify.com').replace(/\/+$/, '');
+const MINER_COLLECT_ENABLED = process.env.MINER_COLLECT_ENABLED !== '0';
+const MINER_COLLECT_INTERVAL_MS = parseInt(process.env.MINER_COLLECT_INTERVAL_MS, 10) || 300000;
+const MINER_COLLECT_POLL_MS = parseInt(process.env.MINER_COLLECT_POLL_MS, 10) || 10000;             // polling do run
+const MINER_COLLECT_RUN_TIMEOUT_MS = parseInt(process.env.MINER_COLLECT_RUN_TIMEOUT_MS, 10) || 900000; // 15 min; depois aborta
+const MINER_COLLECT_HTTP_TIMEOUT_MS = parseInt(process.env.MINER_COLLECT_HTTP_TIMEOUT_MS, 10) || 30000;
+const MINER_COLLECT_DAILY_AD_LIMIT = Number.isFinite(parseInt(process.env.MINER_COLLECT_DAILY_AD_LIMIT, 10)) ? Math.max(0, parseInt(process.env.MINER_COLLECT_DAILY_AD_LIMIT, 10)) : 3000;
+const MINER_COLLECT_MIN_RESERVE = 10;    // saldo minimo para valer a pena iniciar um run
+const MINER_COLLECT_PAGE = 500;          // itens por pagina do dataset
+const MINER_COLLECT_INGEST_BATCH = 200;  // anuncios por lote de ingestao (= MINER_MAX_ADS)
+const MINER_COLLECT_OK_HOURS = 24;       // proxima coleta apos sucesso
+const MINER_COLLECT_DEFAULT_MAX_ADS = 300;
+const MINER_COLLECT_MAX_ADS = 1000;
 // Loopback no enriquecimento so com NODE_ENV=test (para os testes com mock local); nunca em producao.
 const MINER_TEST_LOOPBACK = process.env.NODE_ENV === 'test' && process.env.MINER_ENRICH_TEST_LOOPBACK === '1';
 if (process.env.MINER_ENRICH_TEST_LOOPBACK === '1') {
@@ -254,6 +272,48 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS miner_ai_usage (
         day   DATE PRIMARY KEY,
         count INTEGER NOT NULL DEFAULT 0
+      );
+      -- Coleta via Apify (SPEC-006): buscas salvas, execucoes e consumo diario (anuncios reservados/recebidos por dia SP)
+      CREATE TABLE IF NOT EXISTS miner_searches (
+        id          BIGSERIAL PRIMARY KEY,
+        user_id     VARCHAR(100) NOT NULL DEFAULT 'owner',
+        q           VARCHAR(100) NOT NULL,
+        country     VARCHAR(2) NOT NULL,
+        media_type  VARCHAR(10) NOT NULL DEFAULT 'ALL',
+        max_ads     INTEGER NOT NULL DEFAULT 300,
+        active      BOOLEAN NOT NULL DEFAULT TRUE,
+        next_run_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_run_at TIMESTAMPTZ,
+        last_status VARCHAR(20),
+        last_ads    INTEGER,
+        attempts    INTEGER NOT NULL DEFAULT 0,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_miner_searches_key ON miner_searches (user_id, lower(q), country, media_type);
+      CREATE INDEX IF NOT EXISTS idx_miner_searches_due ON miner_searches (active, next_run_at);
+      CREATE TABLE IF NOT EXISTS miner_collect_runs (
+        id             BIGSERIAL PRIMARY KEY,
+        search_id      BIGINT REFERENCES miner_searches(id) ON DELETE SET NULL,
+        actor          VARCHAR(100) NOT NULL,
+        apify_run_id   VARCHAR(100),
+        status         VARCHAR(20) NOT NULL DEFAULT 'running',
+        items_received INTEGER NOT NULL DEFAULT 0,
+        inserted       INTEGER NOT NULL DEFAULT 0,
+        updated        INTEGER NOT NULL DEFAULT 0,
+        rejected       INTEGER NOT NULL DEFAULT 0,
+        est_cost_usd   NUMERIC(10,4),
+        reserved_ads   INTEGER NOT NULL DEFAULT 0,
+        reserved_day   DATE,
+        started_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        finished_at    TIMESTAMPTZ,
+        error          VARCHAR(200)
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_miner_collect_runs_running ON miner_collect_runs (search_id) WHERE status = 'running';
+      CREATE INDEX IF NOT EXISTS idx_miner_collect_runs_search ON miner_collect_runs (search_id, started_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_miner_collect_runs_started ON miner_collect_runs (started_at DESC);
+      CREATE TABLE IF NOT EXISTS miner_collect_usage (
+        day DATE PRIMARY KEY,
+        ads INTEGER NOT NULL DEFAULT 0
       );
       CREATE TABLE IF NOT EXISTS miner_ad_sources (
         ad_archive_id      VARCHAR(30) NOT NULL,
@@ -450,8 +510,10 @@ const DELETE_PROJECT_SQL = `
 // ---------------------------------------------------------------------------
 /** Remove a chave de qualquer texto antes de expor (defesa extra). */
 function scrubKey(text) {
-  const s = String(text == null ? '' : text);
-  return GEMINI_API_KEY ? s.split(GEMINI_API_KEY).join('[redigido]') : s;
+  let s = String(text == null ? '' : text);
+  if (GEMINI_API_KEY) s = s.split(GEMINI_API_KEY).join('[redigido]');
+  if (APIFY_TOKEN && APIFY_TOKEN.length >= 8) s = s.split(APIFY_TOKEN).join('[redigido]');
+  return s;
 }
 
 /**
@@ -657,26 +719,21 @@ const MINER_SNAPSHOT_SQL = `
   ON CONFLICT (day, landing_domain) DO UPDATE SET
     active_ads = EXCLUDED.active_ads, distinct_creatives = EXCLUDED.distinct_creatives, updated_at = NOW()`;
 
-async function handleMinerIngest(req, res) {
-  const submitterId = getRequestUserId(req);
-  if (!submitterId) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
-  if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
-
-  const payload = await readJsonBody(req); // 413 / 400 tratados pelo catch do handleApi
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return sendJson(res, 400, { ok: false, error: 'invalid_body' });
-  if (typeof payload.source !== 'string' || !payload.source.trim() || payload.source.length > 50) {
-    return sendJson(res, 400, { ok: false, error: 'invalid_source' });
-  }
-  if (!Array.isArray(payload.ads) || payload.ads.length < 1 || payload.ads.length > MINER_MAX_ADS) {
-    return sendJson(res, 400, { ok: false, error: 'invalid_ads', detail: `ads deve ser um array de 1 a ${MINER_MAX_ADS}` });
-  }
-  const context = normalizeMinerContext(payload.context);
-  const extVersion = minerText(payload.extVersion, 50) || null;
+/**
+ * Nucleo da ingestao (compartilhado pela rota da extensao e pela coleta do Apify): valida cada anuncio, faz o upsert,
+ * contribuicoes, fotografia diaria, fila de enriquecimento e log do lote, tudo numa transacao.
+ * contextRaw = {q, country, mediaType, url}; meta = {extVersion?, source?} (source so entra no log do lote quando informado).
+ * Retorna {received, inserted, updated, rejected:[{index, error}]}.
+ */
+async function ingestMinerBatch(submitterId, contextRaw, ads, meta) {
+  const context = normalizeMinerContext(contextRaw);
+  const extVersion = minerText(meta && meta.extVersion, 50) || null;
+  const logContext = meta && meta.source ? { ...context, source: minerText(meta.source, 50) } : context;
 
   // Validacao por anuncio: invalidos (e duplicados no lote) vao para rejected sem abortar o lote.
   const rejected = [];
   const byId = new Map();
-  payload.ads.forEach((raw, index) => {
+  ads.forEach((raw, index) => {
     const r = normalizeMinerAd(raw);
     if (r.error) return rejected.push({ index, error: r.error });
     const prev = byId.get(r.ad.adArchiveId);
@@ -708,7 +765,8 @@ async function handleMinerIngest(req, res) {
         if (!prev || (ad.isActive && !prev.isActive) || (ad.isActive === prev.isActive && ad.startDate > prev.startDate)) {
           samples.set(ad.landingDomain, { url: ad.landingUrl, isActive: ad.isActive, startDate: ad.startDate });
         }
-      }    }
+      }
+    }
     if (byId.size > 0) {
       // Contribuicoes por utilizador (SaaS): um upsert so para o lote inteiro.
       await client.query(
@@ -729,10 +787,11 @@ async function handleMinerIngest(req, res) {
            WHERE miner_domains.sample_url IS DISTINCT FROM EXCLUDED.sample_url`,
         [Array.from(samples.keys()), Array.from(samples.values(), (s) => s.url)]
       );
-    }    await client.query(
+    }
+    await client.query(
       `INSERT INTO miner_ingest_batches (submitter_id, ext_version, received, inserted, updated, rejected, context)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [submitterId, extVersion, payload.ads.length, inserted, updated, rejected.length, JSON.stringify(context)]
+      [submitterId, extVersion, ads.length, inserted, updated, rejected.length, JSON.stringify(logContext)]
     );
     await client.query('COMMIT');
   } catch (err) {
@@ -741,7 +800,24 @@ async function handleMinerIngest(req, res) {
   } finally {
     client.release();
   }
-  return sendJson(res, 200, { ok: true, received: payload.ads.length, inserted, updated, rejected });
+  return { received: ads.length, inserted, updated, rejected };
+}
+
+async function handleMinerIngest(req, res) {
+  const submitterId = getRequestUserId(req);
+  if (!submitterId) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+  if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+
+  const payload = await readJsonBody(req); // 413 / 400 tratados pelo catch do handleApi
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return sendJson(res, 400, { ok: false, error: 'invalid_body' });
+  if (typeof payload.source !== 'string' || !payload.source.trim() || payload.source.length > 50) {
+    return sendJson(res, 400, { ok: false, error: 'invalid_source' });
+  }
+  if (!Array.isArray(payload.ads) || payload.ads.length < 1 || payload.ads.length > MINER_MAX_ADS) {
+    return sendJson(res, 400, { ok: false, error: 'invalid_ads', detail: `ads deve ser um array de 1 a ${MINER_MAX_ADS}` });
+  }
+  const r = await ingestMinerBatch(submitterId, payload.context, payload.ads, { extVersion: payload.extVersion });
+  return sendJson(res, 200, { ok: true, received: r.received, inserted: r.inserted, updated: r.updated, rejected: r.rejected });
 }
 
 /** Escapa % _ e \ para uso em ILIKE. */
@@ -1941,7 +2017,7 @@ async function handleMinerStats(req, res) {
   if (!getRequestUserId(req)) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
   if (req.method !== 'GET') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
   const activeDomains = `SELECT DISTINCT a.landing_domain FROM miner_ads a WHERE ${MINER_ACTIVE_AD_SQL} AND a.landing_domain IS NOT NULL`;
-  const [counts, scaled, niches, checkouts, last] = await Promise.all([
+  const [counts, scaled, niches, checkouts, last, coll] = await Promise.all([
     pool.query(
       `SELECT COUNT(*) FILTER (WHERE ${MINER_ACTIVE_AD_SQL})::int AS active_ads,
               COUNT(DISTINCT a.landing_domain) FILTER (WHERE ${MINER_ACTIVE_AD_SQL} AND a.landing_domain IS NOT NULL)::int AS active_offers,
@@ -1956,12 +2032,20 @@ async function handleMinerStats(req, res) {
       `SELECT d.checkout_platform AS id, COUNT(*)::int AS count FROM miner_domains d
         WHERE d.checkout_platform IS NOT NULL AND d.checkout_platform <> 'unknown' AND d.enriched_at IS NOT NULL AND d.landing_domain IN (${activeDomains})
         GROUP BY d.checkout_platform ORDER BY count DESC, id ASC LIMIT ${MINER_TOP_N}`),
-    pool.query('SELECT MAX(created_at) AS at FROM miner_ingest_batches')
+    pool.query('SELECT MAX(created_at) AS at FROM miner_ingest_batches'),
+    pool.query(
+      `SELECT COALESCE((SELECT ads FROM miner_collect_usage WHERE day = ${MINER_SP_TODAY_SQL}), 0)::int AS today_ads,
+              (SELECT MAX(finished_at) FROM miner_collect_runs) AS last_run_at,
+              (SELECT COUNT(*) FROM miner_searches WHERE active)::int AS active_searches`)
   ]);
   const c = counts.rows[0];
   return sendJson(res, 200, {
     ok: true, activeAds: c.active_ads, activeOffers: c.active_offers, scaledOffers: scaled.rows[0].n, newAds24h: c.new_ads_24h,
-    topNiches: niches.rows, topCheckouts: checkouts.rows, lastIngestAt: last.rows[0].at
+    topNiches: niches.rows, topCheckouts: checkouts.rows, lastIngestAt: last.rows[0].at,
+    collect: {
+      configured: minerCollectConfigured(), actor: MINER_APIFY_ACTOR, todayAds: coll.rows[0].today_ads, dailyLimit: MINER_COLLECT_DAILY_AD_LIMIT,
+      lastRunAt: coll.rows[0].last_run_at, activeSearches: coll.rows[0].active_searches
+    }
   });
 }
 
@@ -1980,6 +2064,461 @@ async function handleMinerFilters(req, res) {
   const vals = (x) => x.rows.map((r) => r.v);
   return sendJson(res, 200, {
     ok: true, countries: vals(countries), ctas: vals(ctas), placements: vals(placements), checkoutPlatforms: vals(checkouts), niches: vals(niches)
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Coleta automatica de anuncios via Apify (SPEC-006): buscas salvas, worker diario, limite de gasto
+// ---------------------------------------------------------------------------
+const MINER_COLLECT_TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']);
+const MINER_COLLECT_MEDIA = ['ALL', 'IMAGE', 'VIDEO'];
+const MINER_CONTROL_RE = new RegExp('[\\x00-\\x1f\\x7f]', 'g');
+const minerSleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Texto sem HTML (tags, script e style), entidades decodificadas. Entrada limitada antes das regex. */
+function plainText(v) {
+  if (typeof v !== 'string') return '';
+  const s = v.slice(0, 20000).replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, ' ').replace(/<\/?[a-zA-Z][^>]*>/g, ' ');
+  return decodeHtmlEntities(s).replace(/[ \t]{2,}/g, ' ').trim();
+}
+
+/** Data ISO, epoch em segundos ou em milissegundos (numero ou texto) -> epoch em segundos; invalida -> null. */
+function toEpochSeconds(v) {
+  if (v === null || v === undefined || v === '') return null;
+  let n;
+  if (typeof v === 'number') n = v;
+  else if (typeof v === 'string') {
+    const s = v.trim();
+    if (/^[0-9]{1,16}(\.[0-9]+)?$/.test(s)) n = Number(s);
+    else {
+      const ms = Date.parse(s);
+      return Number.isFinite(ms) && ms > 0 ? Math.floor(ms / 1000) : null;
+    }
+  } else return null;
+  if (!Number.isFinite(n) || n <= 0 || n >= 1e17) return null;
+  if (n >= 1e11) n = n / 1000; // epoch em ms
+  return Math.floor(n);
+}
+
+/** URL de busca da Biblioteca de Anuncios usada como entrada dos actors (o filtro de ativos vai na propria URL). */
+function minerAdLibraryUrl(search) {
+  const media = { ALL: 'all', IMAGE: 'image', VIDEO: 'video' }[search.media_type] || 'all';
+  return 'https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=' + encodeURIComponent(search.country)
+    + '&q=' + encodeURIComponent(search.q) + '&search_type=keyword_unordered&media_type=' + media;
+}
+
+/**
+ * Item do dataset (qualquer actor suportado) -> MinerAd (SPEC-004). Tolera camelCase/snake_case, campos em item ou snapshot,
+ * datas ISO/epoch e HTML no texto. Retorna null se nao for um objeto ou nao tiver id. A validacao final e o normalizeMinerAd.
+ */
+function mapApifyAdItem(item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+  const snap = item.snapshot && typeof item.snapshot === 'object' && !Array.isArray(item.snapshot) ? item.snapshot : {};
+  const cards = Array.isArray(snap.cards) ? snap.cards : Array.isArray(item.cards) ? item.cards : [];
+  const card0 = cards[0] && typeof cards[0] === 'object' ? cards[0] : {};
+  const pick = (keys, srcs) => {
+    for (const o of srcs || [item, snap]) {
+      for (const k of keys) { const v = o[k]; if (v !== undefined && v !== null && v !== '') return v; }
+    }
+    return undefined;
+  };
+  const idRaw = pick(['adArchiveID', 'adArchiveId', 'ad_archive_id', 'adArchiveid'], [item]);
+  let adArchiveId = null;
+  if (typeof idRaw === 'string') adArchiveId = idRaw.trim();
+  else if (typeof idRaw === 'number' && Number.isSafeInteger(idRaw)) adArchiveId = String(idRaw);
+  if (!adArchiveId) return null;
+
+  const str = (v) => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '');
+  const platformsRaw = pick(['publisherPlatform', 'publisher_platform', 'publisherPlatforms', 'publisher_platforms']);
+  const platforms = (Array.isArray(platformsRaw) ? platformsRaw : platformsRaw ? [platformsRaw] : []).map((p) => str(p).trim().toUpperCase()).filter(Boolean);
+  let displayFormat = str(pick(['displayFormat', 'display_format'])).trim().toUpperCase();
+  if (!MINER_DISPLAY_FORMATS.has(displayFormat)) displayFormat = cards.length > 1 ? 'CAROUSEL' : 'OTHER';
+
+  const bodyRaw = snap.body !== undefined ? snap.body : item.body;
+  const bodyText = bodyRaw && typeof bodyRaw === 'object' ? bodyRaw.text : bodyRaw;
+  const body = plainText(str(bodyText) || str(card0.body) || str(item.text) || (Array.isArray(item.ad_creative_bodies) ? str(item.ad_creative_bodies[0]) : ''));
+
+  const urlOf = (o) => str(o && typeof o === 'object' ? (o.original_image_url || o.originalImageUrl || o.resized_image_url || o.resizedImageUrl || o.url || o.src) : o);
+  const imgSrc = Array.isArray(snap.images) ? snap.images : Array.isArray(item.images) ? item.images : [];
+  const images = imgSrc.map(urlOf);
+  for (const c of cards) if (c && typeof c === 'object') images.push(urlOf({ original_image_url: c.original_image_url || c.originalImageUrl, resized_image_url: c.resized_image_url || c.resizedImageUrl }));
+  const vidSrc = Array.isArray(snap.videos) ? snap.videos : Array.isArray(item.videos) ? item.videos : [];
+  const videos = vidSrc.map((v) => (v && typeof v === 'object'
+    ? { hd: str(v.video_hd_url || v.videoHdUrl || v.hd || v.hdUrl), sd: str(v.video_sd_url || v.videoSdUrl || v.sd || v.sdUrl), preview: str(v.video_preview_image_url || v.videoPreviewImageUrl || v.preview || v.thumbnail) }
+    : { hd: str(v), sd: '', preview: '' }));
+
+  const countRaw = Number(pick(['collationCount', 'collation_count']));
+  return {
+    adArchiveId,
+    pageId: str(pick(['pageID', 'pageId', 'page_id'])),
+    pageName: plainText(str(pick(['pageName', 'page_name']))),
+    isActive: (() => { const a = pick(['isActive', 'is_active'], [item]); return a === false || a === 'false' ? false : true; })(),
+    startDate: toEpochSeconds(pick(['startDate', 'start_date', 'startDateFormatted', 'start_date_formatted'])),
+    endDate: toEpochSeconds(pick(['endDate', 'end_date', 'endDateFormatted', 'end_date_formatted'])),
+    collationId: str(pick(['collationID', 'collationId', 'collation_id'])) || null,
+    collationCount: Number.isInteger(countRaw) && countRaw >= 1 ? countRaw : 1,
+    platforms,
+    displayFormat,
+    body,
+    title: plainText(str(pick(['title'])) || str(card0.title)),
+    caption: plainText(str(pick(['caption'])) || str(card0.caption)),
+    ctaText: plainText(str(pick(['ctaText', 'cta_text'])) || str(card0.cta_text || card0.ctaText)),
+    linkUrl: str(pick(['linkUrl', 'link_url'])) || str(card0.link_url || card0.linkUrl),
+    images: images.filter(Boolean),
+    videos
+  };
+}
+
+// Adaptadores por actor: buildInput(search, limit) monta o input do run; mapItem converte o item do dataset em MinerAd.
+// Campos conforme a documentacao publica dos actors (validar na avaliacao V-10 com o token real).
+const MINER_APIFY_ADAPTERS = {
+  'apify~facebook-ads-scraper': {
+    label: 'Apify Facebook Ads Scraper (oficial)',
+    buildInput: (search, limit) => ({ startUrls: [{ url: minerAdLibraryUrl(search) }], resultsLimit: limit, isDetailsPerAd: false, includeAboutPage: false, onlyTotal: false }),
+    mapItem: mapApifyAdItem
+  },
+  'curious_coder~facebook-ads-library-scraper': {
+    label: 'curious_coder Facebook Ads Library Scraper',
+    buildInput: (search, limit) => ({ urls: [{ url: minerAdLibraryUrl(search) }], count: limit, scrapeAdDetails: false }),
+    mapItem: mapApifyAdItem
+  }
+};
+function minerCollectAdapter() { return Object.prototype.hasOwnProperty.call(MINER_APIFY_ADAPTERS, MINER_APIFY_ACTOR) ? MINER_APIFY_ADAPTERS[MINER_APIFY_ACTOR] : null; }
+function minerCollectConfigured() { return !!APIFY_TOKEN && !!minerCollectAdapter(); }
+
+function minerCollectError(code, extra) { return Object.assign(new Error(code), { collectCode: code }, extra || {}); }
+/** Texto curto de erro para o banco/resposta: codigo + detalhe, sem token. */
+function minerCollectErrText(err) {
+  const code = err && err.collectCode ? err.collectCode : 'collect_error';
+  return scrubKey(code + (err && err.detail ? ': ' + err.detail : '')).slice(0, 200);
+}
+
+/** Chamada a API v2 do Apify (token so no header). Resolve {status, headers, data} ou lanca com collectCode curto. */
+async function apifyCall(method, pathAndQuery, body) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), MINER_COLLECT_HTTP_TIMEOUT_MS);
+  try {
+    const res = await fetch(MINER_APIFY_BASE_URL + pathAndQuery, {
+      method,
+      headers: { Authorization: 'Bearer ' + APIFY_TOKEN, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: controller.signal
+    });
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (e) { /* resposta nao JSON */ }
+    if (!res.ok) {
+      const msg = data && data.error && typeof data.error.message === 'string' ? data.error.message : '';
+      throw minerCollectError('apify_http_' + res.status, { detail: scrubKey(msg).slice(0, 120) });
+    }
+    if (data === null) throw minerCollectError('apify_invalid_response');
+    return { status: res.status, headers: res.headers, data };
+  } catch (err) {
+    if (err && err.collectCode) throw err;
+    if (err && err.name === 'AbortError') throw minerCollectError('apify_timeout');
+    throw minerCollectError('apify_unreachable');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const MINER_SP_TODAY_SQL = "(NOW() AT TIME ZONE 'America/Sao_Paulo')::date";
+
+/**
+ * Reserva atomica de ate maxAds anuncios do limite diario (linha do dia travada com FOR UPDATE).
+ * Retorna {reserved, day}; reserved = 0 se nao houver saldo minimo.
+ */
+async function minerCollectReserve(maxAds) {
+  if (MINER_COLLECT_DAILY_AD_LIMIT <= 0) return { reserved: 0, day: null };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`INSERT INTO miner_collect_usage (day, ads) VALUES (${MINER_SP_TODAY_SQL}, 0) ON CONFLICT (day) DO NOTHING`);
+    const cur = await client.query(`SELECT day::text AS day, ads FROM miner_collect_usage WHERE day = ${MINER_SP_TODAY_SQL} FOR UPDATE`);
+    const remaining = MINER_COLLECT_DAILY_AD_LIMIT - cur.rows[0].ads;
+    const reserved = remaining >= Math.min(MINER_COLLECT_MIN_RESERVE, maxAds) ? Math.min(maxAds, remaining) : 0;
+    if (reserved > 0) await client.query('UPDATE miner_collect_usage SET ads = ads + $2 WHERE day = $1::date', [cur.rows[0].day, reserved]);
+    await client.query('COMMIT');
+    return { reserved, day: cur.rows[0].day };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+async function minerCollectRefund(day, amount) {
+  if (!day || !(amount > 0)) return;
+  await pool.query('UPDATE miner_collect_usage SET ads = GREATEST(ads - $2, 0) WHERE day = $1::date', [day, amount]);
+}
+async function minerCollectRemaining() {
+  const r = await pool.query(`SELECT ads FROM miner_collect_usage WHERE day = ${MINER_SP_TODAY_SQL}`);
+  return MINER_COLLECT_DAILY_AD_LIMIT - (r.rows.length ? r.rows[0].ads : 0);
+}
+
+/**
+ * Prepara um run: reserva o saldo e cria a linha em miner_collect_runs (indice unico: 1 run em andamento por busca).
+ * Retorna {budget:true} sem saldo, {running:true} se a busca ja esta rodando, ou {run}.
+ */
+async function minerCollectPrepare(search, recordBudget) {
+  const { reserved, day } = await minerCollectReserve(search.max_ads);
+  if (reserved <= 0) {
+    if (recordBudget) {
+      await pool.query(
+        `INSERT INTO miner_collect_runs (search_id, actor, status, finished_at, error, reserved_ads) VALUES ($1, $2, 'budget', NOW(), 'collect_daily_limit', 0)`,
+        [search.id, MINER_APIFY_ACTOR]);
+      // Sem saldo hoje: adia a busca para o inicio do dia seguinte (America/Sao_Paulo).
+      await pool.query(
+        `UPDATE miner_searches SET last_status = 'budget',
+                next_run_at = ((${MINER_SP_TODAY_SQL} + 1)::timestamp AT TIME ZONE 'America/Sao_Paulo') WHERE id = $1`, [search.id]);
+    }
+    return { budget: true };
+  }
+  try {
+    const r = await pool.query(
+      `INSERT INTO miner_collect_runs (search_id, actor, status, reserved_ads, reserved_day) VALUES ($1, $2, 'running', $3, $4::date) RETURNING *, reserved_day::text AS reserved_day_txt`,
+      [search.id, MINER_APIFY_ACTOR, reserved, day]);
+    const row = r.rows[0];
+    row.reserved_day = row.reserved_day_txt; // texto YYYY-MM-DD (o driver converteria DATE para Date local)
+    return { run: row };
+  } catch (err) {
+    await minerCollectRefund(day, reserved).catch(() => {});
+    if (err && err.code === '23505') return { running: true };
+    throw err;
+  }
+}
+
+/** Fecha o run: status final, contadores, devolucao do saldo nao usado e reagendamento da busca. */
+async function minerCollectFinish(search, run, status, counters, errText, cost) {
+  const used = counters.received;
+  await pool.query(
+    `UPDATE miner_collect_runs SET status = $2, items_received = $3, inserted = $4, updated = $5, rejected = $6, est_cost_usd = $7,
+            finished_at = NOW(), error = $8 WHERE id = $1`,
+    [run.id, status, counters.received, counters.inserted, counters.updated, counters.rejected, cost, errText]);
+  await minerCollectRefund(run.reserved_day, run.reserved_ads - used);
+  if (status === 'succeeded') {
+    await pool.query(
+      `UPDATE miner_searches SET last_run_at = NOW(), last_status = 'succeeded', last_ads = $2, attempts = 0,
+              next_run_at = NOW() + ($3::int * INTERVAL '1 hour') WHERE id = $1`, [search.id, used, MINER_COLLECT_OK_HOURS]);
+  } else {
+    // Falha: espera 1 h na primeira e 6 h nas seguintes.
+    await pool.query(
+      `UPDATE miner_searches SET last_run_at = NOW(), last_status = $2, attempts = attempts + 1,
+              next_run_at = NOW() + (CASE WHEN attempts + 1 <= 1 THEN 1 ELSE 6 END) * INTERVAL '1 hour' WHERE id = $1`, [search.id, status]);
+  }
+}
+
+/** Executa o run no Apify: POST runs -> polling -> dataset paginado -> ingestao em lotes. Nunca lanca. */
+async function minerCollectExecute(search, run) {
+  const adapter = minerCollectAdapter();
+  const counters = { received: 0, inserted: 0, updated: 0, rejected: 0 };
+  let apifyRunId = null;
+  let terminal = false;
+  const submitterId = ('apify:' + MINER_APIFY_ACTOR).slice(0, 100);
+  const context = { q: search.q, country: search.country, mediaType: search.media_type.toLowerCase() };
+  const buffer = [];
+  // Ingere em lotes de MINER_COLLECT_INGEST_BATCH; force=true descarrega o resto. Itens sem mapeamento (null) viram rejeitados na ingestao.
+  const flush = async (force) => {
+    while (buffer.length >= MINER_COLLECT_INGEST_BATCH || (force && buffer.length)) {
+      const chunk = buffer.splice(0, MINER_COLLECT_INGEST_BATCH);
+      const r = await ingestMinerBatch(submitterId, context, chunk, { source: 'apify' });
+      counters.inserted += r.inserted; counters.updated += r.updated; counters.rejected += r.rejected.length;
+    }
+  };
+  try {
+    if (!adapter) throw minerCollectError('collect_not_configured');
+    const started = await apifyCall('POST', `/v2/acts/${encodeURIComponent(MINER_APIFY_ACTOR)}/runs`, adapter.buildInput(search, run.reserved_ads));
+    const info = started.data && started.data.data;
+    if (!info || typeof info.id !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(info.id) || typeof info.defaultDatasetId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(info.defaultDatasetId)) {
+      throw minerCollectError('apify_invalid_response');
+    }
+    apifyRunId = info.id;
+    await pool.query('UPDATE miner_collect_runs SET apify_run_id = $2 WHERE id = $1', [run.id, apifyRunId]);
+
+    // Polling do run (a cada MINER_COLLECT_POLL_MS) ate um estado final ou o timeout total.
+    const deadline = Date.now() + MINER_COLLECT_RUN_TIMEOUT_MS;
+    let runInfo = info;
+    while (!MINER_COLLECT_TERMINAL.has(runInfo.status)) {
+      if (Date.now() >= deadline) throw minerCollectError('collect_timeout', { finalStatus: 'timeout' });
+      await minerSleep(Math.max(1, Math.min(MINER_COLLECT_POLL_MS, deadline - Date.now())));
+      const polled = await apifyCall('GET', `/v2/actor-runs/${encodeURIComponent(apifyRunId)}`);
+      runInfo = polled.data && polled.data.data;
+      if (!runInfo || typeof runInfo.status !== 'string') throw minerCollectError('apify_invalid_response');
+    }
+    terminal = true;
+    if (runInfo.status !== 'SUCCEEDED') {
+      throw minerCollectError('apify_run_' + runInfo.status.toLowerCase().replace(/[^a-z-]/g, ''), { finalStatus: runInfo.status === 'TIMED-OUT' ? 'timeout' : 'failed' });
+    }
+    const cost = Number.isFinite(Number(runInfo.usageTotalUsd)) && runInfo.usageTotalUsd !== null ? Number(runInfo.usageTotalUsd) : null;
+
+    // Dataset paginado (ate o saldo reservado); mapeia e ingere em lotes.
+    let offset = 0;
+    while (counters.received < run.reserved_ads) {
+      const limit = Math.min(MINER_COLLECT_PAGE, run.reserved_ads - counters.received);
+      const page = await apifyCall('GET', `/v2/datasets/${encodeURIComponent(info.defaultDatasetId)}/items?clean=true&format=json&offset=${offset}&limit=${limit}`);
+      if (!Array.isArray(page.data)) throw minerCollectError('apify_invalid_response');
+      const items = page.data.slice(0, run.reserved_ads - counters.received);
+      if (!items.length) break;
+      counters.received += items.length; offset += items.length;
+      for (const it of items) {
+        let ad = null;
+        try { ad = adapter.mapItem(it); } catch (e) { ad = null; }
+        buffer.push(ad);
+      }
+      await flush(false);
+      const total = Number(page.headers.get('x-apify-pagination-total'));
+      if (page.headers.get('x-apify-pagination-total') !== null && Number.isFinite(total) && offset >= total) break;
+    }
+    await flush(true);
+    await minerCollectFinish(search, run, 'succeeded', counters, null, cost);
+  } catch (err) {
+    const status = err && err.finalStatus === 'timeout' ? 'timeout' : 'failed';
+    // Run ainda ativo no Apify (timeout nosso ou erro no meio): aborta para nao gastar mais.
+    if (apifyRunId && !terminal) { try { await apifyCall('POST', `/v2/actor-runs/${encodeURIComponent(apifyRunId)}/abort`, {}); } catch (e) { /* melhor esforco */ } }
+    console.error('[Coleta] Run falhou:', search.id, minerCollectErrText(err));
+    try { await flush(true); } catch (e) { /* o que ja foi lido (e pago) e ingerido; se o banco caiu, o run fica como interrompido */ }
+    try { await minerCollectFinish(search, run, status, counters, minerCollectErrText(err), null); } catch (e) { /* banco fora: o sweep fecha o run depois */ }
+  }
+}
+
+const MINER_COLLECT_RESERVE_SEARCH_SQL = `
+  UPDATE miner_searches SET next_run_at = NOW() + ($1::int * INTERVAL '1 minute')
+   WHERE id = (SELECT id FROM miner_searches WHERE active AND next_run_at <= NOW() ORDER BY next_run_at ASC, id ASC LIMIT 1 FOR UPDATE SKIP LOCKED)
+  RETURNING *`;
+
+let minerCollectRunning = false;
+/** Um ciclo do worker: reserva 1 busca vencida e executa o run. Nunca lanca. */
+async function minerCollectTick() {
+  if (minerCollectRunning || !MINER_COLLECT_ENABLED || !minerCollectConfigured() || !isDbConnected || !pool) return;
+  minerCollectRunning = true;
+  try {
+    // Runs esquecidos (processo caiu no meio): fecha como interrompidos (sem devolver saldo, por seguranca).
+    await pool.query(
+      `UPDATE miner_collect_runs SET status = 'failed', error = 'collect_interrupted', finished_at = NOW()
+        WHERE status = 'running' AND started_at < NOW() - ($1::int * INTERVAL '1 minute')`, [Math.ceil(MINER_COLLECT_RUN_TIMEOUT_MS / 60000) + 10]);
+    const r = await pool.query(MINER_COLLECT_RESERVE_SEARCH_SQL, [Math.ceil(MINER_COLLECT_RUN_TIMEOUT_MS / 60000) + 10]);
+    if (!r.rows.length) return;
+    const search = r.rows[0];
+    const prep = await minerCollectPrepare(search, true);
+    if (prep.run) await minerCollectExecute(search, prep.run);
+  } catch (err) {
+    console.error('[Coleta] Ciclo do worker falhou:', scrubKey(err && err.message));
+  } finally {
+    minerCollectRunning = false;
+  }
+}
+
+// ---- API de buscas e runs (SPEC-006)
+function minerRunToJson(r) {
+  return {
+    id: Number(r.id), searchId: r.search_id === null ? null : Number(r.search_id), actor: r.actor, apifyRunId: r.apify_run_id, status: r.status,
+    itemsReceived: r.items_received, inserted: r.inserted, updated: r.updated, rejected: r.rejected,
+    estCostUsd: r.est_cost_usd === null ? null : Number(r.est_cost_usd), reservedAds: r.reserved_ads, startedAt: r.started_at, finishedAt: r.finished_at, error: r.error
+  };
+}
+function minerSearchToJson(r, lastRun) {
+  return {
+    id: Number(r.id), q: r.q, country: r.country, mediaType: r.media_type, maxAds: r.max_ads, active: r.active,
+    nextRunAt: r.next_run_at, lastRunAt: r.last_run_at, lastStatus: r.last_status, lastAds: r.last_ads, createdAt: r.created_at,
+    lastRun: lastRun ? minerRunToJson(lastRun) : null
+  };
+}
+const MINER_SEARCH_ID_RE = /^[0-9]{1,15}$/;
+
+async function minerSearchWithLastRun(id, userId) {
+  const r = await pool.query('SELECT * FROM miner_searches WHERE id = $1 AND user_id = $2', [id, userId]);
+  if (!r.rows.length) return null;
+  const lr = await pool.query('SELECT * FROM miner_collect_runs WHERE search_id = $1 ORDER BY started_at DESC, id DESC LIMIT 1', [id]);
+  return minerSearchToJson(r.rows[0], lr.rows[0]);
+}
+
+async function handleMinerSearches(req, res) {
+  const userId = getRequestUserId(req);
+  if (!userId) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+  if (req.method === 'GET') {
+    const r = await pool.query('SELECT * FROM miner_searches WHERE user_id = $1 ORDER BY id ASC', [userId]);
+    const ids = r.rows.map((row) => row.id);
+    const last = new Map();
+    if (ids.length) {
+      const lr = await pool.query('SELECT DISTINCT ON (search_id) * FROM miner_collect_runs WHERE search_id = ANY($1::bigint[]) ORDER BY search_id, started_at DESC, id DESC', [ids]);
+      for (const x of lr.rows) last.set(String(x.search_id), x);
+    }
+    return sendJson(res, 200, { ok: true, searches: r.rows.map((row) => minerSearchToJson(row, last.get(String(row.id)))) });
+  }
+  if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+  const body = await readJsonBody(req);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return sendJson(res, 400, { ok: false, error: 'invalid_body' });
+  const q = typeof body.q === 'string' ? body.q.replace(MINER_CONTROL_RE, ' ').replace(/\s+/g, ' ').trim() : '';
+  if (q.length < 2 || q.length > 100) return sendJson(res, 400, { ok: false, error: 'invalid_q' });
+  if (typeof body.country !== 'string' || !/^[A-Za-z]{2}$/.test(body.country)) return sendJson(res, 400, { ok: false, error: 'invalid_country' });
+  const mediaType = body.mediaType === undefined ? 'ALL' : (typeof body.mediaType === 'string' ? body.mediaType.toUpperCase() : '');
+  if (!MINER_COLLECT_MEDIA.includes(mediaType)) return sendJson(res, 400, { ok: false, error: 'invalid_media_type' });
+  const maxAds = body.maxAds === undefined ? MINER_COLLECT_DEFAULT_MAX_ADS : body.maxAds;
+  if (!Number.isInteger(maxAds) || maxAds < 1 || maxAds > MINER_COLLECT_MAX_ADS) return sendJson(res, 400, { ok: false, error: 'invalid_max_ads' });
+  try {
+    const r = await pool.query(
+      `INSERT INTO miner_searches (user_id, q, country, media_type, max_ads, next_run_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id`,
+      [userId, q, body.country.toUpperCase(), mediaType, maxAds]);
+    return sendJson(res, 201, { ok: true, search: await minerSearchWithLastRun(r.rows[0].id, userId) });
+  } catch (err) {
+    if (err && err.code === '23505') return sendJson(res, 409, { ok: false, error: 'search_exists' });
+    throw err;
+  }
+}
+
+async function handleMinerSearchItem(req, res, rest) {
+  const userId = getRequestUserId(req);
+  if (!userId) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+  const m = /^([^/]+)(\/run)?$/.exec(rest);
+  if (!m) return sendJson(res, 404, { ok: false, error: 'not_found' });
+  if (!MINER_SEARCH_ID_RE.test(m[1])) return sendJson(res, 400, { ok: false, error: 'invalid_id' });
+  const id = m[1];
+  if (m[2]) return handleMinerSearchRun(req, res, id, userId);
+
+  if (req.method === 'DELETE') {
+    const r = await pool.query('DELETE FROM miner_searches WHERE id = $1 AND user_id = $2 RETURNING id', [id, userId]);
+    if (!r.rows.length) return sendJson(res, 404, { ok: false, error: 'not_found' });
+    return sendJson(res, 200, { ok: true, deleted: Number(id) });
+  }
+  if (req.method !== 'PATCH') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+  const body = await readJsonBody(req);
+  if (!body || typeof body !== 'object' || Array.isArray(body) || (body.active === undefined && body.maxAds === undefined)) return sendJson(res, 400, { ok: false, error: 'invalid_body' });
+  if (body.active !== undefined && typeof body.active !== 'boolean') return sendJson(res, 400, { ok: false, error: 'invalid_active' });
+  if (body.maxAds !== undefined && (!Number.isInteger(body.maxAds) || body.maxAds < 1 || body.maxAds > MINER_COLLECT_MAX_ADS)) return sendJson(res, 400, { ok: false, error: 'invalid_max_ads' });
+  const r = await pool.query(
+    `UPDATE miner_searches SET active = COALESCE($3, active), max_ads = COALESCE($4, max_ads) WHERE id = $1 AND user_id = $2 RETURNING id`,
+    [id, userId, body.active === undefined ? null : body.active, body.maxAds === undefined ? null : body.maxAds]);
+  if (!r.rows.length) return sendJson(res, 404, { ok: false, error: 'not_found' });
+  return sendJson(res, 200, { ok: true, search: await minerSearchWithLastRun(id, userId) });
+}
+
+async function handleMinerSearchRun(req, res, id, userId) {
+  if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+  if (!minerCollectConfigured()) return sendJson(res, 503, { ok: false, error: 'collect_not_configured' });
+  const s = await pool.query('SELECT * FROM miner_searches WHERE id = $1 AND user_id = $2', [id, userId]);
+  if (!s.rows.length) return sendJson(res, 404, { ok: false, error: 'not_found' });
+  const search = s.rows[0];
+  const running = await pool.query("SELECT 1 FROM miner_collect_runs WHERE search_id = $1 AND status = 'running' LIMIT 1", [id]);
+  if (running.rowCount > 0) return sendJson(res, 409, { ok: false, error: 'collect_already_running' });
+  const prep = await minerCollectPrepare(search, false);
+  if (prep.budget) return sendJson(res, 429, { ok: false, error: 'collect_daily_limit' });
+  if (prep.running) return sendJson(res, 409, { ok: false, error: 'collect_already_running' });
+  setImmediate(() => { minerCollectExecute(search, prep.run).catch((e) => console.error('[Coleta] Run manual falhou:', scrubKey(e && e.message))); });
+  return sendJson(res, 202, { ok: true, run: minerRunToJson(prep.run) });
+}
+
+async function handleMinerCollectRuns(req, res, sp) {
+  const userId = getRequestUserId(req);
+  if (!userId) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+  if (req.method !== 'GET') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+  const limit = parseIntParam(sp.get('limit'), 20, 1, 100);
+  if (limit === null) return sendJson(res, 400, { ok: false, error: 'invalid_limit' });
+  const r = await pool.query(
+    `SELECT c.*, s.q AS search_q, s.country AS search_country, s.media_type AS search_media FROM miner_collect_runs c
+       LEFT JOIN miner_searches s ON s.id = c.search_id ORDER BY c.started_at DESC, c.id DESC LIMIT ${limit}`);
+  return sendJson(res, 200, {
+    ok: true,
+    runs: r.rows.map((row) => ({ ...minerRunToJson(row), search: row.search_q === null ? null : { q: row.search_q, country: row.search_country, mediaType: row.search_media } }))
   });
 }
 
@@ -2106,7 +2645,9 @@ async function handleApi(req, res, pathname, searchParams) {
     if (pathname === '/api/miner/ads') return await handleMinerAds(req, res, searchParams);
     if (pathname === '/api/miner/stats') return await handleMinerStats(req, res);
     if (pathname === '/api/miner/filters') return await handleMinerFilters(req, res);
-    if (pathname.startsWith('/api/miner/domains/')) {
+    if (pathname === '/api/miner/searches') return await handleMinerSearches(req, res);
+    if (pathname.startsWith('/api/miner/searches/')) return await handleMinerSearchItem(req, res, pathname.slice('/api/miner/searches/'.length));
+    if (pathname === '/api/miner/collect/runs') return await handleMinerCollectRuns(req, res, searchParams);    if (pathname.startsWith('/api/miner/domains/')) {
       const rest = pathname.slice('/api/miner/domains/'.length);
       return await (/\/classify$/.test(rest) ? handleMinerDomainClassify(req, res, rest) : handleMinerDomainEnrich(req, res, rest));
     }
@@ -2237,6 +2778,11 @@ if (pool && GEMINI_API_KEY && MINER_AI_ENABLED) {
   setInterval(() => { minerAiTick().catch((err) => console.error('[Minerador IA] worker:', scrubKey(err && err.message))); }, MINER_AI_INTERVAL_MS).unref();
 }
 
+// Worker da coleta Apify (SPEC-006): so com APIFY_TOKEN, adaptador do actor, banco e MINER_COLLECT_ENABLED != 0.
+if (pool && minerCollectConfigured() && MINER_COLLECT_ENABLED) {
+  setInterval(() => { minerCollectTick().catch((err) => console.error('[Coleta] worker:', scrubKey(err && err.message))); }, MINER_COLLECT_INTERVAL_MS).unref();
+}
+
 // Encerramento limpo (docker stop / redeploy do Easypanel)
 function shutdown(signal) {
   console.log(`[Cockpit Low Ticket] ${signal} recebido, encerrando...`);
@@ -2253,4 +2799,4 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err && err.message ? err.message : err));
 
 // Funcoes internas expostas para os testes unitarios (o servidor roda como script principal).
-module.exports = { __minerTest: { isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS, minerCursorEncode, minerCursorDecode, parseIsoDate, parseNonNegNumber, validateAiResult, buildAiInput, buildAiRequest, aiInputHash, canonicalJson, aiClean, MINER_AI_RESPONSE_SCHEMA, MINER_AI_NICHES, MINER_AI_FORMATS, MINER_AI_ANGLES, MINER_AI_LANGUAGES } };
+module.exports = { __minerTest: { isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS, mapApifyAdItem, toEpochSeconds, plainText, minerAdLibraryUrl, MINER_APIFY_ADAPTERS, normalizeMinerAd, scrubKey, minerCursorEncode, minerCursorDecode, parseIsoDate, parseNonNegNumber, validateAiResult, buildAiInput, buildAiRequest, aiInputHash, canonicalJson, aiClean, MINER_AI_RESPONSE_SCHEMA, MINER_AI_NICHES, MINER_AI_FORMATS, MINER_AI_ANGLES, MINER_AI_LANGUAGES } };
