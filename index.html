@@ -1111,218 +1111,179 @@ input:focus, select:focus, textarea:focus {
  border-color: var(--theme-accent);
  background: var(--theme-accent-soft);
 }
-/* Minerador de Ofertas Estilo AdHeart & Meta Ad Library */
-.adheart-control-panel {
- background: var(--bg-card);
- border: 1px solid var(--border-subtle);
- border-radius: var(--radius);
- padding: 22px;
- margin-bottom: 24px;
- box-shadow: var(--shadow-card);
+/* Minerador de Ofertas - dashboard estilo AdHeart (FE-005 v2) */
+.mn-root, .mn-root * , .mn-overlay, .mn-overlay * { box-sizing: border-box; }
+.mn-root { display: flex; flex-direction: column; gap: 16px; min-width: 0; margin-bottom: 28px; }
+.mn-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.mn-head h2 { margin: 0; }
+.mn-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.mn-indicators { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.mn-ind { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: var(--radius-full); border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-muted); font-size: 0.76rem; font-weight: 600; max-width: 100%; }
+.mn-ind-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); flex: 0 0 auto; }
+.mn-ind.on .mn-ind-dot { background: var(--theme-accent); box-shadow: 0 0 8px var(--theme-accent-glow); }
+.mn-ind.warn .mn-ind-dot { background: var(--accent-amber); }
+.mn-ind.on { color: var(--text-main); }
+.mn-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-main); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: none; min-height: 36px; }
+.mn-btn:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
+.mn-btn:focus-visible, .mn-tab:focus-visible, .mn-kpi:focus-visible, .mn-x:focus-visible, .mn-chip-btn:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
+.mn-btn.primary { background: var(--theme-accent); color: var(--theme-accent-contrast); border-color: var(--theme-accent); }
+.mn-btn.primary:hover { filter: brightness(1.08); }
+.mn-btn.danger { color: var(--accent-red); border-color: rgba(255, 77, 109, 0.4); }
+.mn-btn.sm { padding: 5px 10px; min-height: 30px; font-size: 0.74rem; }
+.mn-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.mn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.mn-kpi { text-align: left; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px 16px; color: var(--text-main); font: inherit; cursor: pointer; min-width: 0; }
+.mn-kpi:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
+.mn-kpi-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.mn-kpi-value { display: block; margin-top: 6px; font-size: 1.7rem; font-weight: 800; line-height: 1.1; color: var(--text-main); overflow-wrap: anywhere; }
+.mn-kpi-sub { display: block; margin-top: 4px; font-size: 0.72rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-skel { position: relative; overflow: hidden; background: var(--bg-input); border-radius: var(--radius-xs); color: transparent !important; }
+.mn-skel::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); animation: mn-shimmer 1.2s infinite; }
+@keyframes mn-shimmer { to { transform: translateX(100%); } }
+.mn-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.mn-tabs { display: inline-flex; padding: 3px; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px solid var(--border-subtle); }
+.mn-tab { border: 0; background: transparent; color: var(--text-muted); font: inherit; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+.mn-tab[aria-selected="true"] { background: var(--theme-accent); color: var(--theme-accent-contrast); }
+.mn-search { flex: 1 1 220px; min-width: 0; }
+.mn-field, .mn-root select, .mn-root input[type="text"], .mn-root input[type="number"], .mn-root input[type="date"], .mn-overlay input[type="text"], .mn-overlay input[type="number"], .mn-overlay select { width: 100%; min-width: 0; padding: 9px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-main); font: inherit; font-size: 0.84rem; min-height: 38px; }
+.mn-root input:focus, .mn-root select:focus, .mn-overlay input:focus, .mn-overlay select:focus { outline: 2px solid var(--theme-accent); outline-offset: 1px; }
+.mn-sort { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 0.76rem; font-weight: 700; }
+.mn-sort select { width: auto; min-width: 150px; }
+.mn-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+.mn-switch input { width: 16px; height: 16px; accent-color: var(--theme-accent); }
+.mn-count { font-size: 0.76rem; color: var(--text-muted); font-weight: 600; }
+.mn-only-narrow { display: none; }
+.mn-body { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 16px; align-items: start; }
+.mn-filters { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+.mn-filters-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mn-filters-head h3 { margin: 0; font-size: 0.95rem; color: var(--text-main); }
+.mn-fgroup { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.mn-fgroup > label, .mn-fgroup > .mn-flabel { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.mn-hint { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-dim); font-size: 0.66rem; }
+.mn-frow { display: flex; gap: 6px; min-width: 0; }
+.mn-frow > * { flex: 1 1 0; min-width: 0; }
+.mn-presets { display: flex; flex-wrap: wrap; gap: 5px; }
+.mn-chip-btn { border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-muted); font: inherit; font-size: 0.72rem; font-weight: 700; padding: 4px 9px; border-radius: var(--radius-full); cursor: pointer; }
+.mn-chip-btn[aria-pressed="true"] { background: var(--theme-accent-soft); color: var(--theme-accent); border-color: var(--theme-accent); }
+.mn-checks { display: flex; flex-direction: column; gap: 4px; }
+.mn-checks label { display: flex; align-items: center; gap: 7px; font-size: 0.8rem; color: var(--text-main); text-transform: none; letter-spacing: 0; font-weight: 500; cursor: pointer; }
+.mn-checks input { accent-color: var(--theme-accent); }
+.mn-dim { opacity: 0.45; }
+.mn-main { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.mn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 12px; min-width: 0; }
+.mn-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.mn-card:hover { border-color: var(--border-hover); }
+.mn-media { position: relative; aspect-ratio: 4 / 3; background: var(--bg-input); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.mn-media.tall { aspect-ratio: 1 / 1; }
+.mn-media img, .mn-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mn-media.big { aspect-ratio: auto; min-height: 220px; max-height: 60vh; }
+.mn-media.big img, .mn-media.big video { object-fit: contain; max-height: 60vh; background: #000; }
+.mn-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; padding: 12px; text-align: center; color: var(--text-dim); font-size: 0.74rem; background: repeating-linear-gradient(45deg, var(--bg-input), var(--bg-input) 10px, var(--bg-card) 10px, var(--bg-card) 20px); }
+.mn-fallback b { font-size: 1.6rem; color: var(--text-muted); }
+.mn-play { position: absolute; inset: 0; margin: auto; width: 52px; height: 52px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.62); color: #fff; font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mn-play:hover { background: var(--theme-accent); color: var(--theme-accent-contrast); }
+.mn-pager { position: absolute; bottom: 8px; right: 8px; display: inline-flex; align-items: center; gap: 4px; background: rgba(0, 0, 0, 0.65); color: #fff; border-radius: var(--radius-full); padding: 2px 6px; font-size: 0.72rem; font-weight: 700; }
+.mn-pager button { border: 0; background: transparent; color: #fff; cursor: pointer; font-size: 0.95rem; padding: 0 4px; }
+.mn-score { position: absolute; top: 8px; left: 8px; background: var(--theme-accent); color: var(--theme-accent-contrast); font-weight: 800; font-size: 0.78rem; padding: 3px 9px; border-radius: var(--radius-full); box-shadow: var(--badge-glow); }
+.mn-card-body { padding: 12px; display: flex; flex-direction: column; gap: 9px; min-width: 0; flex: 1; }
+.mn-title { font-size: 0.95rem; font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; margin: 0; }
+.mn-sub { font-size: 0.74rem; color: var(--text-muted); overflow-wrap: anywhere; }
+.mn-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.mn-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-full); border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-muted); font-size: 0.68rem; font-weight: 700; max-width: 100%; overflow-wrap: anywhere; }
+.mn-badge.accent { color: var(--theme-accent); border-color: var(--theme-accent); background: var(--theme-accent-soft); }
+.mn-badge.amber { color: var(--accent-amber); border-color: rgba(255, 183, 3, 0.4); }
+.mn-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
+.mn-metric { display: flex; flex-direction: column; min-width: 0; }
+.mn-metric span { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); font-weight: 700; }
+.mn-metric b { font-size: 0.95rem; color: var(--text-main); }
+.mn-up { color: var(--theme-accent) !important; }
+.mn-down { color: var(--accent-red) !important; }
+.mn-spark { display: block; width: 100%; height: 30px; }
+.mn-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.mn-actions .mn-btn { flex: 1 1 auto; }
+.mn-adhead { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mn-avatar { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 50%; background: var(--theme-accent-soft); color: var(--theme-accent); font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.mn-adhead-info { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.mn-adhead-info strong { font-size: 0.82rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-adhead-info small { font-size: 0.7rem; color: var(--theme-accent); font-weight: 700; }
+.mn-plats { display: inline-flex; gap: 3px; flex: 0 0 auto; }
+.mn-plat { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1px 4px; }
+.mn-text { font-size: 0.8rem; line-height: 1.45; color: var(--text-main); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; margin: 0; }
+.mn-text.open { -webkit-line-clamp: unset; line-clamp: unset; display: block; }
+.mn-more { align-self: flex-start; border: 0; background: none; color: var(--theme-accent); font: inherit; font-size: 0.74rem; font-weight: 700; cursor: pointer; padding: 0; }
+.mn-headline { font-size: 0.86rem; font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; margin: 0; }
+.mn-cta { align-self: flex-start; padding: 4px 10px; border-radius: var(--radius-xs); background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-main); font-size: 0.74rem; font-weight: 700; overflow-wrap: anywhere; }
+.mn-sentinel { height: 1px; }
+.mn-loadmore { align-self: center; }
+.mn-state { background: var(--bg-card); border: 1px dashed var(--border-subtle); border-radius: var(--radius); padding: 28px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--text-muted); }
+.mn-state h3 { margin: 0; color: var(--text-main); font-size: 1.1rem; }
+.mn-state p { margin: 0; max-width: 560px; font-size: 0.86rem; line-height: 1.5; overflow-wrap: anywhere; }
+.mn-state.err h3 { color: var(--accent-red); }
+.mn-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; width: 100%; max-width: 760px; text-align: left; }
+.mn-step { background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; }
+.mn-step b { color: var(--theme-accent); }
+.mn-state-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.mn-toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 3000; background: var(--bg-card-hover); color: var(--text-main); border: 1px solid var(--theme-accent); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 0.82rem; font-weight: 700; max-width: 92vw; box-shadow: var(--shadow-card); }
+.mn-backdrop { display: none; }
+.mn-overlay { position: fixed; inset: 0; z-index: 2500; background: rgba(0, 0, 0, 0.82); display: none; align-items: flex-start; justify-content: center; padding: 3vh 12px; overflow-y: auto; overscroll-behavior: contain; }
+.mn-overlay.open { display: flex; }
+.mn-modal { position: relative; width: 100%; max-width: 1100px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; box-shadow: var(--shadow-card); }
+.mn-modal.narrow { max-width: 820px; }
+.mn-x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-main); font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.mn-x:hover { border-color: var(--border-hover); }
+.mn-mhead { padding-right: 44px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.mn-mhead h3 { margin: 0; font-size: 1.3rem; color: var(--text-main); overflow-wrap: anywhere; }
+.mn-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.mn-box { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.mn-box h4 { margin: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.mn-box p, .mn-box li { margin: 0; font-size: 0.84rem; color: var(--text-main); line-height: 1.45; overflow-wrap: anywhere; }
+.mn-box ul { margin: 0; padding-left: 18px; }
+.mn-kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 4px 10px; font-size: 0.82rem; }
+.mn-kv dt { color: var(--text-muted); font-weight: 700; }
+.mn-kv dd { margin: 0; color: var(--text-main); overflow-wrap: anywhere; }
+.mn-kv a, .mn-box a { color: var(--theme-accent); overflow-wrap: anywhere; }
+.mn-chart { position: relative; height: 240px; min-width: 0; }
+.mn-fulltext { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.88rem; line-height: 1.5; color: var(--text-main); margin: 0; }
+.mn-msg { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); min-height: 1.1em; overflow-wrap: anywhere; }
+.mn-msg.ok { color: var(--theme-accent); }
+.mn-msg.bad { color: var(--accent-red); }
+.mn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mn-table { display: flex; flex-direction: column; gap: 8px; }
+.mn-trow { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 12px; min-width: 0; }
+.mn-trow > div { min-width: 0; }
+.mn-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.mn-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.68rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em; color: var(--text-muted); min-width: 0; }
+@media (max-width: 1199px) {
+ .mn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.custom-country-wrapper {
- position: relative;
+@media (max-width: 899px) {
+ .mn-only-narrow { display: inline-flex; }
+ .mn-body { grid-template-columns: minmax(0, 1fr); }
+ .mn-filters { position: fixed; top: 0; left: 0; bottom: 0; width: min(330px, 90vw); max-height: none; z-index: 2400; border-radius: 0 var(--radius) var(--radius) 0; transform: translateX(-105%); visibility: hidden; transition: transform 0.2s ease, visibility 0.2s; background: var(--bg-surface); }
+ .mn-filters.open { transform: none; visibility: visible; }
+ .mn-backdrop.open { display: block; position: fixed; inset: 0; z-index: 2300; background: rgba(0, 0, 0, 0.6); }
+ .mn-cols { grid-template-columns: minmax(0, 1fr); }
+ .mn-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+ .mn-form .mn-q { grid-column: 1 / -1; }
 }
-.custom-country-btn:hover,
-.custom-country-btn:focus {
- border-color: rgba(0, 245, 155, 0.45) !important;
- box-shadow: 0 0 10px rgba(0, 245, 155, 0.12);
- outline: none;
+@media (max-width: 520px) {
+ .mn-kpi-value { font-size: 1.3rem; }
+ .mn-kpi { padding: 10px 12px; }
+ .mn-grid { grid-template-columns: minmax(0, 1fr); }
+ .mn-modal { padding: 14px; }
+ .mn-kv { grid-template-columns: minmax(0, 1fr); }
+ .mn-sort select { min-width: 0; width: 100%; }
+ .mn-sort { width: 100%; }
+ .mn-tabs { width: 100%; }
+ .mn-tab { flex: 1; }
 }
-.custom-country-menu {
- display: none;
- position: absolute;
- top: calc(100% + 6px);
- left: 0;
- width: 100%;
- min-width: 220px;
- background: #0e1513;
- border: 1px solid rgba(0, 245, 155, 0.28);
- border-radius: 10px;
- box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8);
- z-index: 1200;
- padding: 8px;
- backdrop-filter: blur(14px);
+@media (max-width: 580px) {
+ /* o cabecalho global estourava 524 px em 360 px de tela (pill do banco + botao de configuracao): quebra a linha */
+ .header-right { flex-wrap: wrap; }
 }
-.custom-country-item {
- display: flex;
- align-items: center;
- justify-content: space-between;
- padding: 8px 10px;
- border-radius: 6px;
- font-size: 0.84rem;
- color: #cfd8dc;
- cursor: pointer;
- transition: all 0.15s ease;
- user-select: none;
-}
-.custom-country-item:hover {
- background: rgba(0, 245, 155, 0.12);
- color: #fff;
-}
-.custom-country-item.active {
- background: rgba(0, 245, 155, 0.2);
- color: var(--theme-accent);
- font-weight: 700;
-}
-.adheart-filter-grid {
- display: grid;
- grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
- gap: 16px;
- margin-top: 16px;
- align-items: flex-end;
-}
-.adheart-stats-bar {
- display: flex;
- align-items: center;
- justify-content: space-between;
- background: rgba(0, 245, 155, 0.05);
- border: 1px solid var(--border-subtle);
- border-radius: var(--radius-sm);
- padding: 12px 18px;
- margin-bottom: 22px;
- flex-wrap: wrap;
- gap: 12px;
-}
-.adheart-feed-grid {
- display: grid;
- grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
- gap: 24px;
-}
-.adheart-card {
- background: var(--bg-surface);
- border: 1px solid var(--border-subtle);
- border-radius: 12px;
- display: flex;
- flex-direction: column;
- overflow: hidden;
- transition: all 0.25s ease;
- box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-.adheart-card:hover {
- border-color: var(--theme-accent);
- transform: translateY(-3px);
- box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px var(--theme-accent-soft);
-}
-.adheart-card-header {
- padding: 14px 16px;
- display: flex;
- align-items: center;
- justify-content: space-between;
- border-bottom: 1px solid rgba(255, 255, 255, 0.06);
- background: rgba(0, 0, 0, 0.2);
-}
-.adheart-page-info {
- display: flex;
- align-items: center;
- gap: 10px;
-}
-.adheart-avatar {
- width: 40px;
- height: 40px;
- border-radius: 50%;
- background: var(--theme-accent-soft);
- color: var(--theme-accent);
- display: flex;
- align-items: center;
- justify-content: center;
- font-weight: 800;
- font-size: 1.05rem;
- border: 1px solid var(--border-subtle);
- flex-shrink: 0;
-}
-.adheart-scale-badge {
- background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.25));
- border: 1px solid rgba(245, 158, 11, 0.5);
- color: #fbbf24;
- font-weight: 800;
- font-size: 0.78rem;
- padding: 4px 10px;
- border-radius: 20px;
- display: inline-flex;
- align-items: center;
- gap: 6px;
- box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
-}
-.adheart-media-box {
- width: 100%;
- aspect-ratio: 1 / 1;
- background: #080d0d;
- position: relative;
- overflow: hidden;
- display: flex;
- align-items: center;
- justify-content: center;
-}
-.adheart-media-box img {
- width: 100%;
- height: 100%;
- object-fit: cover;
- transition: transform 0.3s ease;
-}
-.adheart-media-box:hover img {
- transform: scale(1.02);
-}
-.adheart-media-overlay {
- position: absolute;
- top: 10px;
- right: 10px;
- display: flex;
- gap: 6px;
- z-index: 5;
-}
-.adheart-media-btn {
- background: rgba(0, 0, 0, 0.75);
- backdrop-filter: blur(4px);
- color: #fff;
- border: 1px solid rgba(255, 255, 255, 0.2);
- border-radius: 6px;
- padding: 6px 10px;
- font-size: 0.76rem;
- font-weight: 600;
- cursor: pointer;
- display: inline-flex;
- align-items: center;
- gap: 5px;
- transition: all 0.2s ease;
-}
-.adheart-media-btn:hover {
- background: var(--theme-accent);
- color: #03140e;
- border-color: var(--theme-accent);
-}
-.adheart-copy-box {
- padding: 16px;
- font-size: 0.85rem;
- color: #d1d5db;
- line-height: 1.5;
- background: rgba(0,0,0,0.15);
- border-bottom: 1px solid rgba(255, 255, 255, 0.05);
- max-height: 160px;
- overflow-y: auto;
-}
-.adheart-ad-headline {
- padding: 12px 16px;
- background: rgba(255, 255, 255, 0.02);
- border-bottom: 1px solid rgba(255, 255, 255, 0.05);
- display: flex;
- align-items: center;
- justify-content: space-between;
- gap: 10px;
-}
-.adheart-ad-headline strong {
- color: #fff;
- font-size: 0.88rem;
- line-height: 1.3;
-}
-.adheart-actions {
- padding: 12px 16px;
- display: flex;
- align-items: center;
- justify-content: space-between;
- gap: 8px;
- background: rgba(0,0,0,0.25);
- flex-wrap: wrap;
+@media (prefers-reduced-motion: reduce) {
+ .mn-skel::after { animation: none; }
+ .mn-filters { transition: none; }
 }
 </style>
  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1479,7 +1440,7 @@ input:focus, select:focus, textarea:focus {
      </div>
      <div class="step-meta">
       <strong>Minerador de Ofertas</strong>
-      <small>Radar AdHeart & Meta Ads</small>
+      <small>Dashboard de anúncios e ofertas</small>
      </div>
     </button>
 
@@ -1852,208 +1813,86 @@ input:focus, select:focus, textarea:focus {
 
    <!-- ================= ABA 3: MINERADOR DE OFERTAS ================= -->
    <section class="step-content-pane" id="pane-step-mineracao">
-    <div class="pane-header">
-     <div>
-      
-      <h2>Minerador de Ofertas</h2>
-      <p class="pane-desc">Descubra, filtre e desseque as ofertas mais escaladas da Biblioteca de Anúncios do Meta Ads para o seu nicho.</p>
-     </div>
-    </div>
-
-    <!-- ================= 1. PAINEL DE CONTROLE ADHEART: FILTROS DE ESCALA E MINERAÇÃO ================= -->
-    <div class="adheart-control-panel">
-     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:14px;">
-      <div style="display:flex; align-items:center; gap:10px;">
-       <div style="width:38px; height:38px; border-radius:10px; background:rgba(0,245,155,0.12); display:flex; align-items:center; justify-content:center; color:var(--theme-accent);">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-         <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg>
-       </div>
+     <div class="mn-root" id="mn-root">
+      <div class="mn-head">
        <div>
-        <h3 style="margin:0; font-size:1.15rem; color:#fff;">Painel de Mineração AdHeart & Meta Ads</h3>
-        <p class="text-muted" style="font-size:0.8rem; margin:2px 0 0 0;">
-         Filtre por escala (mínimo de anúncios rodando), tempo de veiculação (dias ativos) e país sem sair do app.
-        </p>
+        <h2>Minerador de Ofertas</h2>
+        <p class="pane-desc">Espione anúncios e ofertas escaladas com dados reais coletados da Biblioteca de Anúncios do Meta.</p>
+       </div>
+       <div class="mn-head-actions">
+        <button type="button" class="mn-btn" id="mn-btn-searches">Buscas automáticas</button>
+        <a class="mn-btn primary" id="mn-btn-library" href="https://www.facebook.com/ads/library/" target="_blank" rel="noopener noreferrer">Abrir Biblioteca de Anúncios ↗</a>
        </div>
       </div>
-      
-     </div>
+      <div class="mn-indicators" id="mn-indicators" aria-live="polite"></div>
 
-     <!-- Grid dos Filtros da Mineração -->
-     <div class="adheart-filter-grid">
-      <!-- 1. Palavra-Chave / Nicho -->
-      <div class="form-group" style="margin:0;">
-       <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px; display:block;">
-        Nicho / Palavra-Chave:
-       </label>
-       <div style="display:flex; gap:6px;">
-        <input type="text" id="adheart-keyword-input" placeholder="Ex: Atividades idosos, confeitaria, receitas..." style="width:100%; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-size:0.88rem;">
-        <button class="btn btn-outline btn-sm" id="btn-sync-adheart-niche" type="button" title="Usar nicho do projeto ativo" style="padding:0 10px; font-size:0.78rem; white-space:nowrap;">
-         Meu Nicho
-        </button>
+      <div class="mn-kpis" id="mn-kpis">
+       <button type="button" class="mn-kpi" data-kpi="ads"><span class="mn-kpi-label">Anúncios ativos</span><span class="mn-kpi-value mn-skel" data-v>0000</span><span class="mn-kpi-sub" data-s></span></button>
+       <button type="button" class="mn-kpi" data-kpi="scaled"><span class="mn-kpi-label">Ofertas escaladas</span><span class="mn-kpi-value mn-skel" data-v>0000</span><span class="mn-kpi-sub" data-s></span></button>
+       <button type="button" class="mn-kpi" data-kpi="new"><span class="mn-kpi-label">Novos em 24 h</span><span class="mn-kpi-value mn-skel" data-v>0000</span><span class="mn-kpi-sub" data-s></span></button>
+       <button type="button" class="mn-kpi" data-kpi="niches"><span class="mn-kpi-label">Nichos ativos</span><span class="mn-kpi-value mn-skel" data-v>0000</span><span class="mn-kpi-sub" data-s></span></button>
+      </div>
+
+      <div class="mn-toolbar">
+       <div class="mn-tabs" role="tablist" aria-label="Vista">
+        <button type="button" class="mn-tab" role="tab" id="mn-tab-offers" data-view="offers" aria-selected="true">Ofertas escaladas</button>
+        <button type="button" class="mn-tab" role="tab" id="mn-tab-ads" data-view="ads" aria-selected="false">Anúncios</button>
+       </div>
+       <input type="text" class="mn-search" id="mn-q" placeholder="Buscar por texto, página ou termo..." maxlength="200" autocomplete="off" aria-label="Buscar">
+       <label class="mn-sort">Ordenar <select id="mn-sort" aria-label="Ordenar"></select></label>
+       <label class="mn-switch"><input type="checkbox" id="mn-infinite" checked> Scroll contínuo</label>
+       <button type="button" class="mn-btn mn-only-narrow" id="mn-btn-filters">Filtros (0)</button>
+      </div>
+
+      <div class="mn-body">
+       <aside class="mn-filters" id="mn-filters" aria-label="Filtros">
+        <div class="mn-filters-head">
+         <h3>Filtros <span class="mn-count" id="mn-fcount">(0)</span></h3>
+         <div class="mn-row">
+          <button type="button" class="mn-btn sm" id="mn-btn-clear">Limpar</button>
+          <button type="button" class="mn-btn sm mn-only-narrow" id="mn-btn-filters-close" aria-label="Fechar filtros">✕</button>
+         </div>
+        </div>
+        <div class="mn-fgroup"><label for="mn-f-country">País</label><select id="mn-f-country"><option value="">Todos</option></select></div>
+        <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Veiculação <span class="mn-hint">(só em Anúncios)</span></span><div class="mn-checks" id="mn-f-placements"></div></div>
+        <div class="mn-fgroup"><label for="mn-f-media">Formato do criativo</label>
+         <select id="mn-f-media"><option value="">Todos</option><option value="IMAGE">Imagem</option><option value="VIDEO">Vídeo</option><option value="CAROUSEL" data-scope="ads">Carrossel (só em Anúncios)</option></select></div>
+        <div class="mn-fgroup"><span class="mn-flabel">Dias ativo</span>
+         <div class="mn-presets" id="mn-f-presets">
+          <button type="button" class="mn-chip-btn" data-days="7" aria-pressed="false">7+</button>
+          <button type="button" class="mn-chip-btn" data-days="15" aria-pressed="false">15+</button>
+          <button type="button" class="mn-chip-btn" data-days="30" aria-pressed="false">30+</button>
+          <button type="button" class="mn-chip-btn" data-days="60" aria-pressed="false">60+</button>
+         </div>
+         <div class="mn-frow"><input type="number" id="mn-f-mindays" min="0" max="100000" placeholder="Mín." aria-label="Mínimo de dias"><input type="number" id="mn-f-maxdays" data-scope="ads" min="0" max="100000" placeholder="Máx." aria-label="Máximo de dias"></div>
+         <span class="mn-hint">O máximo vale só em Anúncios.</span>
+        </div>
+        <div class="mn-fgroup" data-scope="offers"><label for="mn-f-minads">Mínimo de anúncios <span class="mn-hint">(só em Ofertas)</span></label><input type="number" id="mn-f-minads" min="0" max="100000" placeholder="0"></div>
+        <div class="mn-fgroup"><label for="mn-f-platform">Checkout</label><select id="mn-f-platform"><option value="">Todos</option></select></div>
+        <div class="mn-fgroup" data-scope="offers"><span class="mn-flabel">Faixa de preço (R$) <span class="mn-hint">(só em Ofertas)</span></span>
+         <div class="mn-frow"><input type="number" id="mn-f-pmin" min="0" step="0.01" placeholder="De" aria-label="Preço mínimo"><input type="number" id="mn-f-pmax" min="0" step="0.01" placeholder="Até" aria-label="Preço máximo"></div></div>
+        <div class="mn-fgroup"><label for="mn-f-niche">Nicho (IA)</label><select id="mn-f-niche"><option value="">Todos</option></select></div>
+        <div class="mn-fgroup"><label for="mn-f-format">Formato do produto (IA)</label><select id="mn-f-format"><option value="">Todos</option></select></div>
+        <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Data de início <span class="mn-hint">(só em Anúncios)</span></span>
+         <div class="mn-frow"><input type="date" id="mn-f-from" aria-label="Início de"><input type="date" id="mn-f-to" aria-label="Início até"></div></div>
+        <div class="mn-fgroup" data-scope="ads"><label for="mn-f-cta">CTA <span class="mn-hint">(só em Anúncios)</span></label><select id="mn-f-cta"><option value="">Todos</option></select></div>
+        <div class="mn-fgroup" data-scope="ads"><label for="mn-f-domain">Domínio <span class="mn-hint">(só em Anúncios)</span></label><input type="text" id="mn-f-domain" placeholder="exemplo.com" maxlength="253" autocomplete="off"></div>
+        <div class="mn-fgroup"><label for="mn-f-page">Anunciante (ID da página)</label><input type="text" id="mn-f-page" placeholder="Ex.: 1234567890" maxlength="100" autocomplete="off"></div>
+       </aside>
+       <div class="mn-main">
+        <div class="mn-count" id="mn-total" aria-live="polite"></div>
+        <div id="mn-status"></div>
+        <div class="mn-grid" id="mn-grid"></div>
+        <div class="mn-sentinel" id="mn-sentinel"></div>
+        <button type="button" class="mn-btn mn-loadmore" id="mn-loadmore" hidden>Carregar mais</button>
        </div>
       </div>
-
-      <div class="form-group" style="margin:0;">
-       <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px; display:block;">
-        Mínimo de Anúncios (Escala):
-       </label>
-       <select id="adheart-min-ads" style="width:100%; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-size:0.88rem;">
-        <option value="1">1+ anúncio ativo</option>
-        <option value="2">2+ anúncios ativos</option>
-        <option value="3">3+ anúncios ativos</option>
-        <option value="4">4+ anúncios ativos</option>
-        <option value="5" selected> 5+ anúncios ativos (Escalado)</option>
-        <option value="6">6+ anúncios ativos</option>
-        <option value="7">7+ anúncios ativos</option>
-        <option value="8">8+ anúncios ativos</option>
-        <option value="9">9+ anúncios ativos</option>
-        <option value="10">10+ anúncios ativos (Super Escala)</option>
-        <option value="15">15+ anúncios ativos (Dominando Nicho)</option>
-        <option value="20">20+ anúncios ativos (Grande Player)</option>
-       </select>
-      </div>
-
-      <!-- 3. Tempo de Veiculação / Dias Rodando -->
-      <div class="form-group" style="margin:0;">
-       <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px; display:block;">
-        Tempo Ativo (Dias Rodando):
-       </label>
-       <select id="adheart-min-days" style="width:100%; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-size:0.88rem;">
-        <option value="0">Qualquer período</option>
-        <option value="3"> Pelo menos 3 dias rodando</option>
-        <option value="5"> Pelo menos 5 dias rodando</option>
-        <option value="10" selected> Pelo menos 10 dias rodando</option>
-        <option value="15"> Pelo menos 15 dias rodando</option>
-        <option value="20"> Pelo menos 20 dias (Validado)</option>
-        <option value="30">Pelo menos 30 dias (ROI Comprovado)</option>
-        <option value="45">Mais de 45 dias (Evergreen)</option>
-        <option value="60">Mais de 60 dias (Super Consolidado)</option>
-       </select>
-      </div>
-
-      <!-- 4. País de Veiculação (Custom Dropdown com Busca) -->
-      <div class="form-group custom-country-wrapper" style="margin:0; position:relative;">
-       <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px; display:block;">
-        País de Veiculação:
-       </label>
-       <!-- Hidden input mantido para integridade de dados e compatibilidade de JS -->
-       <input type="hidden" id="adheart-country" value="ALL">
-       
-       <!-- Botão Gatilho Estilizado -->
-       <button type="button" id="adheart-country-btn" class="custom-country-btn" aria-haspopup="listbox" aria-expanded="false" style="width:100%; height:41px; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-size:0.88rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer; text-align:left; transition:all 0.2s;">
-        <span id="adheart-country-current-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Todos os países</span>
-        <svg id="adheart-country-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); transition:transform 0.2s ease; flex-shrink:0; margin-left:6px;">
-         <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-       </button>
-
-       <!-- Menu Dropdown Suspenso com Busca em Tempo Real -->
-       <div id="adheart-country-menu" class="custom-country-menu">
-        <!-- Campo de Busca com Lupa -->
-        <div style="position:relative; margin-bottom:8px;">
-         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-         </svg>
-         <input type="text" id="adheart-country-search" placeholder="Pesquisar país..." autocomplete="off" style="width:100%; padding:7px 10px 7px 30px; background:rgba(0,0,0,0.45); border:1px solid var(--border-subtle); border-radius:6px; color:#fff; font-size:0.82rem; outline:none; transition:border-color 0.2s;">
-        </div>
-
-        <!-- Lista Rolável dos Países -->
-        <div id="adheart-country-list" style="max-height:190px; overflow-y:auto; display:flex; flex-direction:column; gap:2px;">
-         <!-- Inserido dinamicamente via JS -->
-        </div>
-
-        <!-- Feedback Vazio caso nenhum país seja encontrado -->
-        <div id="adheart-country-empty" style="display:none; padding:12px 6px; text-align:center; font-size:0.78rem; color:var(--text-muted);">
-         Nenhum país encontrado
-        </div>
-       </div>
-      </div>
-
-      <!-- 5. Formato de Mídia -->
-      <div class="form-group" style="margin:0;">
-       <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px; display:block;">
-        Formato do Criativo:
-       </label>
-       <select id="adheart-media-type" style="width:100%; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; color:#fff; font-size:0.88rem;">
-        <option value="ALL" selected>Todos os Formatos</option>
-        <option value="IMAGE">–¼ Somente Imagem</option>
-        <option value="VIDEO">Somente Vídeo</option>
-       </select>
-      </div>
-
-      <!-- 6. Botão de Minerar -->
-      <div style="margin:0; display:flex; gap:8px;">
-       <button class="btn btn-primary" id="btn-adheart-search" type="button" style="flex:1; padding:10px 16px; font-weight:800; font-size:0.88rem; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-         <circle cx="11" cy="11" r="8"></circle>
-         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <span>Minerar Ofertas</span>
-       </button>
-       <button class="btn btn-outline" id="btn-adheart-reset" type="button" title="Resetar filtros para o padrão" style="padding:10px 12px;">
-        Resetar
-       </button>
-      </div>
+      <div class="mn-backdrop" id="mn-backdrop"></div>
      </div>
 
+     <div class="mn-overlay" id="mn-overlay" role="dialog" aria-modal="true" aria-label="Detalhes"></div>
+     <div class="mn-overlay" id="mn-overlay-searches" role="dialog" aria-modal="true" aria-label="Buscas automáticas"></div>
 
-    </div>
-
-    <!-- Barra de Estatísticas em Tempo Real -->
-    <div class="adheart-stats-bar" id="adheart-stats-bar">
-     <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-      <span style="font-size:0.86rem; color:#fff; font-weight:700;">
-         Resultados da Mineração:
-      </span>
-      <span class="badge-tag theme" id="adheart-count-offers" style="font-size:0.75rem;">
-       Carregando ofertas...
-      </span>
-      <span class="badge-tag blue" id="adheart-count-ads" style="font-size:0.75rem;">
-       Calculando anúncios...
-      </span>
-      <span class="badge-tag green" id="adheart-filter-summary" style="font-size:0.75rem;">
-       Filtro: Brasil • Ativos
-      </span>
-     </div>
-     <div style="font-size:0.78rem; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
-      <span style="width:8px; height:8px; border-radius:50%; background:#00f59b; display:inline-block;"></span>
-      <span>Base de demonstra&ccedil;&atilde;o: dados simulados (sem conex&atilde;o com a Meta Ad Library)</span>
-     </div>
-    </div>
-
-    <!-- ================= 2. FEED DE ANÚNCIOS MINERADOS (CARDS ADHEART) ================= -->
-    <div id="adheart-feed-container" class="adheart-feed-grid" style="margin-bottom:32px;">
-     <!-- Cards de Anúncios Renderizados Dinamicamente pelo JS -->
-    </div>
-
-    <!-- Modal / Visualizador de Todos os Anúncios da Mesma Fanpage -->
-    <div class="modal-overlay" id="modal-fanpage-ads" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); backdrop-filter:blur(8px); z-index:99999; align-items:center; justify-content:center; padding:20px;">
-     <div class="card" style="width:100%; max-width:960px; max-height:90vh; overflow-y:auto; border-color:var(--border-subtle); position:relative; box-shadow:0 20px 60px rgba(0,0,0,0.8); padding:26px;">
-      <button id="modal-fanpage-close" onclick="window.closeFanpageModal()" style="position:absolute; top:18px; right:18px; background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:1.5rem;" title="Fechar">&times;</button>
-      
-      <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:16px;">
-       <div id="modal-fanpage-avatar" class="adheart-avatar" style="width:48px; height:48px; font-size:1.25rem;">P</div>
-       <div>
-        <div style="display:flex; align-items:center; gap:10px;">
-         <h3 id="modal-fanpage-name" style="margin:0; font-size:1.3rem; font-weight:800; color:#fff;">Nome da Fanpage</h3>
-         <span class="badge-tag theme" id="modal-fanpage-badge">Fanpage Verificada</span>
-        </div>
-        <p id="modal-fanpage-meta" style="margin:4px 0 0 0; font-size:0.82rem; color:var(--text-muted);">
-         Analisando todos os anúncios vinculados a esta página
-        </p>
-       </div>
-      </div>
-
-      <!-- Grid de anúncios daquela Fanpage -->
-      <div id="modal-fanpage-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:18px;">
-       <!-- Inserido dinamicamente -->
-      </div>
-     </div>
-    </div>
 
     <!-- ================= 2. ESTÚDIO DE TRANSCRIÇÃO & REMODELAGEM DE CRIATIVOS COM IA ================= -->
     <div class="card mb-4" id="studio-transcription-remodel">
@@ -2820,7 +2659,7 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch (e) {}
 
   // Atualiza a URL com o hash correspondente sem recarregar a página
-  if (pushState) {
+  if (pushState && window.location.hash.replace('#', '').split('?')[0] !== stepKey) {
    try {
     history.replaceState(null, '', '#' + stepKey);
    } catch (e) {
@@ -2828,8 +2667,8 @@ document.addEventListener('DOMContentLoaded', () => {
    }
   }
 
-  if (stepKey === 'mineracao' && typeof window.filterAdheartAds === 'function') {
-   window.filterAdheartAds();
+  if (stepKey === 'mineracao' && typeof mnOpenHook === 'function') {
+   mnOpenHook();
   }
  }
  window.switchStep = switchStep;
@@ -2843,7 +2682,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
  // Listener para navegação por voltar/avançar no navegador ou troca de hash
  window.addEventListener('hashchange', () => {
-  const currentHash = window.location.hash.replace('#', '').trim();
+  const currentHash = window.location.hash.replace('#', '').split('?')[0].trim();
   if (currentHash && VALID_STEPS.includes(currentHash)) {
    switchStep(currentHash, false);
   }
@@ -2851,7 +2690,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
  // Restaura imediatamente a aba ativa no F5 ou abertura do app
  function restoreActiveStepOnLoad() {
-  const hash = window.location.hash ? window.location.hash.replace('#', '').trim() : '';
+  const hash = window.location.hash ? window.location.hash.replace('#', '').split('?')[0].trim() : '';
   const savedStep = localStorage.getItem(ACTIVE_STEP_KEY);
   let targetStep = 'nicho';
 
@@ -4203,1162 +4042,1301 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
  }
  attachSubnicheButtons();
 
- // ================= 3.1 MINERADOR DE OFERTAS ESTILO ADHEART & META ADS =================
-  const COUNTRY_OPTIONS = [
-  { code: 'ALL', name: 'Todos os países' },
-  { code: 'BR', name: 'Brasil' },
-  { code: 'US', name: 'Estados Unidos' },
-  { code: 'GB', name: 'Reino Unido' },
-  { code: 'CA', name: 'Canadá' },
-  { code: 'AU', name: 'Austrália' },
-  { code: 'DE', name: 'Alemanha' },
-  { code: 'FR', name: 'França' },
-  { code: 'ES', name: 'Espanha' }
- ];
+ // ================= 3.1 MINERADOR DE OFERTAS (DASHBOARD ESTILO ADHEART, DADOS REAIS) =================
+ var mnOpenHook = null;
+ (function minerDashboard() {
+  const $ = (id) => document.getElementById(id);
+  if (!$('mn-root')) return;
 
- const adheartKeywordInput = document.getElementById('adheart-keyword-input');
- const adheartMinAds = document.getElementById('adheart-min-ads');
- const adheartMinDays = document.getElementById('adheart-min-days');
- const adheartCountry = document.getElementById('adheart-country');
- const adheartMediaType = document.getElementById('adheart-media-type');
- const btnAdheartSearch = document.getElementById('btn-adheart-search');
- const btnAdheartReset = document.getElementById('btn-adheart-reset');
- const btnSyncAdheartNiche = document.getElementById('btn-sync-adheart-niche');
+  const STORE_KEY = 'cockpit_miner_ui';
+  const TOKEN_KEY = 'cockpit_api_token';
+  const PAGE = 30;
+  const NICHES = {
+   saude_emagrecimento: 'Saúde e emagrecimento', fitness: 'Fitness', beleza_estetica: 'Beleza e estética', moda: 'Moda', relacionamento: 'Relacionamento',
+   maternidade_infantil: 'Maternidade e infantil', terceira_idade: 'Terceira idade', educacao_concursos: 'Educação e concursos', idiomas: 'Idiomas',
+   financas_renda_extra: 'Finanças e renda extra', marketing_digital: 'Marketing digital', culinaria_receitas: 'Culinária e receitas',
+   artesanato_diy: 'Artesanato e DIY', casa_decoracao: 'Casa e decoração', pets: 'Pets', espiritualidade_religiao: 'Espiritualidade e religião',
+   desenvolvimento_pessoal: 'Desenvolvimento pessoal', tecnologia: 'Tecnologia', outro: 'Outro'
+  };
+  const FORMATS = {
+   pdf_ebook: 'PDF / e-book', curso_online: 'Curso online', mentoria: 'Mentoria', planner_imprimivel: 'Planner imprimível',
+   app_software: 'App / software', fisico: 'Produto físico', servico: 'Serviço', outro: 'Outro'
+  };
+  const PLACEMENTS = { FACEBOOK: 'Facebook', INSTAGRAM: 'Instagram', MESSENGER: 'Messenger', AUDIENCE_NETWORK: 'Audience Network' };
+  const PLAT_SHORT = { FACEBOOK: 'FB', INSTAGRAM: 'IG', MESSENGER: 'MS', AUDIENCE_NETWORK: 'AN' };
+  const MEDIA_LABEL = { ALL: 'Todos', IMAGE: 'Imagem', VIDEO: 'Vídeo' };
+  const SORTS = {
+   offers: [['score', 'Score'], ['activeAds', 'Anúncios ativos'], ['days', 'Dias no ar'], ['growth', 'Crescimento (7 dias)']],
+   ads: [['days', 'Dias no ar'], ['recent', 'Mais recentes'], ['collation', 'Mais repetidos'], ['score', 'Score da oferta']]
+  };
+  const DEFAULT_SORT = { offers: 'score', ads: 'recent' };
+  const FILTER_KEYS = ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'minAds', 'platform', 'priceMin', 'priceMax', 'niche', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId'];
+  const SCOPE = {
+   offers: ['country', 'mediaType', 'minDays', 'minAds', 'platform', 'priceMin', 'priceMax', 'niche', 'format', 'pageId'],
+   ads: ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'platform', 'niche', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId']
+  };
+  const CTRL = {
+   country: 'mn-f-country', mediaType: 'mn-f-media', minDays: 'mn-f-mindays', maxDays: 'mn-f-maxdays', minAds: 'mn-f-minads', platform: 'mn-f-platform',
+   priceMin: 'mn-f-pmin', priceMax: 'mn-f-pmax', niche: 'mn-f-niche', format: 'mn-f-format', startFrom: 'mn-f-from', startTo: 'mn-f-to',
+   cta: 'mn-f-cta', domain: 'mn-f-domain', pageId: 'mn-f-page'
+  };
+  const TEXT_CTRL = ['minDays', 'maxDays', 'minAds', 'priceMin', 'priceMax', 'domain', 'pageId'];
+  const ERR = {
+   unauthorized: 'Token de acesso inválido ou ausente.',
+   db_offline: 'O servidor está sem conexão com o banco de dados.',
+   miner_requires_app_token: 'O servidor está sem APP_TOKEN configurado; o Minerador exige o token.',
+   collect_not_configured: 'Coleta automática não configurada: defina APIFY_TOKEN no servidor.',
+   collect_daily_limit: 'Limite diário de anúncios da coleta atingido. Tente novamente amanhã.',
+   collect_already_running: 'Já existe uma coleta em andamento para esta busca.',
+   search_exists: 'Já existe uma busca igual a esta.',
+   ai_not_configured: 'IA não configurada no servidor (defina GEMINI_API_KEY).',
+   ai_daily_limit: 'Limite diário de classificações por IA atingido. Tente novamente amanhã.',
+   not_found: 'Não encontrado.',
+   invalid_q: 'Termo inválido (use de 2 a 100 caracteres).',
+   invalid_country: 'País inválido.',
+   invalid_media_type: 'Formato do criativo inválido.',
+   invalid_max_ads: 'Máximo de anúncios inválido (de 1 a 1000).',
+   invalid_days_range: 'O mínimo de dias é maior que o máximo.',
+   invalid_date_range: 'A data inicial é posterior à data final.',
+   invalid_price_range: 'O preço mínimo é maior que o máximo.'
+  };
 
- const adheartFeedContainer = document.getElementById('adheart-feed-container');
- const adheartCountOffers = document.getElementById('adheart-count-offers');
- const adheartCountAds = document.getElementById('adheart-count-ads');
- const adheartFilterSummary = document.getElementById('adheart-filter-summary');
+  const grid = $('mn-grid');
+  const statusBox = $('mn-status');
+  const sentinel = $('mn-sentinel');
+  const btnMore = $('mn-loadmore');
+  const selSort = $('mn-sort');
+  const inpQ = $('mn-q');
+  const chkInf = $('mn-infinite');
+  const filtersBox = $('mn-filters');
+  const backdrop = $('mn-backdrop');
+  const ovOffer = $('mn-overlay');
+  const ovSearches = $('mn-overlay-searches');
+  const ovAd = document.createElement('div');
+  ovAd.className = 'mn-overlay';
+  ovAd.setAttribute('role', 'dialog');
+  ovAd.setAttribute('aria-modal', 'true');
+  ovAd.setAttribute('aria-label', 'Detalhes do anúncio');
+  // Sobreposições no body: um ancestral com transform quebraria o position: fixed.
+  [ovOffer, ovSearches, ovAd].forEach((o) => document.body.appendChild(o));
 
- const modalFanpageAds = document.getElementById('modal-fanpage-ads');
- const modalFanpageName = document.getElementById('modal-fanpage-name');
- const modalFanpageAvatar = document.getElementById('modal-fanpage-avatar');
- const modalFanpageMeta = document.getElementById('modal-fanpage-meta');
- const modalFanpageGrid = document.getElementById('modal-fanpage-grid');
-
- const spyCopyInput = document.getElementById('spy-copy-input');
- const spyUrlInput = document.getElementById('spy-url-input');
- const spyDaysActive = document.getElementById('spy-days-active');
- const btnDeconstructOffer = document.getElementById('btn-deconstruct-offer');
- const deconstructPlaceholder = document.getElementById('deconstruct-placeholder');
- const deconstructContent = document.getElementById('deconstruct-content');
-
- const minerCreativeFile = document.getElementById('miner-creative-file');
- const btnUploadMinerAsset = document.getElementById('btn-upload-miner-asset');
- const minerVaultGrid = document.getElementById('miner-vault-grid');
- const minerVaultEmpty = document.getElementById('miner-vault-empty');
-
- // Base de Dados Robusta de Ofertas Mineradas Reais (Mercado Low Ticket Brasil)
- const adheartDatabase = [
-  // 1. Clube Mente Ativa 60+ (Nicho Idosos / Memória / Atividades Cognitivas)
-  {
-   id: 'ad_idosos_1',
-   pageName: 'Clube Mente Ativa 60+',
-   pageId: 'page_mente_ativa',
-   pageAvatar: 'MA',
-   pageVerified: true,
-   activeAdsCount: 14,
-   daysActive: 34,
-   startDate: '28 de Agosto de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: '100 ATIVIDADES PARA MEMÓRIA',
-   imageSubtitle: 'Letras Grandes • Para Imprimir • R$ 24,90',
-   headline: 'Caderno de 100 Atividades Cognitivas em PDF (Para Imprimir)',
-   primaryText: 'Mantenha a mente de quem você ama ativa, lúcida e saudável!\n\nVocê percebeu pequenos esquecimentos na rotina ou aquela sensação de ociosidade no dia a dia? Nosso caderno reúne 100 atividades lúdicas de raciocínio, caça-palavras nostálgicos e exercícios com letras grandes.\n\nEnvio imediato em PDF pelo WhatsApp/E-mail\nPode imprimir quantas vezes quiser\nAprovado por terapeutas ocupacionais\n\nGaranta o seu hoje por apenas R$ 24,90 no Pix!',
-   ctaText: 'Obter Oferta',
-   destinationUrl: 'https://pay.kiwify.com.br/mente-ativa-100-atividades',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 24,90',
-   nicheKeywords: ['idosos', 'atividades', 'memória', 'cognitiva', 'mente ativa', 'cérebro', 'jogos']
-  },
-  {
-   id: 'ad_idosos_2',
-   pageName: 'Clube Mente Ativa 60+',
-   pageId: 'page_mente_ativa',
-   pageAvatar: 'MA',
-   pageVerified: true,
-   activeAdsCount: 14,
-   daysActive: 28,
-   startDate: '03 de Setembro de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'VÍDEO: FOLHEANDO O CADERNO',
-   imageSubtitle: 'Demonstração real do PDF impresso na mesa',
-   headline: 'Veja por dentro o material mais elogiado por filhas e cuidadoras!',
-   primaryText: 'Veja como o material é simples de imprimir e aplicar em casa!\n\nFolheamos as páginas do Caderno Mente Ativa para você ver a clareza dos desenhos e o tamanho das letras. Diversão saudável que combate o isolamento e exercita a memória sem cansar.\n\nApenas R$ 24,90 no Pix (Acesso Vitalício).',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.kiwify.com.br/mente-ativa-100-atividades',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 24,90',
-   nicheKeywords: ['idosos', 'atividades', 'memória', 'vídeo', 'folheando']
-  },
-  {
-   id: 'ad_idosos_3',
-   pageName: 'Clube Mente Ativa 60+',
-   pageId: 'page_mente_ativa',
-   pageAvatar: 'MA',
-   pageVerified: true,
-   activeAdsCount: 14,
-   daysActive: 19,
-   startDate: '12 de Setembro de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: 'DESAFIO 30 DIAS DE LUCIDEZ',
-   imageSubtitle: '1 Atividade por Dia • R$ 24,90',
-   headline: 'Apenas 15 minutos por dia para exercitar o raciocínio e o foco!',
-   primaryText: 'Desafio de 30 dias para exercitar o cérebro sem sobrecarga.\n\nFichas diárias com desafios de palavras cruzadas, labirintos e jogos de atenção criados com carinho para a terceira idade.\n\nAdquira com valor promocional por R$ 24,90 no Pix.',
-   ctaText: 'Obter Oferta',
-   destinationUrl: 'https://pay.kiwify.com.br/mente-ativa-100-atividades',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 24,90',
-   nicheKeywords: ['idosos', 'memória', 'desafio', 'lucidez']
-  },
-
-  // 2. Vida & Longevidade Saudável (Caligrafia e Coordenação)
-  {
-   id: 'ad_idosos_4',
-   pageName: 'Vida & Longevidade Saudável',
-   pageId: 'page_vida_longevidade',
-   pageAvatar: 'VL',
-   pageVerified: false,
-   activeAdsCount: 9,
-   daysActive: 22,
-   startDate: '09 de Setembro de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: 'GUIA PRÁTICO DE CALIGRAFIA',
-   imageSubtitle: 'Firmeza nas mãos e traçados suaves • R$ 19,90',
-   headline: 'Treine a firmeza e caligrafia com traçados guiados em PDF',
-   primaryText: ' Exercício motor e relaxamento em um único caderno!\n\nLinhas pontilhadas e dinâmicas de coordenação motora fina preparadas para quem quer resgatar o prazer de escrever à mão.\n\nReceba em 1 minuto no seu e-mail por R$ 19,90.',
-   ctaText: 'Comprar Agora',
-   destinationUrl: 'https://pay.pepper.com.br/caligrafia-motora-idosos',
-   checkoutPlatform: 'Pepper',
-   productPrice: 'R$ 19,90',
-   nicheKeywords: ['idosos', 'caligrafia', 'coordenação motora', 'firmeza', 'escrita']
-  },
-  {
-   id: 'ad_idosos_5',
-   pageName: 'Vida & Longevidade Saudável',
-   pageId: 'page_vida_longevidade',
-   pageAvatar: 'VL',
-   pageVerified: false,
-   activeAdsCount: 9,
-   daysActive: 15,
-   startDate: '16 de Setembro de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'VÍDEO: TREINO DE TRAÇADOS EM CASA',
-   imageSubtitle: 'Exercício simples para coordenação motora',
-   headline: 'Veja a evolução na caligrafia com apenas 2 semanas de treino diário!',
-   primaryText: 'Treino guiado para resgatar a firmeza dos dedos e das mãos.\n\nPDF prático para imprimir e praticar no conforto da sala.\n\nApenas R$ 19,90 com acesso vitalício.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.pepper.com.br/caligrafia-motora-idosos',
-   checkoutPlatform: 'Pepper',
-   productPrice: 'R$ 19,90',
-   nicheKeywords: ['idosos', 'caligrafia', 'vídeo', 'coordenação']
-  },
-
-  // 3. Confeitaria Lucrativa Oficial (Recheios Sem Fogo / Bolos / Doces)
-  {
-   id: 'ad_confeitaria_1',
-   pageName: 'Confeitaria Lucrativa Oficial',
-   pageId: 'page_confeitaria_pro',
-   pageAvatar: 'CL',
-   pageVerified: true,
-   activeAdsCount: 18,
-   daysActive: 47,
-   startDate: '15 de Julho de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: '50 RECHEIOS QUE NÃO VÃO AO FOGO',
-   imageSubtitle: 'Ponto perfeito de bico • Faça em 5 minutos • R$ 27,90',
-   headline: 'Apostila Secreta: 50 Recheios Lucrativos que Não Vão ao Fogo',
-   primaryText: 'Ž‚ Cansada de perder horas na frente do fogão mexendo panela?\n\nDescubra as 50 receitas secretas de recheios estruturados, aveludados e prontos em 5 minutos na batedeira. Ponto firme para bolos altos e fatias perfeitas.\n\n”¥ De R$ 97 por apenas R$ 27,90 no Pix hoje!\nŽ Bônus: Planilha de Precificação Automática inclusa.',
-   ctaText: 'Obter Oferta',
-   destinationUrl: 'https://pay.hotmart.com/recheios-secretos-lucrativos',
-   checkoutPlatform: 'Hotmart',
-   productPrice: 'R$ 27,90',
-   nicheKeywords: ['confeitaria', 'bolos', 'recheios', 'doces', 'receitas', 'renda extra']
-  },
-  {
-   id: 'ad_confeitaria_2',
-   pageName: 'Confeitaria Lucrativa Oficial',
-   pageId: 'page_confeitaria_pro',
-   pageAvatar: 'CL',
-   pageVerified: true,
-   activeAdsCount: 18,
-   daysActive: 39,
-   startDate: '23 de Julho de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'CORTE DO BOLO COM RECHEIO FIRME',
-   imageSubtitle: 'Textura cremosa que não vaza na entrega',
-   headline: 'Veja a estrutura desse recheio que não vai ao fogo!',
-   primaryText: 'Olha o corte perfeito dessa fatia! Recheio aveludado que suporta transporte de delivery sem desmoronar.\n\nAprenda o método prático que já ajudou mais de 12.000 confeiteiras a lucrarem de casa.\n\nBaixe a apostila em PDF por R$ 27,90.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.hotmart.com/recheios-secretos-lucrativos',
-   checkoutPlatform: 'Hotmart',
-   productPrice: 'R$ 27,90',
-   nicheKeywords: ['confeitaria', 'vídeo', 'recheios', 'corte de bolo', 'receitas']
-  },
-  {
-   id: 'ad_confeitaria_3',
-   pageName: 'Confeitaria Lucrativa Oficial',
-   pageId: 'page_confeitaria_pro',
-   pageAvatar: 'CL',
-   pageVerified: true,
-   activeAdsCount: 18,
-   daysActive: 25,
-   startDate: '06 de Agosto de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: 'BOLOS NO POTE DE ALTO GIRO',
-   imageSubtitle: 'Custo de R$ 2,50 • Venda por R$ 10,00 • R$ 27,90',
-   headline: 'Como faturar R$ 150 por dia com potinhos gourmet na vizinhança',
-   primaryText: ' O produto com o menor custo de produção e mais rápida aceitação!\n\nReceitas de massas fofinhas e combinações de recheios que duram 5 dias na geladeira com textura impecável.\n\nAdquira a apostila completa com bônus por R$ 27,90.',
-   ctaText: 'Obter Oferta',
-   destinationUrl: 'https://pay.hotmart.com/recheios-secretos-lucrativos',
-   checkoutPlatform: 'Hotmart',
-   productPrice: 'R$ 27,90',
-   nicheKeywords: ['confeitaria', 'bolo no pote', 'doces', 'renda extra']
-  },
-
-  // 4. Amigurumi & Crochê do Zero (Artesanato / Fios / Receitas)
-  {
-   id: 'ad_croche_1',
-   pageName: 'Amigurumi & Crochê do Zero',
-   pageId: 'page_croche_brasil',
-   pageAvatar: 'AC',
-   pageVerified: true,
-   activeAdsCount: 11,
-   daysActive: 31,
-   startDate: '01 de Agosto de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: 'PACK 80 RECEITAS DE AMIGURUMI',
-   imageSubtitle: 'Passo a passo em português com fotos • R$ 24,90',
-   headline: 'Pack com 80 Modelos de Amigurumi Fáceis para Iniciantes',
-   primaryText: ' Pare de tentar decifrar receitas em inglês ou com termos difíceis!\n\nReunimos 80 receitas em português com contagem exata de pontos, fotos de cada ângulo e lista de fios recomendados. Faça bichinhos encantadores nas horas vagas!\n\nAdquira o acervo digital completo por R$ 24,90.',
-   ctaText: 'Obter Oferta',
-   destinationUrl: 'https://pay.kiwify.com.br/amigurumi-80-receitas',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 24,90',
-   nicheKeywords: ['crochê', 'amigurumi', 'artesanato', 'fios', 'costura', 'receitas']
-  },
-  {
-   id: 'ad_croche_2',
-   pageName: 'Amigurumi & Crochê do Zero',
-   pageId: 'page_croche_brasil',
-   pageAvatar: 'AC',
-   pageVerified: true,
-   activeAdsCount: 11,
-   daysActive: 21,
-   startDate: '11 de Agosto de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'VÍDEO: PONTO BAIXO E ANEL MÁGICO',
-   imageSubtitle: 'A técnica secreta que não deixa buracos na peça',
-   headline: 'Aprenda o segredo do acabamento invisível no amigurumi!',
-   primaryText: 'Veja como fazer o anel mágico perfeito sem repuxar o fio!\n\nVídeo e fichas ilustradas do nosso pack digital de 80 receitas em PDF.\n\nApenas R$ 24,90 no Pix com suporte a dúvidas.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.kiwify.com.br/amigurumi-80-receitas',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 24,90',
-   nicheKeywords: ['crochê', 'amigurumi', 'vídeo', 'anel mágico', 'artesanato']
-  },
-
-  // 5. Coluna Sem Dor em Casa (Saúde / Fisioterapia Low Ticket / Ciático)
-  {
-   id: 'ad_coluna_1',
-   pageName: 'Coluna Sem Dor em Casa',
-   pageId: 'page_coluna_sem_dor',
-   pageAvatar: 'CD',
-   pageVerified: true,
-   activeAdsCount: 15,
-   daysActive: 42,
-   startDate: '20 de Julho de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: 'ALÍVIO DO NERVO CIÁTICO EM 10 MIN',
-   imageSubtitle: '5 Alongamentos Suaves na Cama • R$ 19,90',
-   headline: 'Guia Ilustrado: 5 Alongamentos Rápidos para Aliviar o Ciático',
-   primaryText: 'š¨ Dor aguda descendo pela perna ou travamento na lombar?\n\nFaça estes 5 movimentos suaves no colchão da sua cama antes de levantar. Desenvolvido para descompactar a vértebra e aliviar a pressão no nervo ciático sem esforço pesado.\n\nMaterial em PDF de leitura rápida: R$ 19,90 no Pix.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.greenn.com.br/alivio-ciatico-em-casa',
-   checkoutPlatform: 'Greenn',
-   productPrice: 'R$ 19,90',
-   nicheKeywords: ['dor', 'coluna', 'ciático', 'alongamento', 'costas', 'saúde', 'lombar']
-  },
-  {
-   id: 'ad_coluna_2',
-   pageName: 'Coluna Sem Dor em Casa',
-   pageId: 'page_coluna_sem_dor',
-   pageAvatar: 'CD',
-   pageVerified: true,
-   activeAdsCount: 15,
-   daysActive: 36,
-   startDate: '26 de Julho de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'DESTRAVANDO A LOMBAR NO COLCHÃO',
-   imageSubtitle: 'Demonstração prática dos 5 movimentos suaves',
-   headline: 'Veja a fisioterapeuta demonstrando os alongamentos de alívio rápido!',
-   primaryText: 'Não faça remédios fortes antes de tentar a descompressão manual.\n\nAssista ao passo a passo que destrava as articulações da lombar em menos de 10 minutos.\n\nGuia digital completo por apenas R$ 19,90.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.greenn.com.br/alivio-ciatico-em-casa',
-   checkoutPlatform: 'Greenn',
-   productPrice: 'R$ 19,90',
-   nicheKeywords: ['dor', 'coluna', 'vídeo', 'alongamento', 'fisioterapia']
-  },
-
-  // 6. Rotina Leve & Organizada (Planner Digital / Dona de Casa)
-  {
-   id: 'ad_planner_1',
-   pageName: 'Rotina Leve & Organizada',
-   pageId: 'page_rotina_leve',
-   pageAvatar: 'RL',
-   pageVerified: false,
-   activeAdsCount: 8,
-   daysActive: 19,
-   startDate: '12 de Setembro de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: 'PLANNER DA DONA DE CASA 2026',
-   imageSubtitle: 'Cardápio Semanal + Limpeza sem Estresse • R$ 17,90',
-   headline: 'Planner Imprimível da Dona de Casa: Casa Limpa em 30 Minutos',
-   primaryText: 'Sua rotina em casa parece um caos que nunca acaba?\n\nOrganize o cardápio da semana, lista de compras e cronograma de limpeza rápida com fichas práticas prontas para imprimir. Chega de sobrecarga mental!\n\nBaixe agora por apenas R$ 17,90.',
-   ctaText: 'Obter Oferta',
-   destinationUrl: 'https://pay.kiwify.com.br/planner-dona-de-casa',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 17,90',
-   nicheKeywords: ['planner', 'organização', 'dona de casa', 'rotina', 'limpeza', 'família']
-  },
-  {
-   id: 'ad_planner_2',
-   pageName: 'Rotina Leve & Organizada',
-   pageId: 'page_rotina_leve',
-   pageAvatar: 'RL',
-   pageVerified: false,
-   activeAdsCount: 8,
-   daysActive: 14,
-   startDate: '17 de Setembro de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'ORGANIZANDO A SEMANA NO PLANNER',
-   imageSubtitle: 'Menos ansiedade e casa impecável em meia hora',
-   headline: 'Como economizei R$ 400 no mercado organizando o cardápio em PDF!',
-   primaryText: 'Veja como as tabelas de compras e cardápio reduzem o desperdício de comida e poupam seu tempo todos os dias.\n\nPlanner pronto para imprimir por R$ 17,90 no Pix.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.kiwify.com.br/planner-dona-de-casa',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 17,90',
-   nicheKeywords: ['planner', 'organização', 'vídeo', 'cardápio']
-  },
-
-  // 7. Alfabetização Divertida Kids (Pedagogia / Educação Infantil)
-  {
-   id: 'ad_pedagogia_1',
-   pageName: 'Alfabetização Divertida Kids',
-   pageId: 'page_alfa_kids',
-   pageAvatar: 'AK',
-   pageVerified: true,
-   activeAdsCount: 22,
-   daysActive: 58,
-   startDate: '05 de Julho de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: '200 ATIVIDADES DE ALFABETIZAÇÃO',
-   imageSubtitle: 'Método Fônico Ilustrado • 4 a 8 anos • R$ 29,90',
-   headline: 'Kit Completo com 200 Atividades Lúdicas de Alfabetização (PDF)',
-   primaryText: ' Ajude seu filho a aprender a ler e escrever com prazer, longe das telas!\n\nCaderno completo baseado em dinâmicas de sons, vogais coloridas e desafios progressivos que mantêm a criança concentrada e motivada.\n\n200 páginas prontas para imprimir\nAcesso imediato no WhatsApp\n\nApenas R$ 29,90 (Promoção desta semana).',
-   ctaText: 'Comprar Agora',
-   destinationUrl: 'https://pay.kiwify.com.br/kit-alfabetizacao-200-atividades',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 29,90',
-   nicheKeywords: ['criança', 'alfabetização', 'pedagogia', 'atividades infantis', 'leitura', 'escola']
-  },
-  {
-   id: 'ad_pedagogia_2',
-   pageName: 'Alfabetização Divertida Kids',
-   pageId: 'page_alfa_kids',
-   pageAvatar: 'AK',
-   pageVerified: true,
-   activeAdsCount: 22,
-   daysActive: 44,
-   startDate: '19 de Julho de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'CRIANÇA DE 5 ANOS LENDO PALAVRINHAS',
-   imageSubtitle: 'A magia do método fônico ilustrado em casa',
-   headline: 'Veja a alegria da Maitê lendo sua primeira frase completa!',
-   primaryText: 'Método fônico suave que transforma a alfabetização em uma brincadeira diária de 20 minutos.\n\nBaixe agora o material de 200 atividades por R$ 29,90.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.kiwify.com.br/kit-alfabetizacao-200-atividades',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 29,90',
-   nicheKeywords: ['criança', 'alfabetização', 'vídeo', 'educação']
-  },
-
-  // 8. Artesanato em Resina Pro (Artesanato / Joias / Decoração)
-  {
-   id: 'ad_resina_1',
-   pageName: 'Artesanato em Resina Pro',
-   pageId: 'page_resina_pro',
-   pageAvatar: 'RP',
-   pageVerified: true,
-   activeAdsCount: 12,
-   daysActive: 36,
-   startDate: '26 de Julho de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: 'GUIA PRÁTICO DE PEÇAS EM RESINA',
-   imageSubtitle: 'Joias, Chaveiros & Letras Cristalinas • R$ 27,90',
-   headline: 'Aprenda a criar peças de resina perfeitas sem bolhas em casa!',
-   primaryText: '’Ž Crie chaveiros, marca-páginas e joias brilhantes com baixo investimento inicial.\n\nApostila passo a passo com lista de moldes, proporção exata de catalisador e fornecedores de resina barata.\n\nBaixe o acervo em PDF por R$ 27,90 no Pix.',
-   ctaText: 'Obter Oferta',
-   destinationUrl: 'https://pay.hotmart.com/guia-resina-artesanato',
-   checkoutPlatform: 'Hotmart',
-   productPrice: 'R$ 27,90',
-   nicheKeywords: ['resina', 'artesanato', 'joias', 'chaveiros', 'epóxi', 'renda extra']
-  },
-  {
-   id: 'ad_resina_2',
-   pageName: 'Artesanato em Resina Pro',
-   pageId: 'page_resina_pro',
-   pageAvatar: 'RP',
-   pageVerified: true,
-   activeAdsCount: 12,
-   daysActive: 29,
-   startDate: '02 de Agosto de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'DESMOLDANDO PEÇA DE RESINA EM 4K',
-   imageSubtitle: 'O brilho perfeito sem lixar nem polir',
-   headline: 'O segredo da mistura sem microbolhas revelado em detalhes!',
-   primaryText: 'Olha a transparência cristalina dessa peça desmoldada!\n\nAprenda a técnica correta no nosso guia completo em PDF por R$ 27,90.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.hotmart.com/guia-resina-artesanato',
-   checkoutPlatform: 'Hotmart',
-   productPrice: 'R$ 27,90',
-   nicheKeywords: ['resina', 'vídeo', 'artesanato', 'desmoldando']
-  },
-
-  // 9. Pet Saudável em Casa (Cães / Biscoitos / Alimentação Natural)
-  {
-   id: 'ad_pet_1',
-   pageName: 'Pet Saudável em Casa',
-   pageId: 'page_pet_brasil',
-   pageAvatar: 'PB',
-   pageVerified: false,
-   activeAdsCount: 10,
-   daysActive: 24,
-   startDate: '07 de Agosto de 2026',
-   country: 'BR',
-   mediaType: 'IMAGE',
-   imageTitle: '50 PETISCOS NATURAIS PARA CÃES',
-   imageSubtitle: 'Receitas Rápidas no Forno ou Airfryer • R$ 19,90',
-   headline: 'Apostila Digital: 50 Petiscos Caseiros e Saudáveis para o seu Cachorro',
-   primaryText: ' Diga adeus aos petiscos industriais cheios de corantes e conservantes!\n\nReceitas aprovadas por veterinários com aveia, maçã, frango e cenoura que qualquer pessoa faz em 15 minutos.\n\nReceba o livro em PDF por R$ 19,90 no Pix.',
-   ctaText: 'Obter Oferta',
-   destinationUrl: 'https://pay.kiwify.com.br/petiscos-naturais-caes',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 19,90',
-   nicheKeywords: ['pet', 'cães', 'cachorro', 'petiscos', 'receitas', 'veterinário', 'saúde']
-  },
-  {
-   id: 'ad_pet_2',
-   pageName: 'Pet Saudável em Casa',
-   pageId: 'page_pet_brasil',
-   pageAvatar: 'PB',
-   pageVerified: false,
-   activeAdsCount: 10,
-   daysActive: 19,
-   startDate: '12 de Agosto de 2026',
-   country: 'BR',
-   mediaType: 'VIDEO',
-   imageTitle: 'FAZENDO BISCOITINHO NA AIRFRYER',
-   imageSubtitle: 'Pronto em 12 minutos e o cachorro ama!',
-   headline: 'Veja como é fácil fazer o petisco saudável que ajuda na digestão!',
-   primaryText: 'Receita rápida de 3 ingredientes que custa menos de R$ 5 para fazer uma fornada inteira!\n\nGuia digital completo por R$ 19,90.',
-   ctaText: 'Saiba Mais',
-   destinationUrl: 'https://pay.kiwify.com.br/petiscos-naturais-caes',
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 19,90',
-   nicheKeywords: ['pet', 'cães', 'vídeo', 'petiscos', 'airfryer']
+  // ---------- utilitários ----------
+  function h(tag, cls, text) {
+   const e = document.createElement(tag);
+   if (cls) e.className = cls;
+   if (text !== undefined && text !== null) e.textContent = String(text);
+   return e;
   }
- ];
-
- // Armazém dinâmico para pesquisas livres
- window.dynamicAdStore = window.dynamicAdStore || [];
-
- function generateDynamicAdheartAds(keyword, minAds, minDays, selectedCountry = "ALL") {
-  const cleanWord = keyword.replace(/[^\w\s\u00C0-\u00FF]/g, '').trim() || 'Infoproduto Low Ticket';
-  const adsCount = Math.max(minAds, 12);
-  const days = Math.max(minDays, 28);
-  const pSlug = cleanWord.toLowerCase().replace(/\s+/g, '_');
-  const pId = `page_dyn_${pSlug}`;
-  const pName = `Academia ${cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1)} Pro`;
-  const avatar = cleanWord.substring(0, 2).toUpperCase();
-
-  const ad1 = {
-   id: `ad_dyn_${pSlug}_1`,
-   pageName: pName,
-   pageId: pId,
-   pageAvatar: avatar,
-   pageVerified: true,
-   activeAdsCount: adsCount,
-   daysActive: days,
-   startDate: 'Ativo há ' + days + ' dias',
-   country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
-   mediaType: 'IMAGE',
-   imageTitle: `MÉTODO 100% PRÁTICO EM PDF: ${cleanWord.toUpperCase()}`,
-   imageSubtitle: `Apostila Completa • Passo a Passo Ilustrado • R$ 24,90`,
-   headline: `Domine ${cleanWord} com o Guia Definitivo em PDF (Acesso Vitalício)`,
-   primaryText: `Descubra o método testado e comprovado para dominar ${cleanWord} de forma rápida e sem complicação!\n\nConteúdo prático, direto ao ponto e desenvolvido para quem quer resultados reais no conforto de casa.\n\nEnvio imediato em PDF\nAcesso vitalício e suporte a dúvidas\n\nGaranta sua vaga promocional por apenas R$ 24,90 no Pix!`,
-   ctaText: 'Obter Oferta',
-   destinationUrl: `https://pay.kiwify.com.br/guia-${cleanWord.toLowerCase().replace(/\s+/g, '-')}`,
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 24,90',
-   nicheKeywords: [cleanWord.toLowerCase()]
-  };
-
-  const ad2 = {
-   id: `ad_dyn_${pSlug}_2`,
-   pageName: pName,
-   pageId: pId,
-   pageAvatar: avatar,
-   pageVerified: true,
-   activeAdsCount: adsCount,
-   daysActive: Math.max(days - 6, 14),
-   startDate: 'Ativo há ' + Math.max(days - 6, 14) + ' dias',
-   country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
-   mediaType: 'VIDEO',
-   imageTitle: `VÍDEO: VEJA O MATERIAL POR DENTRO`,
-   imageSubtitle: `Demonstração real do conteúdo e bônus`,
-   headline: `Veja na prática como funciona o método de ${cleanWord}!`,
-   primaryText: `Veja por dentro da apostila e entenda por que tantas pessoas estão recomendando este método.\n\nMaterial completo para baixar e imprimir quando quiser por R$ 24,90.`,
-   ctaText: 'Saiba Mais',
-   destinationUrl: `https://pay.kiwify.com.br/guia-${cleanWord.toLowerCase().replace(/\s+/g, '-')}`,
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 24,90',
-   nicheKeywords: [cleanWord.toLowerCase(), 'vídeo']
-  };
-
-  const ad3 = {
-   id: `ad_dyn_${pSlug}_3`,
-   pageName: pName,
-   pageId: pId,
-   pageAvatar: avatar,
-   pageVerified: true,
-   activeAdsCount: adsCount,
-   daysActive: Math.max(days - 11, 8),
-   startDate: 'Ativo há ' + Math.max(days - 11, 8) + ' dias',
-   country: (selectedCountry && selectedCountry !== 'ALL' ? selectedCountry : 'BR'),
-   mediaType: 'IMAGE',
-   imageTitle: `PACK BÔNUS EXCLUSIVO DE ${cleanWord.toUpperCase()}`,
-   imageSubtitle: `Planilhas & Fichas Práticas Inclusas • R$ 24,90`,
-   headline: `Leve o Guia Completo de ${cleanWord} + 2 Bônus Exclusivos hoje!`,
-   primaryText: `Ž Oferta Especial da Semana: Além do material principal de ${cleanWord}, receba 2 fichas de apoio e checklist prático.\n\nApenas R$ 24,90 no Pix (Envio Imediato).`,
-   ctaText: 'Garantir Vaga',
-   destinationUrl: `https://pay.kiwify.com.br/guia-${cleanWord.toLowerCase().replace(/\s+/g, '-')}`,
-   checkoutPlatform: 'Kiwify',
-   productPrice: 'R$ 24,90',
-   nicheKeywords: [cleanWord.toLowerCase(), 'bônus']
-  };
-
-  // Salva no armazém dinâmico
-  window.dynamicAdStore = window.dynamicAdStore.filter(a => a.pageId !== pId);
-  window.dynamicAdStore.push(ad1, ad2, ad3);
-
-  return [ad1, ad2, ad3];
- }
-
- function getAllRegisteredAds() {
-  return [...adheartDatabase, ...(window.dynamicAdStore || [])];
- }
-
- function renderAdheartFeed(ads) {
-  if (!adheartFeedContainer) return;
-  if (!ads || ads.length === 0) {
-   adheartFeedContainer.innerHTML = `
-    <div style="grid-column:1/-1; text-align:center; padding:48px 24px; border:2px dashed var(--border-subtle); border-radius:12px; background:rgba(0,0,0,0.2);">
-     <div style="font-size:2.4rem; margin-bottom:10px;">”</div>
-     <h4 style="color:#fff; margin:0 0 6px 0; font-size:1.1rem;">Nenhum anúncio encontrado para estes filtros restritos</h4>
-     <p style="color:var(--text-muted); font-size:0.86rem; max-width:440px; margin:0 auto 16px auto;">
-      Tente diminuir a exigência de anúncios ativos (ex: para 1+, 2+ ou 3+) ou reduzir o filtro de dias rodando para expandir os resultados.
-     </p>
-     <button class="btn btn-primary btn-sm" onclick="window.resetAdheartFilters()">
-      Restaurar Filtros Padrão
-     </button>
-    </div>
-   `;
-   return;
+  function btn(label, cls, onClick) {
+   const b = h('button', 'mn-btn' + (cls ? ' ' + cls : ''), label);
+   b.type = 'button';
+   if (onClick) b.addEventListener('click', onClick);
+   return b;
   }
-
-  adheartFeedContainer.innerHTML = ads.map(ad => `
-   <div class="adheart-card" data-ad-id="${ad.id}">
-    <!-- Header da Fanpage & Badges de Escala -->
-    <div class="adheart-card-header">
-     <div class="adheart-page-info">
-      <div class="adheart-avatar">${ad.pageAvatar}</div>
-      <div>
-       <div style="display:flex; align-items:center; gap:6px;">
-        <strong style="color:#fff; font-size:0.9rem;">${ad.pageName}</strong>
-        ${ad.pageVerified ? '<span style="color:#38bdf8; font-size:0.75rem;" title="Página Verificada">“</span>' : ''}
-       </div>
-       <button class="btn-filter-page" onclick="window.openFanpageModal('${ad.pageId}', '${ad.pageName}')" style="background:transparent; border:none; color:var(--theme-accent); font-size:0.75rem; padding:0; cursor:pointer; text-decoration:underline;">
-        Ver anúncios desta página ”
-       </button>
-      </div>
-     </div>
-     <div style="text-align:right;">
-      <div class="adheart-scale-badge">
-       ”¥ ${ad.activeAdsCount} Anúncios Ativos
-      </div>
-     </div>
-    </div>
-
-    <!-- Barra de Metadados: Dias Rodando & País -->
-    <div style="padding:8px 16px; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:space-between; font-size:0.75rem; border-bottom:1px solid rgba(255,255,255,0.04);">
-     <span style="color:var(--theme-accent); font-weight:700;">
-      ⏱ Rodando há ${ad.daysActive} dias
-     </span>
-     <span style="color:var(--text-muted);">
-      Início: ${ad.startDate} • ‡§‡· Brasil
-     </span>
-    </div>
-
-    <!-- Mídia do Criativo (Render em Tela) -->
-    <div class="adheart-media-box">
-     <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; background:radial-gradient(circle at center, #132420 0%, #080d0d 100%); text-align:center; position:relative;">
-      <!-- Badge de Formato -->
-      <div style="position:absolute; top:12px; left:12px;">
-       <span class="badge-tag ${ad.mediaType === 'VIDEO' ? 'purple' : 'green'}" style="font-size:0.72rem; font-weight:800;">
-        ${ad.mediaType === 'VIDEO' ? 'VÍDEO ATIVO' : '–¼ IMAGEM HD'}
-       </span>
-      </div>
-
-      <!-- Overlay de Ações Rápidas no Criativo -->
-      <div class="adheart-media-overlay">
-       <button class="adheart-media-btn" onclick="window.downloadAdCreative('${ad.id}')" title="Baixar criativo em alta definição PNG">
-        ⬇ Baixar Criativo
-       </button>
-       <button class="adheart-media-btn" onclick="window.sendToCreativeStudio('${ad.id}')" title="Usar no Criador de Criativos">
-        Ž¨ Usar
-       </button>
-      </div>
-
-      <div style="width:64px; height:64px; border-radius:14px; background:rgba(0,245,155,0.1); border:1px solid rgba(0,245,155,0.3); display:flex; align-items:center; justify-content:center; color:var(--theme-accent); margin-bottom:12px; font-size:1.8rem;">
-       ${ad.mediaType === 'VIDEO' ? '▶' : '“„'}
-      </div>
-      <strong style="color:#fff; font-size:1.05rem; max-width:280px; line-height:1.3; margin-bottom:6px;">
-       ${ad.imageTitle}
-      </strong>
-      <span style="color:var(--theme-accent); font-size:0.82rem; font-weight:700;">
-       ${ad.imageSubtitle}
-      </span>
-     </div>
-    </div>
-
-    <!-- Box de Headline do Anúncio -->
-    <div class="adheart-ad-headline">
-     <strong>${ad.headline}</strong>
-     <span class="badge-tag blue" style="font-size:0.72rem; white-space:nowrap;">${ad.checkoutPlatform}</span>
-    </div>
-
-    <!-- Box de Copy Completa -->
-    <div class="adheart-copy-box">
-     <div style="white-space:pre-line; margin-bottom:10px;">${ad.primaryText}</div>
-     <div style="text-align:right;">
-      <button class="btn btn-outline btn-sm" onclick="window.copyAdCopy('${ad.id}', this)" style="padding:4px 10px; font-size:0.76rem;">
-       Copiar Copy
-      </button>
-     </div>
-    </div>
-
-    <!-- Rodapé e Ações Estratégicas -->
-    <div class="adheart-actions">
-     <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:180px;">
-      <a href="${ad.destinationUrl}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.76rem; padding:6px 10px; display:inline-flex; align-items:center; gap:5px; text-decoration:none;" title="Ver Página de Vendas do Concorrente">
-       <span>”— Página / Checkout</span>
-      </a>
-      <button class="btn btn-sm btn-outline" onclick="window.saveAdToVault('${ad.id}')" style="font-size:0.76rem; padding:6px 10px;" title="Salvar no Cofre do Projeto">
-        Salvar
-      </button>
-     </div>
-     <button class="btn btn-sm btn-primary" onclick="window.deconstructThisAd('${ad.id}')" style="font-size:0.78rem; padding:6px 14px; font-weight:700;">
-      Remodelar Copy com IA
-     </button>
-    </div>
-   </div>
-  `).join('');
- }
-
- function filterAdheartAds() {
-  const rawKeyword = adheartKeywordInput ? adheartKeywordInput.value.trim().toLowerCase() : '';
-  const minAds = parseInt(adheartMinAds ? adheartMinAds.value : '5', 10) || 1;
-  const minDays = parseInt(adheartMinDays ? adheartMinDays.value : '10', 10) || 0;
-  const country = (countryInputHidden ? countryInputHidden.value : (adheartCountry ? adheartCountry.value : 'ALL')) || 'ALL';
-  const mediaType = adheartMediaType ? adheartMediaType.value : 'ALL';
-
-  const pool = getAllRegisteredAds();
-
-  let results = pool.filter(ad => {
-   // 1. Filtro de Anúncios Ativos
-   if (ad.activeAdsCount < minAds) return false;
-
-   // 2. Filtro de Dias Rodando
-   if (ad.daysActive < minDays) return false;
-
-   // 3. Filtro de País
-   if (country !== 'ALL' && ad.country !== country) return false;
-
-   // 4. Filtro de Formato
-   if (mediaType !== 'ALL' && ad.mediaType !== mediaType) return false;
-
-   // 5. Filtro de Palavra-chave (se preenchida)
-   if (rawKeyword) {
-    const textMatch = ad.headline.toLowerCase().includes(rawKeyword) ||
-             ad.primaryText.toLowerCase().includes(rawKeyword) ||
-             ad.pageName.toLowerCase().includes(rawKeyword) ||
-             ad.nicheKeywords.some(k => k.toLowerCase().includes(rawKeyword));
-    if (!textMatch) return false;
+  function safeUrl(u) {
+   if (typeof u !== 'string' || !u || u.length > 4000) return '';
+   try {
+    const x = new URL(u);
+    return (x.protocol === 'http:' || x.protocol === 'https:') ? x.href : '';
+   } catch (e) { return ''; }
+  }
+  function linkEl(url, text, cls) {
+   const u = safeUrl(url);
+   if (!u) return h('span', cls, text);
+   const a = h('a', cls, text);
+   a.href = u;
+   a.target = '_blank';
+   a.rel = 'noopener noreferrer';
+   return a;
+  }
+  const fmtInt = (n) => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString('pt-BR') : '—';
+  const fmtMoney = (n) => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
+  const fmtScore = (n) => (typeof n === 'number' && isFinite(n)) ? (Number.isInteger(n) ? String(n) : n.toFixed(1)) : '—';
+  function fmtDate(sec) {
+   const n = Number(sec);
+   return n > 0 ? new Date(n * 1000).toLocaleDateString('pt-BR') : '—';
+  }
+  function fmtDateTime(v) {
+   const t = v ? new Date(v).getTime() : NaN;
+   return isFinite(t) ? new Date(t).toLocaleString('pt-BR') : '—';
+  }
+  function ago(v) {
+   const t = typeof v === 'number' ? v : new Date(v).getTime();
+   if (!isFinite(t)) return '—';
+   const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+   if (s < 60) return 'menos de 1 min';
+   if (s < 3600) return Math.floor(s / 60) + ' min';
+   if (s < 86400) return Math.floor(s / 3600) + ' h';
+   return Math.floor(s / 86400) + ' d';
+  }
+  const nicheLabel = (id) => NICHES[id] || (id ? String(id).replace(/_/g, ' ') : '—');
+  const formatLabel = (id) => FORMATS[id] || (id ? String(id).replace(/_/g, ' ') : '—');
+  const platLabel = (id) => id === 'unknown' ? 'Desconhecido' : (id ? String(id).charAt(0).toUpperCase() + String(id).slice(1) : '—');
+  function countryLabel(code) {
+   try { return code + ' — ' + new Intl.DisplayNames(['pt-BR'], { type: 'region' }).of(code); } catch (e) { return code; }
+  }
+  function errMsg(status, code) {
+   if (code && ERR[code]) return ERR[code];
+   if (status === 0) return 'Sem conexão com o servidor.';
+   if (status === 401) return ERR.unauthorized;
+   if (status === 429) return 'Limite atingido. Tente novamente mais tarde.';
+   if (status === 503) return 'Serviço indisponível no servidor.';
+   return 'Erro inesperado' + (code ? ' (' + String(code).slice(0, 60) + ')' : '') + '.';
+  }
+  async function call(path, opts) {
+   let r;
+   try { r = await apiFetch(path, opts); } catch (e) {
+    if (e && e.name === 'AbortError') throw e;
+    return { status: 0, ok: false, data: null };
    }
-
+   let data = null;
+   try { data = await r.json(); } catch (e) {}
+   return { status: r.status, ok: r.ok && !!data && data.ok !== false, data };
+  }
+  function jsonOpts(method, body) {
+   return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+  }
+  let toastTimer = null;
+  function toast(msg) {
+   let t = document.getElementById('mn-toast');
+   if (!t) { t = h('div', 'mn-toast'); t.id = 'mn-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+   t.textContent = msg;
+   t.style.display = 'block';
+   clearTimeout(toastTimer);
+   toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2400);
+  }
+  function askToken() {
+   const tk = prompt('Informe o token de acesso (APP_TOKEN) do servidor:');
+   if (tk === null) return false;
+   try { localStorage.setItem(TOKEN_KEY, tk.trim()); } catch (e) {}
+   if (typeof initDatabaseSync === 'function') initDatabaseSync();
    return true;
-  });
+  }
 
-  // Se a busca textual não encontrou nada na base, gera dinamicamente para o termo
-  if (results.length === 0) {
-   const dynamicAds = generateDynamicAdheartAds(rawKeyword || 'Oferta Escalada', minAds, minDays, country);
-   results = dynamicAds.filter(ad => {
-    if (mediaType !== 'ALL' && ad.mediaType !== mediaType) return false;
-    return true;
+  // ---------- estado ----------
+  function emptyFilters() { const f = {}; FILTER_KEYS.forEach((k) => { f[k] = ''; }); return f; }
+  function defaults() { return { view: 'offers', sort: 'score', q: '', infinite: true, f: emptyFilters() }; }
+  let st = defaults();
+  let stats = null;
+  let filterOpts = null;
+  let filtersAt = 0;
+
+  function sanitizeFilter(k, v) {
+   if (typeof v !== 'string') return '';
+   v = v.trim();
+   if (!v) return '';
+   switch (k) {
+    case 'country': return /^[A-Za-z]{2,3}$/.test(v) ? v.toUpperCase() : '';
+    case 'placements': {
+     const parts = Array.from(new Set(v.split(',').map((x) => x.trim().toUpperCase()).filter((x) => PLACEMENTS[x])));
+     return parts.join(',');
+    }
+    case 'mediaType': return ['IMAGE', 'VIDEO', 'CAROUSEL'].includes(v.toUpperCase()) ? v.toUpperCase() : '';
+    case 'minDays': case 'maxDays': case 'minAds': return /^\d{1,6}$/.test(v) ? String(parseInt(v, 10)) : '';
+    case 'priceMin': case 'priceMax': return /^\d{1,7}(\.\d{1,2})?$/.test(v) ? v : '';
+    case 'platform': return /^[a-z0-9_]{1,30}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
+    case 'niche': case 'format': return /^[a-z_]{1,40}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
+    case 'startFrom': case 'startTo': return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
+    case 'cta': return (v.length <= 500 && !/[\u0000-\u001f]/.test(v)) ? v : '';
+    case 'domain': return /^[a-z0-9.-]{1,253}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
+    case 'pageId': return /^[A-Za-z0-9_.-]{1,100}$/.test(v) ? v : '';
+    default: return '';
+   }
+  }
+  function stateToQuery() {
+   const p = new URLSearchParams();
+   if (st.view !== 'offers') p.set('view', st.view);
+   if (st.sort !== DEFAULT_SORT[st.view]) p.set('sort', st.sort);
+   if (st.q) p.set('q', st.q);
+   FILTER_KEYS.forEach((k) => { if (st.f[k]) p.set(k, st.f[k]); });
+   if (!st.infinite) p.set('inf', '0');
+   return p.toString();
+  }
+  function queryToState(qs) {
+   const p = new URLSearchParams(qs || '');
+   const s = defaults();
+   if (p.get('view') === 'ads') s.view = 'ads';
+   s.sort = DEFAULT_SORT[s.view];
+   const so = p.get('sort');
+   if (so && SORTS[s.view].some((x) => x[0] === so)) s.sort = so;
+   s.q = (p.get('q') || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
+   FILTER_KEYS.forEach((k) => { s.f[k] = sanitizeFilter(k, p.get(k) || ''); });
+   s.infinite = p.get('inf') !== '0';
+   return s;
+  }
+  function persist() {
+   const qs = stateToQuery();
+   try { localStorage.setItem(STORE_KEY, qs); } catch (e) {}
+   try {
+    if ($('pane-step-mineracao').classList.contains('active')) history.replaceState(null, '', '#mineracao' + (qs ? '?' + qs : ''));
+   } catch (e) {}
+  }
+  function hashQuery() {
+   const hsh = window.location.hash.replace('#', '');
+   return hsh.indexOf('mineracao?') === 0 ? hsh.slice('mineracao?'.length) : null;
+  }
+  function activeCount() {
+   return SCOPE[st.view].filter((k) => st.f[k] && !(k === 'mediaType' && st.view === 'offers' && st.f[k] === 'CAROUSEL')).length;
+  }
+  function hasAnyFilter() { return activeCount() > 0 || !!st.q; }
+
+  // ---------- controles ----------
+  function setOptions(sel, entries, current, firstLabel) {
+   sel.replaceChildren();
+   const o0 = document.createElement('option');
+   o0.value = '';
+   o0.textContent = firstLabel || 'Todos';
+   sel.appendChild(o0);
+   const seenV = new Set(['']);
+   entries.forEach(([v, label]) => {
+    if (seenV.has(v)) return;
+    seenV.add(v);
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = label;
+    sel.appendChild(o);
+   });
+   if (current && !seenV.has(current)) {
+    const o = document.createElement('option');
+    o.value = current;
+    o.textContent = current;
+    sel.appendChild(o);
+   }
+   sel.value = current || '';
+  }
+  function populateFilterOptions() {
+   const fo = filterOpts || {};
+   setOptions($('mn-f-country'), (fo.countries || []).map((c) => [c, countryLabel(c)]), st.f.country);
+   setOptions($('mn-f-platform'), (fo.checkoutPlatforms || []).map((c) => [c, platLabel(c)]), st.f.platform);
+   setOptions($('mn-f-niche'), (fo.niches || []).map((c) => [c, nicheLabel(c)]), st.f.niche);
+   setOptions($('mn-f-format'), Object.keys(FORMATS).map((c) => [c, FORMATS[c]]), st.f.format);
+   setOptions($('mn-f-cta'), (fo.ctas || []).map((c) => [c, c]), st.f.cta);
+   const box = $('mn-f-placements');
+   box.replaceChildren();
+   const selected = new Set(st.f.placements ? st.f.placements.split(',') : []);
+   const list = (fo.placements && fo.placements.length) ? fo.placements.filter((p) => PLACEMENTS[p]) : Object.keys(PLACEMENTS);
+   list.forEach((p) => {
+    const lab = document.createElement('label');
+    const c = document.createElement('input');
+    c.type = 'checkbox';
+    c.value = p;
+    c.checked = selected.has(p);
+    c.addEventListener('change', onFilterChange);
+    lab.appendChild(c);
+    lab.appendChild(document.createTextNode(PLACEMENTS[p]));
+    box.appendChild(lab);
+   });
+  }
+  function syncControls() {
+   inpQ.value = st.q;
+   chkInf.checked = st.infinite;
+   FILTER_KEYS.forEach((k) => {
+    if (k === 'placements') return;
+    const el = $(CTRL[k]);
+    if (!el) return;
+    if (el.tagName === 'SELECT' && st.f[k] && !Array.prototype.some.call(el.options, (o) => o.value === st.f[k])) {
+     const o = document.createElement('option');
+     o.value = st.f[k];
+     o.textContent = k === 'niche' ? nicheLabel(st.f[k]) : k === 'platform' ? platLabel(st.f[k]) : st.f[k];
+     el.appendChild(o);
+    }
+    el.value = st.f[k];
+   });
+   const sel = new Set(st.f.placements ? st.f.placements.split(',') : []);
+   $('mn-f-placements').querySelectorAll('input').forEach((c) => { c.checked = sel.has(c.value); });
+   refreshChrome();
+  }
+  function readControls() {
+   st.q = inpQ.value.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
+   st.infinite = chkInf.checked;
+   FILTER_KEYS.forEach((k) => {
+    if (k === 'placements') return;
+    const el = $(CTRL[k]);
+    if (el) st.f[k] = sanitizeFilter(k, el.value);
+   });
+   const marks = [];
+   $('mn-f-placements').querySelectorAll('input').forEach((c) => { if (c.checked) marks.push(c.value); });
+   st.f.placements = sanitizeFilter('placements', marks.join(','));
+  }
+  function buildSortOptions() {
+   selSort.replaceChildren();
+   SORTS[st.view].forEach(([v, label]) => {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = label;
+    selSort.appendChild(o);
+   });
+   selSort.value = st.sort;
+  }
+  function libraryUrl() {
+   const p = new URLSearchParams({
+    active_status: 'active', ad_type: 'all', country: st.f.country || 'ALL', q: st.q || '',
+    search_type: 'keyword_unordered', media_type: ({ IMAGE: 'image', VIDEO: 'video' })[st.f.mediaType] || 'all'
+   });
+   return 'https://www.facebook.com/ads/library/?' + p.toString();
+  }
+  function refreshChrome() {
+   const n = activeCount();
+   $('mn-btn-filters').textContent = 'Filtros (' + n + ')';
+   $('mn-fcount').textContent = '(' + n + ')';
+   $('mn-btn-library').href = libraryUrl();
+   $('mn-tab-offers').setAttribute('aria-selected', String(st.view === 'offers'));
+   $('mn-tab-ads').setAttribute('aria-selected', String(st.view === 'ads'));
+   filtersBox.querySelectorAll('[data-scope]').forEach((el) => {
+    const off = el.getAttribute('data-scope') !== st.view;
+    if (el.tagName === 'OPTION') { el.disabled = off; return; }
+    el.classList.toggle('mn-dim', off);
+   });
+   $('mn-f-presets').querySelectorAll('button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(st.f.minDays === b.dataset.days));
    });
   }
 
-  // Atualiza contadores do banner
-  const totalOffers = results.length;
-  const totalActiveAds = results.reduce((acc, curr) => acc + curr.activeAdsCount, 0);
-
-  if (adheartCountOffers) adheartCountOffers.textContent = `${totalOffers} Ofertas Escaladas`;
-  if (adheartCountAds) adheartCountAds.textContent = `${totalActiveAds} Anúncios Ativos`;
-  if (adheartFilterSummary) {
-      const cObj = COUNTRY_OPTIONS.find(c => c.code === country);
-   const cLabel = cObj ? cObj.name : 'Todos os países';
-   adheartFilterSummary.textContent = `${cLabel} • Mín. ${minAds} anúncios • ${minDays}+ dias rodando`;
-  }
-
-  renderAdheartFeed(results);
- }
-
- // Ações de cada Card do AdHeart
- window.copyAdCopy = function(adId, btn) {
-  const allAds = getAllRegisteredAds();
-  const ad = allAds.find(a => a.id === adId) || { primaryText: 'Copy do anúncio Low Ticket' };
-  navigator.clipboard.writeText(ad.primaryText).then(() => {
-   const originalText = btn.innerHTML;
-   btn.innerHTML = 'Copiada!';
-   btn.style.color = 'var(--theme-accent)';
-   setTimeout(() => {
-    btn.innerHTML = originalText;
-    btn.style.color = '';
-   }, 2000);
-  }).catch(() => {
-   alert('Copy copiada para a área de transferência!');
-  });
- };
-
- // Download Real de Criativo em Alta Definição (1080x1080 PNG) via HTML5 Canvas
- window.downloadAdCreative = function(adId) {
-  const allAds = getAllRegisteredAds();
-  const ad = allAds.find(a => a.id === adId) || adheartDatabase[0];
-
-  try {
-   const canvas = document.createElement('canvas');
-   canvas.width = 1080;
-   canvas.height = 1080;
-   const ctx = canvas.getContext('2d');
-
-   // 1. Fundo com Gradiente Escuro Premium
-   const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1080);
-   bgGrad.addColorStop(0, '#06130e');
-   bgGrad.addColorStop(0.5, '#0b2018');
-   bgGrad.addColorStop(1, '#020605');
-   ctx.fillStyle = bgGrad;
-   ctx.fillRect(0, 0, 1080, 1080);
-
-   // 2. Moldura Sutil Neon Verde
-   ctx.strokeStyle = 'rgba(0, 245, 155, 0.35)';
-   ctx.lineWidth = 14;
-   ctx.strokeRect(20, 20, 1040, 1040);
-
-   // 3. Header do Anúncio (Simulação Facebook Ads / Instagram)
-   ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-   ctx.beginPath();
-   ctx.roundRect(50, 50, 980, 130, 20);
-   ctx.fill();
-
-   // Avatar Circular
-   ctx.fillStyle = '#00f59b';
-   ctx.beginPath();
-   ctx.arc(120, 115, 44, 0, Math.PI * 2);
-   ctx.fill();
-
-   ctx.fillStyle = '#020d08';
-   ctx.font = 'bold 36px sans-serif';
-   ctx.textAlign = 'center';
-   ctx.textBaseline = 'middle';
-   ctx.fillText(ad.pageAvatar || 'LT', 120, 115);
-
-   // Nome da Fanpage
-   ctx.fillStyle = '#ffffff';
-   ctx.font = 'bold 36px sans-serif';
-   ctx.textAlign = 'left';
-   ctx.fillText(ad.pageName || 'Oferta Low Ticket', 185, 100);
-
-   ctx.fillStyle = '#9ca3af';
-   ctx.font = '24px sans-serif';
-   ctx.fillText('Patrocinado • ‡§‡· Brasil • ' + (ad.activeAdsCount || 10) + ' anúncios ativos', 185, 140);
-
-   // Badge de Escala no Topo Direito
-   ctx.fillStyle = '#f59e0b';
-   ctx.font = 'bold 24px sans-serif';
-   ctx.textAlign = 'right';
-   ctx.fillText('”¥ ESCALADO HÁ ' + (ad.daysActive || 25) + ' DIAS', 1000, 118);
-
-   // 4. Card Central do Criativo (Mockup)
-   ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-   ctx.strokeStyle = 'rgba(0, 245, 155, 0.45)';
-   ctx.lineWidth = 4;
-   ctx.beginPath();
-   ctx.roundRect(80, 220, 920, 520, 30);
-   ctx.fill();
-   ctx.stroke();
-
-   // Ícone Central do Formato
-   ctx.fillStyle = 'rgba(0, 245, 155, 0.15)';
-   ctx.beginPath();
-   ctx.arc(540, 360, 80, 0, Math.PI * 2);
-   ctx.fill();
-
-   ctx.fillStyle = '#00f59b';
-   ctx.font = 'bold 70px sans-serif';
-   ctx.textAlign = 'center';
-   ctx.fillText(ad.mediaType === 'VIDEO' ? '▶' : '“„', 540, 380);
-
-   // Título do Criativo
-   ctx.fillStyle = '#ffffff';
-   ctx.font = '900 44px sans-serif';
-   const words = (ad.imageTitle || 'MATERIAL EXCLUSIVO EM PDF').split(' ');
-   let mid = Math.ceil(words.length / 2);
-   let line1 = words.slice(0, mid).join(' ');
-   let line2 = words.slice(mid).join(' ');
-   ctx.fillText(line1, 540, 500);
-   if (line2) ctx.fillText(line2, 540, 560);
-
-   // Subtítulo e Preço
-   ctx.fillStyle = '#00f59b';
-   ctx.font = 'bold 34px sans-serif';
-   ctx.fillText(ad.imageSubtitle || ('Apenas ' + (ad.productPrice || 'R$ 24,90')), 540, 640);
-
-   // 5. Headline de Gancho
-   ctx.fillStyle = '#e5e7eb';
-   ctx.font = '600 30px sans-serif';
-   ctx.fillText('"' + (ad.headline || 'Método validado para imprimir') + '"', 540, 800);
-
-   // 6. Botão Call-To-Action estilo Anúncio
-   ctx.fillStyle = '#00f59b';
-   ctx.beginPath();
-   ctx.roundRect(160, 860, 760, 110, 25);
-   ctx.fill();
-
-   ctx.fillStyle = '#03140e';
-   ctx.font = '900 38px sans-serif';
-   ctx.textAlign = 'center';
-   ctx.fillText(ad.ctaText ? ad.ctaText.toUpperCase() + ' ” ' + (ad.productPrice || 'R$ 24,90') : 'GARANTIR ACESSO IMEDIATO', 540, 930);
-
-   // 7. Rodapé de Origem
-   ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-   ctx.font = '22px sans-serif';
-   ctx.fillText('Minerado no Cockpit Low Ticket Master • ' + (ad.checkoutPlatform || 'Kiwify'), 540, 1025);
-
-   // Dispara o download automático do PNG
-   const link = document.createElement('a');
-   const safeName = (ad.imageTitle || 'criativo')
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '_')
-    .replace(/_+/g, '_')
-    .substring(0, 30);
-   link.download = `criativo_${safeName}_1080x1080.png`;
-   link.href = canvas.toDataURL('image/png');
-   document.body.appendChild(link);
-   link.click();
-   document.body.removeChild(link);
-
-   alert(`Criativo HD baixado com sucesso!\n\nArquivo salvo: criativo_${safeName}_1080x1080.png (Resolução 1080x1080 HD).`);
-  } catch (err) {
-   console.error('Erro ao gerar criativo:', err);
-   alert(`⬇ Download do Criativo "${ad.imageTitle}" concluído.`);
-  }
- };
-
- window.sendToCreativeStudio = function(adId) {
-  const allAds = getAllRegisteredAds();
-  const ad = allAds.find(a => a.id === adId);
-  if (!ad) return;
-
-  if (ad.mediaType === 'VIDEO') {
-   switchStep('video');
-   const vScript = document.getElementById('vid-prompt-input');
-   if (vScript) vScript.value = ad.primaryText;
-   alert(`Criativo de vídeo "${ad.pageName}" enviado para o Estúdio de Vídeo!`);
-  } else {
-   switchStep('criativos');
-   const headlineInput = document.getElementById('img-headline-input');
-   if (headlineInput) headlineInput.value = ad.headline;
-   alert(`Criativo de imagem "${ad.pageName}" enviado para o Estúdio de Imagem!`);
-  }
- };
-
-  // ================= SELETOR DE PAÍSES CUSTOMIZADO COM BUSCA EM TEMPO REAL =================
-
- const countryInputHidden = document.getElementById('adheart-country');
- const countryBtn = document.getElementById('adheart-country-btn');
- const countryCurrentText = document.getElementById('adheart-country-current-text');
- const countryArrow = document.getElementById('adheart-country-arrow');
- const countryMenu = document.getElementById('adheart-country-menu');
- const countrySearch = document.getElementById('adheart-country-search');
- const countryList = document.getElementById('adheart-country-list');
- const countryEmpty = document.getElementById('adheart-country-empty');
-
- function renderCountryOptions(filterQuery = '') {
-  if (!countryList) return;
-  const cleanQuery = filterQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const currentSelected = countryInputHidden ? countryInputHidden.value : 'ALL';
-
-  const filtered = COUNTRY_OPTIONS.filter(item => {
-   if (!cleanQuery) return true;
-   const normalizedName = item.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-   return normalizedName.includes(cleanQuery);
-  });
-
-  if (filtered.length === 0) {
-   countryList.innerHTML = '';
-   if (countryEmpty) countryEmpty.style.display = 'block';
-   return;
-  }
-
-  if (countryEmpty) countryEmpty.style.display = 'none';
-  countryList.innerHTML = filtered.map(item => {
-   const isSelected = item.code === currentSelected;
-   return `
-    <div class="custom-country-item ${isSelected ? 'active' : ''}" data-country-code="${item.code}">
-     <span>${item.name}</span>
-     ${isSelected ? '<span style="font-size:0.75rem; color:var(--theme-accent); font-weight:800;">“</span>' : ''}
-    </div>
-   `;
-  }).join('');
-
-  countryList.querySelectorAll('.custom-country-item').forEach(el => {
-   el.addEventListener('click', () => {
-    const code = el.getAttribute('data-country-code');
-    selectCountry(code);
-   });
-  });
- }
-
- function selectCountry(code) {
-  const selectedItem = COUNTRY_OPTIONS.find(c => c.code === code) || COUNTRY_OPTIONS[0];
-  if (countryInputHidden) {
-   countryInputHidden.value = selectedItem.code;
-  }
-  if (countryCurrentText) {
-   countryCurrentText.textContent = selectedItem.name;
-  }
-  renderCountryOptions(countrySearch ? countrySearch.value : '');
-  closeCountryMenu();
-  filterAdheartAds();
- }
-
- function openCountryMenu() {
-  if (!countryMenu) return;
-  countryMenu.style.display = 'block';
-  if (countryBtn) countryBtn.setAttribute('aria-expanded', 'true');
-  if (countryArrow) countryArrow.style.transform = 'rotate(180deg)';
-  if (countrySearch) {
-   countrySearch.value = '';
-   renderCountryOptions('');
-   setTimeout(() => countrySearch.focus(), 60);
-  }
- }
-
- function closeCountryMenu() {
-  if (!countryMenu) return;
-  countryMenu.style.display = 'none';
-  if (countryBtn) countryBtn.setAttribute('aria-expanded', 'false');
-  if (countryArrow) countryArrow.style.transform = 'rotate(0deg)';
- }
-
- if (countryBtn) {
-  countryBtn.addEventListener('click', (e) => {
-   e.stopPropagation();
-   if (countryMenu && countryMenu.style.display === 'block') {
-    closeCountryMenu();
+  // ---------- indicadores e KPIs ----------
+  function renderIndicators() {
+   const box = $('mn-indicators');
+   box.replaceChildren();
+   if (!stats) return;
+   const mk = (cls, text) => {
+    const e = h('span', 'mn-ind ' + cls);
+    e.appendChild(h('span', 'mn-ind-dot'));
+    e.appendChild(h('span', '', text));
+    box.appendChild(e);
+   };
+   const c = stats.collect || {};
+   if (c.configured) {
+    const ns = Number(c.activeSearches) || 0;
+    mk('on', 'Coleta automática: ' + (c.lastRunAt ? 'última há ' + ago(c.lastRunAt) : 'ainda sem coletas')
+     + ' · hoje ' + fmtInt(c.todayAds) + '/' + fmtInt(c.dailyLimit) + ' anúncios · ' + ns + (ns === 1 ? ' busca ativa' : ' buscas ativas'));
    } else {
-    openCountryMenu();
+    mk('warn', 'Coleta automática: não configurada (defina APIFY_TOKEN no servidor)');
+   }
+   mk(stats.lastIngestAt ? 'on' : '', stats.lastIngestAt ? 'Extensão: última captura há ' + ago(stats.lastIngestAt) : 'Extensão: sem capturas');
+  }
+  function setKpis(skeleton) {
+   $('mn-kpis').querySelectorAll('.mn-kpi').forEach((k) => {
+    const v = k.querySelector('[data-v]');
+    const s = k.querySelector('[data-s]');
+    const kind = k.dataset.kpi;
+    if (skeleton || !stats) {
+     v.classList.add('mn-skel');
+     if (!stats) v.textContent = '0000';
+     return;
+    }
+    v.classList.remove('mn-skel');
+    if (kind === 'ads') { v.textContent = fmtInt(stats.activeAds); s.textContent = fmtInt(stats.activeOffers) + ' ofertas ativas'; }
+    if (kind === 'scaled') { v.textContent = fmtInt(stats.scaledOffers); s.textContent = 'de ' + fmtInt(stats.activeOffers) + ' ofertas ativas'; }
+    if (kind === 'new') { v.textContent = fmtInt(stats.newAds24h); s.textContent = 'vistos pela 1ª vez em 24 h'; }
+    if (kind === 'niches') {
+     const n = filterOpts && Array.isArray(filterOpts.niches) ? filterOpts.niches.length : (stats.topNiches || []).length;
+     v.textContent = fmtInt(n);
+     const top = (stats.topNiches || [])[0];
+     s.textContent = top ? 'top: ' + nicheLabel(top.id) + ' (' + top.count + ')' : 'sem nichos classificados';
+    }
+   });
+  }
+  let statsReady = Promise.resolve();
+  function loadStats() {
+   setKpis(true);
+   statsReady = (async () => {
+    const r = await call('/api/miner/stats');
+    if (r.ok) { stats = r.data; } else { stats = null; }
+    setKpis(false);
+    if (!r.ok) {
+     $('mn-kpis').querySelectorAll('[data-v]').forEach((v) => { v.classList.remove('mn-skel'); v.textContent = '—'; });
+    }
+    renderIndicators();
+   })();
+   return statsReady;
+  }
+  async function loadFilterOptions(force) {
+   if (!force && filterOpts && Date.now() - filtersAt < 60000) return;
+   const r = await call('/api/miner/filters');
+   if (r.ok) {
+    filterOpts = r.data;
+    filtersAt = Date.now();
+    populateFilterOptions();
+    setKpis(false);
+   }
+  }
+
+  // ---------- mídia e cards ----------
+  function fallbackEl(label, initial) {
+   const f = h('div', 'mn-fallback');
+   f.appendChild(h('b', '', (initial || '?').charAt(0).toUpperCase()));
+   f.appendChild(h('span', '', label || 'Criativo indisponível'));
+   return f;
+  }
+  function imgEl(src, onFail) {
+   const img = document.createElement('img');
+   img.loading = 'lazy';
+   img.decoding = 'async';
+   img.referrerPolicy = 'no-referrer';
+   img.alt = '';
+   img.addEventListener('error', onFail);
+   img.src = src;
+   return img;
+  }
+  function mediaBox(ad, big, onOpen) {
+   const box = h('div', 'mn-media' + (big ? ' big' : ''));
+   const initial = (ad.pageName || ad.domain || ad.landingDomain || '?');
+   const imgs = (ad.images || []).map(safeUrl).filter(Boolean);
+   const vids = (ad.videos || []).filter((v) => v && typeof v === 'object')
+    .map((v) => ({ src: safeUrl(v.hd) || safeUrl(v.sd), poster: safeUrl(v.preview) })).filter((v) => v.src);
+   // O fallback troca so o conteudo do criativo; o chip de score (filho do mesmo quadro) continua no lugar.
+   const clearMedia = () => box.querySelectorAll(':scope > img, :scope > video, :scope > .mn-play, :scope > .mn-pager, :scope > .mn-fallback').forEach((n) => n.remove());
+   const showFallback = (msg) => { clearMedia(); box.insertBefore(fallbackEl(msg, initial), box.firstChild); };
+   if (vids.length) {
+    const poster = vids[0].poster || imgs[0] || '';
+    if (poster) box.appendChild(imgEl(poster, () => { const p = box.querySelector('img'); if (p) p.replaceWith(fallbackEl('Prévia indisponível', initial)); }));
+    else box.appendChild(fallbackEl('Vídeo', initial));
+    const play = h('button', 'mn-play', '▶');
+    play.type = 'button';
+    play.setAttribute('aria-label', 'Reproduzir vídeo');
+    play.addEventListener('click', (e) => {
+     e.stopPropagation();
+     const v = document.createElement('video');
+     v.controls = true;
+     v.autoplay = true;
+     v.playsInline = true;
+     v.preload = 'auto';
+     v.addEventListener('error', () => showFallback('Vídeo indisponível (a URL pode ter expirado)'));
+     clearMedia();
+     box.insertBefore(v, box.firstChild);
+     v.src = vids[0].src;
+    });
+    box.appendChild(play);
+    return box;
+   }
+   if (imgs.length) {
+    let idx = 0;
+    const show = () => {
+     const n = imgEl(imgs[idx], () => { if (n.parentNode === box) n.replaceWith(fallbackEl('Criativo indisponível (a URL pode ter expirado)', initial)); });
+     const old = box.querySelector(':scope > img, :scope > .mn-fallback');
+     if (old) old.replaceWith(n); else box.insertBefore(n, box.firstChild);
+     if (pageLabel) pageLabel.textContent = (idx + 1) + '/' + imgs.length;
+    };
+    let pageLabel = null;
+    if (imgs.length > 1) {
+     const pager = h('div', 'mn-pager');
+     const prev = h('button', '', '‹'); prev.type = 'button'; prev.setAttribute('aria-label', 'Anterior');
+     const next = h('button', '', '›'); next.type = 'button'; next.setAttribute('aria-label', 'Próximo');
+     pageLabel = h('span', '', '1/' + imgs.length);
+     prev.addEventListener('click', (e) => { e.stopPropagation(); idx = (idx - 1 + imgs.length) % imgs.length; show(); });
+     next.addEventListener('click', (e) => { e.stopPropagation(); idx = (idx + 1) % imgs.length; show(); });
+     pager.append(prev, pageLabel, next);
+     box.appendChild(pager);
+    }
+    show();
+    if (onOpen) { box.style.cursor = 'pointer'; box.addEventListener('click', onOpen); }
+    return box;
+   }
+   box.appendChild(fallbackEl('Sem criativo disponível', initial));
+   return box;
+  }
+  function badge(text, cls) { return h('span', 'mn-badge' + (cls ? ' ' + cls : ''), text); }
+  function metric(label, value, cls) {
+   const m = h('div', 'mn-metric');
+   m.appendChild(h('span', '', label));
+   m.appendChild(h('b', cls || '', value));
+   return m;
+  }
+  function drawSpark(canvas, pts) {
+   const ctx = canvas.getContext('2d');
+   if (!ctx || pts.length < 2) return;
+   const w = canvas.width, hh = canvas.height;
+   const vals = pts.map((p) => Number(p.activeAds) || 0);
+   const max = Math.max.apply(null, vals), min = Math.min.apply(null, vals);
+   const span = Math.max(max - min, 1);
+   let col = '#00f59b';
+   try { col = getComputedStyle(document.documentElement).getPropertyValue('--theme-accent').trim() || col; } catch (e) {}
+   ctx.clearRect(0, 0, w, hh);
+   ctx.lineWidth = 2;
+   ctx.strokeStyle = col;
+   ctx.lineJoin = 'round';
+   ctx.beginPath();
+   vals.forEach((v, i) => {
+    const x = 3 + (w - 6) * (i / (vals.length - 1));
+    const y = hh - 4 - (hh - 8) * ((v - min) / span);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+   });
+   ctx.stroke();
+  }
+  function offerCard(o) {
+   const card = h('article', 'mn-card');
+   card.dataset.domain = o.domain;
+   const sample = (o.sampleAds || [])[0];
+   const media = mediaBox({ images: sample && sample.image ? [sample.image] : [], videos: [], pageName: o.domain }, false, () => openOffer(o.domain, o));
+   media.appendChild(h('span', 'mn-score', 'Score ' + fmtScore(o.score)));
+   card.appendChild(media);
+   const body = h('div', 'mn-card-body');
+   body.appendChild(h('h3', 'mn-title', o.domain));
+   const names = o.pageNames || [];
+   if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
+   const badges = h('div', 'mn-badges');
+   if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') badges.appendChild(badge(platLabel(o.checkout.platform), 'accent'));
+   if (o.checkout && typeof o.checkout.priceMin === 'number') badges.appendChild(badge('a partir de ' + fmtMoney(o.checkout.priceMin), 'amber'));
+   if (o.ai && o.ai.niche) badges.appendChild(badge(nicheLabel(o.ai.niche)));
+   if (badges.childNodes.length) body.appendChild(badges);
+   const g = Number(o.growth7d) || 0;
+   const metrics = h('div', 'mn-metrics');
+   metrics.appendChild(metric('Anúncios ativos', fmtInt(o.activeAds)));
+   metrics.appendChild(metric('Criativos distintos', fmtInt(o.distinctCreatives)));
+   metrics.appendChild(metric('Dias no ar', fmtInt(o.maxDaysRunning)));
+   metrics.appendChild(metric('Crescimento 7 d', (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '● ') + g, g > 0 ? 'mn-up' : g < 0 ? 'mn-down' : ''));
+   body.appendChild(metrics);
+   const pts = o.sparkline || [];
+   if (pts.length >= 2) {
+    const cv = h('canvas', 'mn-spark');
+    cv.width = 240; cv.height = 30;
+    cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', 'Anúncios ativos nos últimos 14 dias');
+    body.appendChild(cv);
+    drawSpark(cv, pts);
+   } else {
+    body.appendChild(h('div', 'mn-sub', 'Sem histórico de 14 dias ainda'));
+   }
+   const act = h('div', 'mn-actions');
+   act.appendChild(btn('Ver oferta', 'primary sm', () => openOffer(o.domain, o)));
+   act.appendChild(btn('Anúncios desta oferta', 'sm', () => { st.f.domain = o.domain; setView('ads'); }));
+   body.appendChild(act);
+   card.appendChild(body);
+   return card;
+  }
+  function daysOf(ad) {
+   if (typeof ad.daysRunning === 'number') return ad.daysRunning;
+   return Math.max(0, Math.floor((Date.now() / 1000 - Number(ad.startDate || 0)) / 86400));
+  }
+  function libraryAdUrl(ad) {
+   return /^[0-9A-Za-z_-]{1,40}$/.test(String(ad.adArchiveId || '')) ? 'https://www.facebook.com/ads/library/?id=' + encodeURIComponent(ad.adArchiveId) : '';
+  }
+  function adText(ad) { return [ad.title, ad.body].filter(Boolean).join('\n\n'); }
+  async function copyText(text) {
+   try {
+    await navigator.clipboard.writeText(text);
+    return true;
+   } catch (e) {
+    try {
+     const ta = document.createElement('textarea');
+     ta.value = text;
+     ta.style.position = 'fixed'; ta.style.opacity = '0';
+     document.body.appendChild(ta);
+     ta.select();
+     const ok = document.execCommand('copy');
+     ta.remove();
+     return ok;
+    } catch (e2) { return false; }
+   }
+  }
+  function platIcons(ad) {
+   const w = h('span', 'mn-plats');
+   (ad.platforms || []).forEach((p) => { if (PLAT_SHORT[p]) { const s = h('span', 'mn-plat', PLAT_SHORT[p]); s.title = PLACEMENTS[p]; w.appendChild(s); } });
+   return w;
+  }
+  function adCard(ad) {
+   const card = h('article', 'mn-card');
+   card.dataset.ad = ad.adArchiveId;
+   const head = h('div', 'mn-card-body');
+   head.style.flex = '0 0 auto';
+   const ah = h('div', 'mn-adhead');
+   ah.appendChild(h('div', 'mn-avatar', (ad.pageName || '?').trim().charAt(0).toUpperCase() || '?'));
+   const info = h('div', 'mn-adhead-info');
+   const nm = h('strong', '', ad.pageName || 'Página sem nome');
+   nm.title = ad.pageName || '';
+   info.appendChild(nm);
+   info.appendChild(h('small', '', (ad.isActive ? 'Ativo há ' : 'Rodou por ') + daysOf(ad) + ' dias'));
+   ah.append(info, platIcons(ad));
+   head.appendChild(ah);
+   card.appendChild(head);
+   card.appendChild(mediaBox(ad, false, () => openAd(ad)));
+   const body = h('div', 'mn-card-body');
+   if (ad.body) {
+    const p = h('p', 'mn-text', ad.body);
+    body.appendChild(p);
+    if (ad.body.length > 140 || ad.body.split('\n').length > 3) {
+     const more = h('button', 'mn-more', 'ver mais');
+     more.type = 'button';
+     more.addEventListener('click', () => { const o = p.classList.toggle('open'); more.textContent = o ? 'ver menos' : 'ver mais'; });
+     body.appendChild(more);
+    }
+   }
+   if (ad.title) body.appendChild(h('h4', 'mn-headline', ad.title));
+   if (ad.ctaText) body.appendChild(h('span', 'mn-cta', ad.ctaText));
+   if (ad.landingDomain) body.appendChild(h('div', 'mn-sub', ad.landingDomain));
+   const badges = h('div', 'mn-badges');
+   if (ad.collationCount > 1) badges.appendChild(badge(ad.collationCount + ' anúncios com este criativo', 'accent'));
+   const of = ad.offer;
+   if (of) {
+    if (typeof of.score === 'number') badges.appendChild(badge('Score ' + fmtScore(of.score)));
+    if (of.checkoutPlatform && of.checkoutPlatform !== 'unknown') badges.appendChild(badge(platLabel(of.checkoutPlatform)));
+    if (typeof of.priceMin === 'number') badges.appendChild(badge(fmtMoney(of.priceMin), 'amber'));
+    if (of.niche) badges.appendChild(badge(nicheLabel(of.niche)));
+   }
+   if (badges.childNodes.length) body.appendChild(badges);
+   const act = h('div', 'mn-actions');
+   const lib = libraryAdUrl(ad);
+   if (lib) act.appendChild(linkEl(lib, 'Ver na Biblioteca', 'mn-btn sm'));
+   if (ad.landingDomain) act.appendChild(btn('Ver oferta', 'sm', () => openOffer(ad.landingDomain, null)));
+   act.appendChild(btn('Copiar texto', 'sm', async () => { toast((await copyText(adText(ad))) ? 'Texto copiado' : 'Não foi possível copiar'); }));
+   body.appendChild(act);
+   card.appendChild(body);
+   return card;
+  }
+
+  // ---------- modais ----------
+  const openStack = [];
+  let focusBefore = null;
+  function lockScroll() { document.body.style.overflow = openStack.length ? 'hidden' : ''; }
+  function openModal(ov, narrow) {
+   ov.replaceChildren();
+   const m = h('div', 'mn-modal' + (narrow ? ' narrow' : ''));
+   const x = h('button', 'mn-x', '✕');
+   x.type = 'button';
+   x.setAttribute('aria-label', 'Fechar');
+   x.addEventListener('click', () => closeModal(ov));
+   m.appendChild(x);
+   ov.appendChild(m);
+   if (!openStack.length) focusBefore = document.activeElement;
+   if (openStack.indexOf(ov) < 0) openStack.push(ov);
+   ov.classList.add('open');
+   ov.scrollTop = 0;
+   lockScroll();
+   x.focus();
+   return m;
+  }
+  const closers = new Map();
+  function closeModal(ov) {
+   const i = openStack.indexOf(ov);
+   if (i < 0) return;
+   openStack.splice(i, 1);
+   ov.classList.remove('open');
+   ov.replaceChildren();
+   const c = closers.get(ov);
+   if (c) c();
+   lockScroll();
+   if (!openStack.length && focusBefore && focusBefore.focus) { try { focusBefore.focus(); } catch (e) {} }
+  }
+  [ovOffer, ovSearches, ovAd].forEach((ov) => ov.addEventListener('mousedown', (e) => { if (e.target === ov) closeModal(ov); }));
+  document.addEventListener('keydown', (e) => {
+   if (e.key === 'Escape') {
+    if (openStack.length) { e.preventDefault(); closeModal(openStack[openStack.length - 1]); return; }
+    if (filtersBox.classList.contains('open')) closeDrawer();
+    return;
+   }
+   if (e.key === 'Tab' && openStack.length) {
+    const ov = openStack[openStack.length - 1];
+    const f = Array.prototype.filter.call(ov.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea,video[controls]'), (el) => el.offsetParent !== null);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    else if (!ov.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
    }
   });
- }
 
- if (countrySearch) {
-  countrySearch.addEventListener('click', (e) => e.stopPropagation());
-  countrySearch.addEventListener('input', (e) => {
-   renderCountryOptions(e.target.value);
-  });
- }
+  function box(title) {
+   const b = h('div', 'mn-box');
+   if (title) b.appendChild(h('h4', '', title));
+   return b;
+  }
+  function kv(pairs) {
+   const dl = h('dl', 'mn-kv');
+   pairs.forEach(([k, v]) => {
+    dl.appendChild(h('dt', '', k));
+    const dd = h('dd');
+    if (v instanceof Node) dd.appendChild(v); else dd.textContent = (v === null || v === undefined || v === '') ? '—' : String(v);
+    dl.appendChild(dd);
+   });
+   return dl;
+  }
 
- document.addEventListener('click', (e) => {
-  if (countryMenu && countryMenu.style.display === 'block') {
-   const isInside = countryMenu.contains(e.target) || (countryBtn && countryBtn.contains(e.target));
-   if (!isInside) {
-    closeCountryMenu();
+  // Modal da oferta
+  let offerChart = null;
+  closers.set(ovOffer, () => { if (offerChart) { offerChart.destroy(); offerChart = null; } offerSeq++; });
+  let offerSeq = 0;
+  async function openOffer(domain, preset) {
+   const m = openModal(ovOffer, false);
+   const my = ++offerSeq;
+   const head = h('div', 'mn-mhead');
+   head.appendChild(h('h3', '', domain));
+   m.appendChild(head);
+   const content = h('div');
+   content.style.cssText = 'display:flex;flex-direction:column;gap:16px;min-width:0';
+   const loading = h('div', 'mn-box');
+   loading.appendChild(h('div', 'mn-skel', 'Carregando oferta…'));
+   loading.firstChild.style.height = '120px';
+   content.appendChild(loading);
+   m.appendChild(content);
+   const r = await call('/api/miner/offers/' + encodeURIComponent(domain));
+   if (my !== offerSeq || !ovOffer.classList.contains('open')) return;
+   content.replaceChildren();
+   if (!r.ok) {
+    const e = h('div', 'mn-state err');
+    e.appendChild(h('h3', '', 'Não foi possível abrir a oferta'));
+    e.appendChild(h('p', '', errMsg(r.status, r.data && r.data.error)));
+    content.appendChild(e);
+    return;
    }
+   const d = r.data;
+   const ads = d.ads || [];
+   const snaps = d.snapshots || [];
+   const last = snaps[snaps.length - 1];
+   const o = preset || {};
+   const badges = h('div', 'mn-badges');
+   if (typeof o.score === 'number') badges.appendChild(badge('Score ' + fmtScore(o.score), 'accent'));
+   const activeAds = typeof o.activeAds === 'number' ? o.activeAds : ads.filter((a) => a.isActive).length;
+   badges.appendChild(badge(fmtInt(activeAds) + ' anúncios ativos'));
+   badges.appendChild(badge(fmtInt(typeof o.distinctCreatives === 'number' ? o.distinctCreatives : (last ? last.distinctCreatives : null)) + ' criativos distintos'));
+   badges.appendChild(badge(fmtInt(typeof o.maxDaysRunning === 'number' ? o.maxDaysRunning : Math.max.apply(null, ads.map(daysOf).concat([0]))) + ' dias no ar'));
+   if (typeof o.growth7d === 'number') badges.appendChild(badge('Crescimento 7 d: ' + (o.growth7d > 0 ? '+' : '') + o.growth7d));
+   head.appendChild(badges);
+
+   const chartBox = box('Últimos 30 dias');
+   if (snaps.length && typeof Chart !== 'undefined') {
+    const wrap = h('div', 'mn-chart');
+    const cv = document.createElement('canvas');
+    cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', 'Anúncios ativos e criativos distintos nos últimos 30 dias');
+    wrap.appendChild(cv);
+    chartBox.appendChild(wrap);
+    content.appendChild(chartBox);
+    const cs = getComputedStyle(document.documentElement);
+    const accent = cs.getPropertyValue('--theme-accent').trim() || '#00f59b';
+    const amber = cs.getPropertyValue('--accent-amber').trim() || '#ffb703';
+    const muted = cs.getPropertyValue('--text-muted').trim() || '#94a3b8';
+    offerChart = new Chart(cv.getContext('2d'), {
+     type: 'line',
+     data: {
+      labels: snaps.map((s) => s.day.slice(5).split('-').reverse().join('/')),
+      datasets: [
+       { label: 'Anúncios ativos', data: snaps.map((s) => s.activeAds), borderColor: accent, backgroundColor: accent, tension: 0.3, pointRadius: 2 },
+       { label: 'Criativos distintos', data: snaps.map((s) => s.distinctCreatives), borderColor: amber, backgroundColor: amber, tension: 0.3, pointRadius: 2 }
+      ]
+     },
+     options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: muted } } },
+      scales: { x: { ticks: { color: muted, maxTicksLimit: 8 }, grid: { color: 'rgba(148,163,184,0.1)' } }, y: { beginAtZero: true, ticks: { color: muted, precision: 0 }, grid: { color: 'rgba(148,163,184,0.1)' } } }
+     }
+    });
+   } else {
+    chartBox.appendChild(h('p', '', snaps.length ? 'Gráfico indisponível (biblioteca de gráficos não carregou).' : 'Ainda não há histórico diário para esta oferta.'));
+    content.appendChild(chartBox);
+   }
+
+   const cols = h('div', 'mn-cols');
+   const aiBox = box('Ficha da IA');
+   const ai = d.ai;
+   if (ai) {
+    aiBox.appendChild(kv([
+     ['Nicho', nicheLabel(ai.niche)], ['Subnicho', ai.subniche], ['Promessa', ai.promise], ['Formato', formatLabel(ai.format)],
+     ['Público', ai.audience], ['Confiança', typeof ai.confidence === 'number' ? Math.round(ai.confidence * 100) + '%' : '—'], ['Classificada', fmtDateTime(ai.classifiedAt)]
+    ]));
+    if ((ai.angles || []).length) {
+     const chips = h('div', 'mn-badges');
+     ai.angles.forEach((a) => chips.appendChild(badge(String(a))));
+     aiBox.appendChild(h('h4', '', 'Ângulos'));
+     aiBox.appendChild(chips);
+    }
+    if (ai.summary) aiBox.appendChild(h('p', '', ai.summary));
+   } else {
+    aiBox.appendChild(h('p', '', 'Ainda não classificada pela IA. Use “Reclassificar” para pedir a análise.'));
+   }
+   const ckBox = box('Checkout e preços');
+   const en = d.enrichment;
+   if (en && en.enrichedAt) {
+    const pr = h('span', '', (en.prices || []).length ? en.prices.map((p) => fmtMoney(Number(p))).join(' · ') : '—');
+    ckBox.appendChild(kv([
+     ['Plataforma', platLabel(en.platform)],
+     ['Link do checkout', en.checkoutUrl ? linkEl(en.checkoutUrl, en.checkoutUrl, '') : '—'],
+     ['Preços', pr], ['Preço mínimo', typeof en.priceMin === 'number' ? fmtMoney(en.priceMin) : '—'],
+     ['Título da página', en.pageTitle], ['Analisada', fmtDateTime(en.enrichedAt)]
+    ]));
+   } else {
+    ckBox.appendChild(h('p', '', 'Ainda não analisada. Use “Reanalisar página” para detectar o checkout e os preços.'));
+    if (en && en.lastError) ckBox.appendChild(h('p', 'mn-sub', 'Último erro: ' + en.lastError));
+   }
+   cols.append(aiBox, ckBox);
+   content.appendChild(cols);
+
+   const actBox = h('div', 'mn-row');
+   const msg = h('div', 'mn-msg');
+   msg.setAttribute('role', 'status');
+   const run = (label, path) => {
+    const b = btn(label, 'sm');
+    b.addEventListener('click', async () => {
+     b.disabled = true;
+     msg.className = 'mn-msg';
+     msg.textContent = 'Enviando…';
+     const rr = await call('/api/miner/domains/' + encodeURIComponent(domain) + path, { method: 'POST' });
+     b.disabled = false;
+     if (my !== offerSeq) return;
+     if (rr.status === 202) { msg.className = 'mn-msg ok'; msg.textContent = 'Agendado. A ficha será atualizada em instantes; reabra a oferta para ver o resultado.'; }
+     else { msg.className = 'mn-msg bad'; msg.textContent = errMsg(rr.status, rr.data && rr.data.error); }
+    });
+    return b;
+   };
+   actBox.append(run('Reanalisar página', '/enrich'), run('Reclassificar', '/classify'), msg);
+   content.appendChild(actBox);
+
+   const adsBox = box('Anúncios da oferta (' + ads.length + ')');
+   const g = h('div', 'mn-grid');
+   ads.forEach((a) => g.appendChild(adCard(a)));
+   adsBox.appendChild(g);
+   content.appendChild(adsBox);
   }
- });
 
- // Inicializa lista de países
- renderCountryOptions('');
-
- // ================= AÇÕES DOS CARDS DO ADHEART =================
- window.deconstructThisAd = function(adId) {
-  const allAds = getAllRegisteredAds();
-  const ad = allAds.find(a => a.id === adId);
-  if (!ad) return;
-
-  const transcriptBox = document.getElementById('transcribed-text-result');
-  if (transcriptBox) {
-   transcriptBox.value = ad.primaryText;
-   updateTranscribeWordCount();
+  // Modal do anúncio
+  function openAd(ad) {
+   const m = openModal(ovAd, true);
+   const head = h('div', 'mn-mhead');
+   head.appendChild(h('h3', '', ad.title || ad.pageName || 'Anúncio'));
+   const badges = h('div', 'mn-badges');
+   badges.appendChild(badge((ad.isActive ? 'Ativo há ' : 'Rodou por ') + daysOf(ad) + ' dias', 'accent'));
+   if (ad.collationCount > 1) badges.appendChild(badge(ad.collationCount + ' anúncios com este criativo'));
+   head.appendChild(badges);
+   m.appendChild(head);
+   m.appendChild(mediaBox(ad, true, null));
+   const t = box('Texto do anúncio');
+   t.appendChild(h('p', 'mn-fulltext', ad.body || '—'));
+   m.appendChild(t);
+   const meta = box('Detalhes');
+   meta.appendChild(kv([
+    ['Página', ad.pageName], ['ID da página', ad.pageId], ['ID do anúncio', ad.adArchiveId],
+    ['Início', fmtDate(ad.startDate)], ['Fim', ad.endDate ? fmtDate(ad.endDate) : 'em veiculação'],
+    ['Primeira captura', fmtDateTime(ad.firstSeenAt)], ['Última captura', fmtDateTime(ad.lastSeenAt)],
+    ['Plataformas', (ad.platforms || []).map((p) => PLACEMENTS[p] || p).join(', ')], ['Países', (ad.countries || []).join(', ')],
+    ['Formato', ad.displayFormat], ['CTA', ad.ctaText], ['Legenda', ad.caption], ['Termos de busca', (ad.queries || []).join(', ')],
+    ['Domínio', ad.landingDomain]
+   ]));
+   m.appendChild(meta);
+   const row = h('div', 'mn-row');
+   const lib = libraryAdUrl(ad);
+   if (lib) row.appendChild(linkEl(lib, 'Ver na Biblioteca', 'mn-btn sm'));
+   if (ad.linkUrl && safeUrl(ad.linkUrl)) row.appendChild(linkEl(ad.linkUrl, 'Abrir destino', 'mn-btn sm'));
+   if (ad.landingDomain) row.appendChild(btn('Ver oferta', 'sm', () => openOffer(ad.landingDomain, null)));
+   row.appendChild(btn('Copiar texto', 'sm', async () => { toast((await copyText(adText(ad))) ? 'Texto copiado' : 'Não foi possível copiar'); }));
+   m.appendChild(row);
   }
 
-  const remodelProdInput = document.getElementById('remodel-my-product');
-  const activeProj = activeProjectId ? projectsList.find(p => p.id === activeProjectId) : null;
-  if (remodelProdInput && activeProj) {
-   remodelProdInput.value = activeProj.name;
-  }
+  // Painel de buscas automáticas (Apify)
+  const RUN_STATUS = { running: 'Em execução', SUCCEEDED: 'Concluída', FAILED: 'Falhou', ABORTED: 'Abortada', 'TIMED-OUT': 'Tempo esgotado' };
+  const runStatus = (s) => RUN_STATUS[s] || RUN_STATUS[String(s || '').toUpperCase()] || (s ? String(s) : '—');
+  let searchesTimer = null;
+  let searchesSeq = 0;
+  closers.set(ovSearches, () => { clearTimeout(searchesTimer); searchesSeq++; });
+  function openSearches() {
+   const m = openModal(ovSearches, true);
+   const my = ++searchesSeq;
+   const head = h('div', 'mn-mhead');
+   head.appendChild(h('h3', '', 'Buscas automáticas'));
+   head.appendChild(h('p', 'mn-sub', 'Coleta diária de anúncios da Biblioteca do Meta via Apify, dentro do limite de gasto configurado no servidor.'));
+   m.appendChild(head);
+   const info = h('div', 'mn-msg');
+   m.appendChild(info);
 
-  const remodelSpeakerInput = document.getElementById('remodel-my-speaker');
-  if (remodelSpeakerInput && !remodelSpeakerInput.value) {
-   remodelSpeakerInput.value = 'Especialista / Locutor';
-  }
+   const formBox = box('Nova busca');
+   const form = h('form', 'mn-form');
+   form.noValidate = true;
+   const lab = (text, el, cls) => { const l = h('label', cls || '', text); l.appendChild(el); return l; };
+   const iq = document.createElement('input'); iq.type = 'text'; iq.maxLength = 100; iq.placeholder = 'Ex.: emagrecimento'; iq.setAttribute('aria-label', 'Termo');
+   const ic = document.createElement('select'); ic.setAttribute('aria-label', 'País');
+   const codes = Array.from(new Set(['BR', 'PT', 'US', 'GB', 'CA', 'AU', 'DE', 'FR', 'ES', 'MX', 'AR', 'CL', 'CO'].concat((filterOpts && filterOpts.countries) || [])));
+   codes.forEach((c) => { const o = document.createElement('option'); o.value = c; o.textContent = countryLabel(c); ic.appendChild(o); });
+   ic.value = 'BR';
+   const im = document.createElement('select'); im.setAttribute('aria-label', 'Formato');
+   [['ALL', 'Todos'], ['IMAGE', 'Imagem'], ['VIDEO', 'Vídeo']].forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; im.appendChild(o); });
+   const ix = document.createElement('input'); ix.type = 'number'; ix.min = '1'; ix.max = '1000'; ix.value = '300'; ix.setAttribute('aria-label', 'Máximo de anúncios');
+   const create = btn('Criar busca', 'primary'); create.type = 'submit';
+   form.append(lab('Termo', iq, 'mn-q'), lab('País', ic), lab('Formato', im), lab('Máx. anúncios', ix), create);
+   const fmsg = h('div', 'mn-msg'); fmsg.setAttribute('role', 'status');
+   formBox.append(form, fmsg);
+   m.appendChild(formBox);
 
-  const remodelChat = document.getElementById('remodel-chat-input');
-  if (remodelChat) {
-   remodelChat.value = `Substitua o nome do produto por "${activeProj ? activeProj.name : 'Meu Produto'}" e a pessoa falando por um novo especialista, adaptando a copy mantendo a mesma retenção dos primeiros segundos.`;
-  }
+   const listBox = box('Buscas salvas');
+   const list = h('div', 'mn-table');
+   listBox.appendChild(list);
+   const lmsg = h('div', 'mn-msg'); lmsg.setAttribute('role', 'status');
+   listBox.appendChild(lmsg);
+   m.appendChild(listBox);
+   const histBox = box('Últimas execuções');
+   const hist = h('div', 'mn-table');
+   histBox.appendChild(hist);
+   m.appendChild(histBox);
 
-  // Alterna para sub-aba 2 (Remodelar)
-  activateStudioTab('remodel');
-
-  const studioElement = document.getElementById('studio-transcription-remodel');
-  if (studioElement) {
-   studioElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
- };
-
- window.saveAdToVault = function(adId) {
-  const allAds = getAllRegisteredAds();
-  const ad = allAds.find(a => a.id === adId);
-  if (!ad) return;
-  alert(`Criativo da oferta "${ad.pageName}" salvo nas referências do seu projeto com sucesso!`);
- };
-
- window.openFanpageModal = function(pageId, pageName) {
-  const allAds = getAllRegisteredAds();
-  const pageAds = allAds.filter(a => a.pageId === pageId);
-
-  if (modalFanpageName) modalFanpageName.textContent = pageName;
-  if (modalFanpageAvatar) modalFanpageAvatar.textContent = pageName.substring(0, 2).toUpperCase();
-  if (modalFanpageMeta) {
-   modalFanpageMeta.textContent = `Esta Fanpage possui ${pageAds.length} anúncios ativos minerados neste produto (testes de criativo, copy e escala).`;
-  }
-
-  if (modalFanpageGrid) {
-   modalFanpageGrid.innerHTML = pageAds.map(ad => `
-    <div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:10px; padding:12px;">
-     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-      <span class="badge-tag theme" style="font-size:0.7rem;">${ad.checkoutPlatform}</span>
-      <small style="color:var(--theme-accent); font-weight:700; font-size:0.72rem;">${ad.daysActive}d ativo</small>
-     </div>
-     <strong style="font-size:0.82rem; color:#fff; display:block; margin-bottom:4px; line-height:1.3;">${ad.headline}</strong>
-     <p style="font-size:0.75rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.4; max-height:80px; overflow:hidden; text-overflow:ellipsis;">${ad.primaryText.substring(0, 140)}...</p>
-     <div style="display:flex; gap:6px;">
-      <button class="btn btn-sm btn-primary" onclick="window.deconstructThisAd('${ad.id}'); window.closeFanpageModal();" style="flex:1; font-size:0.75rem; padding:6px 8px;">
-       Remodelar Copy
-      </button>
-      <button class="btn btn-sm btn-outline" onclick="window.downloadAdCreative('${ad.id}')" style="font-size:0.75rem; padding:6px 8px;" title="Baixar">
-       Salvar
-      </button>
-     </div>
-    </div>
-   `).join('');
-  }
-
-  if (modalFanpageAds) modalFanpageAds.style.display = 'flex';
- };
-
- window.closeFanpageModal = function() {
-  if (modalFanpageAds) modalFanpageAds.style.display = 'none';
- };
-
- window.setAdheartNiche = function(nicheKeyword) {
-  if (adheartKeywordInput) {
-   adheartKeywordInput.value = nicheKeyword;
-   filterAdheartAds();
-  }
- };
-
- window.resetAdheartFilters = function() {
-  if (adheartKeywordInput) adheartKeywordInput.value = '';
-  if (adheartMinAds) adheartMinAds.value = '5';
-  if (adheartMinDays) adheartMinDays.value = '10';
-  if (countryInputHidden) countryInputHidden.value = 'ALL';
-  if (countryCurrentText) countryCurrentText.textContent = 'Todos os países';
-  renderCountryOptions('');
-  if (adheartMediaType) adheartMediaType.value = 'ALL';
-  filterAdheartAds();
- };
-
- window.filterAdheartAds = filterAdheartAds;
-
- if (btnAdheartSearch) btnAdheartSearch.addEventListener('click', filterAdheartAds);
- if (btnAdheartReset) btnAdheartReset.addEventListener('click', window.resetAdheartFilters);
- if (adheartMinAds) adheartMinAds.addEventListener('change', filterAdheartAds);
- if (adheartMinDays) adheartMinDays.addEventListener('change', filterAdheartAds);
- if (adheartMediaType) adheartMediaType.addEventListener('change', filterAdheartAds);
- if (adheartKeywordInput) {
-  adheartKeywordInput.addEventListener('keydown', (e) => {
-   if (e.key === 'Enter') {
+   const say = (el, kind, text) => { el.className = 'mn-msg' + (kind ? ' ' + kind : ''); el.textContent = text; };
+   async function refresh() {
+    if (my !== searchesSeq) return;
+    const [rs, rr] = await Promise.all([call('/api/miner/searches'), call('/api/miner/collect/runs?limit=10')]);
+    if (my !== searchesSeq) return;
+    const c = stats && stats.collect;
+    if (c) {
+     say(info, c.configured ? 'ok' : 'bad', c.configured
+      ? 'Coleta configurada · hoje ' + fmtInt(c.todayAds) + '/' + fmtInt(c.dailyLimit) + ' anúncios · ' + (c.activeSearches || 0) + ' buscas ativas'
+      : ERR.collect_not_configured);
+    }
+    list.replaceChildren();
+    if (!rs.ok) {
+     say(lmsg, 'bad', errMsg(rs.status, rs.data && rs.data.error));
+    } else {
+     const items = rs.data.searches || [];
+     if (!items.length) list.appendChild(h('p', 'mn-sub', 'Nenhuma busca criada ainda.'));
+     items.forEach((s) => list.appendChild(searchRow(s)));
+    }
+    hist.replaceChildren();
+    let running = false;
+    if (rr.ok) {
+     const runs = rr.data.runs || [];
+     if (!runs.length) hist.appendChild(h('p', 'mn-sub', 'Nenhuma execução ainda.'));
+     runs.forEach((x) => {
+      if (x.status === 'running') running = true;
+      const row = h('div', 'mn-trow');
+      const l = h('div');
+      l.appendChild(h('strong', '', (x.search ? x.search.q + ' · ' + x.search.country : 'Busca removida') + ' — ' + runStatus(x.status)));
+      l.appendChild(h('div', 'mn-sub', 'recebidos ' + fmtInt(x.itemsReceived) + ' · novos ' + fmtInt(x.inserted) + ' · atualizados ' + fmtInt(x.updated) + ' · rejeitados ' + fmtInt(x.rejected)
+       + (typeof x.estCostUsd === 'number' ? ' · custo est. US$ ' + x.estCostUsd.toFixed(2) : '')));
+      if (x.error) l.appendChild(h('div', 'mn-sub mn-down', 'Erro: ' + x.error));
+      row.append(l, h('div', 'mn-sub', 'há ' + ago(x.startedAt)));
+      hist.appendChild(row);
+     });
+    } else {
+     hist.appendChild(h('p', 'mn-sub', errMsg(rr.status, rr.data && rr.data.error)));
+    }
+    if ((rs.ok && (rs.data.searches || []).some((s) => s.lastRun && s.lastRun.status === 'running')) || running) {
+     clearTimeout(searchesTimer);
+     searchesTimer = setTimeout(refresh, 4000);
+    } else {
+     // coleta terminou: atualiza o indicador do cabeçalho
+     if (my === searchesSeq && searchesTimer) { searchesTimer = null; loadStats(); }
+    }
+   }
+   function searchRow(s) {
+    const row = h('div', 'mn-trow');
+    row.dataset.search = s.id;
+    const l = h('div');
+    l.appendChild(h('strong', '', s.q));
+    l.appendChild(h('div', 'mn-sub', 'País ' + s.country + ' · Formato ' + (MEDIA_LABEL[s.mediaType] || s.mediaType) + ' · máx. ' + fmtInt(s.maxAds) + ' anúncios · ' + (s.active ? 'Ativa' : 'Pausada')));
+    const lr = s.lastRun;
+    l.appendChild(h('div', 'mn-sub', lr
+     ? 'Último run: ' + runStatus(lr.status) + ' · ' + fmtInt(lr.status === 'running' ? lr.itemsReceived : (s.lastAds !== null && s.lastAds !== undefined ? s.lastAds : lr.itemsReceived)) + ' anúncios · há ' + ago(lr.startedAt)
+     : 'Nunca executada'));
+    const act = h('div', 'mn-row');
+    act.appendChild(btn('Rodar agora', 'sm', async function () {
+     this.disabled = true;
+     const r = await call('/api/miner/searches/' + s.id + '/run', { method: 'POST' });
+     this.disabled = false;
+     if (r.status === 202) { say(lmsg, 'ok', 'Coleta iniciada.'); refresh(); loadStats(); }
+     else say(lmsg, 'bad', errMsg(r.status, r.data && r.data.error));
+    }));
+    act.appendChild(btn(s.active ? 'Pausar' : 'Ativar', 'sm', async function () {
+     this.disabled = true;
+     const r = await call('/api/miner/searches/' + s.id, jsonOpts('PATCH', { active: !s.active }));
+     this.disabled = false;
+     if (r.ok) { say(lmsg, 'ok', s.active ? 'Busca pausada.' : 'Busca ativada.'); refresh(); loadStats(); }
+     else say(lmsg, 'bad', errMsg(r.status, r.data && r.data.error));
+    }));
+    const del = btn('Apagar', 'sm danger', () => {
+     del.hidden = true;
+     const ok = btn('Confirmar apagar', 'sm danger', async () => {
+      ok.disabled = true;
+      const r = await call('/api/miner/searches/' + s.id, { method: 'DELETE' });
+      if (r.ok) { say(lmsg, 'ok', 'Busca apagada.'); refresh(); loadStats(); }
+      else { ok.disabled = false; say(lmsg, 'bad', errMsg(r.status, r.data && r.data.error)); }
+     });
+     const no = btn('Cancelar', 'sm', () => { ok.remove(); no.remove(); del.hidden = false; });
+     act.append(ok, no);
+    });
+    act.appendChild(del);
+    row.append(l, act);
+    return row;
+   }
+   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    filterAdheartAds();
-   }
-  });
- }
+    const q = iq.value.replace(/\s+/g, ' ').trim();
+    if (q.length < 2 || q.length > 100) { say(fmsg, 'bad', ERR.invalid_q); return; }
+    const max = Number(ix.value);
+    if (!Number.isInteger(max) || max < 1 || max > 1000) { say(fmsg, 'bad', ERR.invalid_max_ads); return; }
+    create.disabled = true;
+    const r = await call('/api/miner/searches', jsonOpts('POST', { q, country: ic.value, mediaType: im.value, maxAds: max }));
+    create.disabled = false;
+    if (r.status === 201) { say(fmsg, 'ok', 'Busca criada. A primeira coleta roda no próximo ciclo ou use “Rodar agora”.'); iq.value = ''; refresh(); loadStats(); }
+    else say(fmsg, 'bad', errMsg(r.status, r.data && r.data.error));
+   });
+   say(info, '', 'Carregando…');
+   refresh();
+  }
 
- if (btnSyncAdheartNiche) {
-  btnSyncAdheartNiche.addEventListener('click', () => {
-   const activeProj = activeProjectId ? projectsList.find(p => p.id === activeProjectId) : null;
-   if (activeProj && adheartKeywordInput) {
-    adheartKeywordInput.value = activeProj.name;
-    filterAdheartAds();
-   }
-  });
- }
+  // ---------- lista ----------
+  let seq = 0;
+  let ctrl = null;
+  let loading = false;
+  let done = false;
+  let cursor = null;
+  let offset = 0;
+  let total = null;
+  let seen = new Set();
+  let shown = 0;
+  let lastSig = '';
+  let io = null;
 
- // Inicializa o feed AdHeart na abertura
- filterAdheartAds();
+  function listQuery() {
+   const p = new URLSearchParams();
+   if (st.q) p.set('q', st.q);
+   p.set('sort', st.sort);
+   p.set('limit', String(PAGE));
+   SCOPE[st.view].forEach((k) => {
+    const v = st.f[k];
+    if (!v) return;
+    if (k === 'mediaType' && st.view === 'offers' && v === 'CAROUSEL') return;
+    p.set(k, v);
+   });
+   return p;
+  }
+  function setStatus(node) {
+   statusBox.replaceChildren();
+   if (node) statusBox.appendChild(node);
+  }
+  function stateBox(cls, title, text, actions) {
+   const s = h('div', 'mn-state' + (cls ? ' ' + cls : ''));
+   s.appendChild(h('h3', '', title));
+   if (text) s.appendChild(h('p', '', text));
+   if (actions && actions.length) {
+    const a = h('div', 'mn-state-actions');
+    actions.forEach((x) => a.appendChild(x));
+    s.appendChild(a);
+   }
+   return s;
+  }
+  function showSkeleton() {
+   grid.replaceChildren();
+   for (let i = 0; i < 8; i++) {
+    const c = h('div', 'mn-card mn-skelcard');
+    const a = h('div', 'mn-media mn-skel');
+    const b = h('div', 'mn-card-body');
+    ['60%', '90%', '40%'].forEach((w) => { const l = h('div', 'mn-skel', 'x'); l.style.width = w; l.style.height = '14px'; b.appendChild(l); });
+    c.append(a, b);
+    c.setAttribute('aria-hidden', 'true');
+    grid.appendChild(c);
+   }
+  }
+  function onboarding() {
+   const c = stats && stats.collect;
+   const wrap = h('div', 'mn-state');
+   if (c && c.configured) {
+    wrap.appendChild(h('h3', '', 'Crie sua primeira busca automática'));
+    wrap.appendChild(h('p', '', 'Ainda não há anúncios minerados. Crie uma busca (termo, país e formato) e o servidor coleta os anúncios ativos da Biblioteca do Meta todos os dias, via Apify.'));
+   } else if (c) {
+    wrap.appendChild(h('h3', '', 'Ainda não há anúncios minerados'));
+    wrap.appendChild(h('p', '', 'Para ativar a coleta automática, defina o APIFY_TOKEN nas variáveis de ambiente do servidor e reinicie. Enquanto isso, você pode usar a extensão do navegador.'));
+   } else {
+    wrap.appendChild(h('h3', '', 'Ainda não há anúncios minerados'));
+    wrap.appendChild(h('p', '', 'Crie uma busca automática (se o servidor tiver APIFY_TOKEN) ou use a extensão do navegador para capturar anúncios.'));
+   }
+   const acts = h('div', 'mn-state-actions');
+   acts.appendChild(btn('Criar busca automática', 'primary', openSearches));
+   acts.appendChild(linkEl(libraryUrl(), 'Abrir Biblioteca de Anúncios ↗', 'mn-btn'));
+   wrap.appendChild(acts);
+   wrap.appendChild(h('p', 'mn-sub', 'Alternativa opcional: capturar com a extensão'));
+   const steps = h('div', 'mn-steps');
+   [['1. Instale a extensão', 'Carregue a extensão do Cockpit no seu navegador (modo desenvolvedor).'],
+    ['2. Configure servidor e token', 'Informe o endereço do servidor e o APP_TOKEN nas opções da extensão.'],
+    ['3. Navegue na Biblioteca', 'Abra a Biblioteca de Anúncios do Meta e pesquise: os anúncios aparecem aqui sozinhos.']].forEach(([t, d]) => {
+     const s = h('div', 'mn-step'); s.appendChild(h('b', '', t)); s.appendChild(h('span', '', d)); steps.appendChild(s);
+    });
+   wrap.appendChild(steps);
+   return wrap;
+  }
+  function showApiError(r, append) {
+   const code = r.data && r.data.error;
+   let node;
+   const retry = btn('Tentar novamente', 'primary', () => { if (append) load(false); else load(true); });
+   if (r.status === 401) {
+    node = stateBox('err', 'Token de acesso inválido', 'O servidor recusou o token. Informe o APP_TOKEN configurado no servidor.', [btn('Informar token', 'primary', () => { if (askToken()) { loadStats(); loadFilterOptions(true); load(true); } })]);
+   } else if (r.status === 503 && code === 'db_offline') {
+    node = stateBox('err', 'Banco de dados indisponível', ERR.db_offline + ' O Minerador precisa do PostgreSQL ligado.', [retry]);
+   } else if (r.status === 503 && code === 'miner_requires_app_token') {
+    node = stateBox('err', 'Servidor sem token de acesso', ERR.miner_requires_app_token, [retry]);
+   } else {
+    node = stateBox('err', 'Não foi possível carregar', errMsg(r.status, code), [retry]);
+   }
+   setStatus(node);
+  }
+  async function load(reset) {
+   if (reset) {
+    if (ctrl) ctrl.abort();
+    seq++; cursor = null; offset = 0; done = false; total = null; seen = new Set(); shown = 0; loading = false;
+    showSkeleton();
+    setStatus(null);
+    $('mn-total').textContent = '';
+    btnMore.hidden = true;
+   }
+   if (loading || done) return;
+   loading = true;
+   const my = seq;
+   ctrl = new AbortController();
+   const p = listQuery();
+   if (st.view === 'ads') { if (cursor) p.set('cursor', cursor); } else p.set('offset', String(offset));
+   let r;
+   try {
+    r = await call('/api/miner/' + (st.view === 'ads' ? 'ads' : 'offers') + '?' + p.toString(), { signal: ctrl.signal });
+   } catch (e) { return; }
+   if (my !== seq) return;
+   loading = false;
+   if (!r.ok) {
+    if (reset) grid.replaceChildren();
+    showApiError(r, !reset);
+    return;
+   }
+   const items = st.view === 'ads' ? (r.data.ads || []) : (r.data.offers || []);
+   if (reset) grid.replaceChildren();
+   setStatus(null);
+   let added = 0;
+   items.forEach((it) => {
+    const key = st.view === 'ads' ? String(it.adArchiveId) : String(it.domain);
+    if (seen.has(key)) return;
+    seen.add(key);
+    grid.appendChild(st.view === 'ads' ? adCard(it) : offerCard(it));
+    added++;
+   });
+   shown += added;
+   if (st.view === 'ads') {
+    cursor = r.data.nextCursor || null;
+    done = !cursor;
+   } else {
+    total = r.data.total;
+    offset += items.length;
+    done = items.length === 0 || offset >= total;
+   }
+   if (reset && items.length === 0) {
+    await statsReady;
+    if (my !== seq) return;
+    setStatus(hasAnyFilter()
+     ? stateBox('', 'Nenhum resultado para estes filtros', 'Tente afrouxar os filtros ou limpar a busca.', [btn('Limpar filtros', 'primary', clearAll)])
+     : onboarding());
+    $('mn-total').textContent = '';
+    return;
+   }
+   $('mn-total').textContent = st.view === 'offers'
+    ? fmtInt(total) + (total === 1 ? ' oferta' : ' ofertas')
+    : fmtInt(shown) + (shown === 1 ? ' anúncio carregado' : ' anúncios carregados') + (done ? '' : ' (role para carregar mais)');
+   btnMore.hidden = done || (st.infinite && !!io);
+   if (io) { io.unobserve(sentinel); io.observe(sentinel); }
+  }
+
+  // ---------- reações a mudanças ----------
+  function signature() { return st.view + '|' + listQuery().toString(); }
+  function applyChange(force) {
+   refreshChrome();
+   persist();
+   const sig = signature();
+   if (!force && sig === lastSig) return;
+   lastSig = sig;
+   loadStats();
+   load(true);
+  }
+  function onFilterChange() {
+   readControls();
+   applyChange(false);
+  }
+  function setView(v, keepSort) {
+   st.view = v;
+   if (!keepSort || !SORTS[v].some((x) => x[0] === st.sort)) st.sort = DEFAULT_SORT[v];
+   buildSortOptions();
+   syncControls();
+   applyChange(true);
+  }
+  function clearAll() {
+   st.q = '';
+   st.f = emptyFilters();
+   syncControls();
+   applyChange(false);
+  }
+  function openDrawer() { filtersBox.classList.add('open'); backdrop.classList.add('open'); }
+  function closeDrawer() { filtersBox.classList.remove('open'); backdrop.classList.remove('open'); }
+  function debounced(fn, ms) {
+   let t = null;
+   const f = () => { clearTimeout(t); t = setTimeout(fn, ms); };
+   f.now = () => { clearTimeout(t); fn(); };
+   return f;
+  }
+
+  // listeners (todos nos elementos do próprio dashboard)
+  const debouncedChange = debounced(onFilterChange, 400);
+  inpQ.addEventListener('input', debouncedChange);
+  inpQ.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); debouncedChange.now(); } });
+  TEXT_CTRL.forEach((k) => $(CTRL[k]).addEventListener('input', debouncedChange));
+  ['country', 'mediaType', 'platform', 'niche', 'format', 'cta', 'startFrom', 'startTo'].forEach((k) => $(CTRL[k]).addEventListener('change', onFilterChange));
+  selSort.addEventListener('change', () => { st.sort = selSort.value; applyChange(true); });
+  chkInf.addEventListener('change', () => {
+   st.infinite = chkInf.checked;
+   persist();
+   btnMore.hidden = done || (st.infinite && !!io) || !shown;
+   if (io) { io.unobserve(sentinel); io.observe(sentinel); }
+  });
+  $('mn-f-presets').addEventListener('click', (e) => {
+   const b = e.target.closest('button[data-days]');
+   if (!b) return;
+   $('mn-f-mindays').value = st.f.minDays === b.dataset.days ? '' : b.dataset.days;
+   onFilterChange();
+  });
+  $('mn-btn-clear').addEventListener('click', clearAll);
+  $('mn-tab-offers').addEventListener('click', () => { if (st.view !== 'offers') setView('offers'); });
+  $('mn-tab-ads').addEventListener('click', () => { if (st.view !== 'ads') setView('ads'); });
+  $('mn-btn-filters').addEventListener('click', openDrawer);
+  $('mn-btn-filters-close').addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
+  $('mn-btn-searches').addEventListener('click', openSearches);
+  btnMore.addEventListener('click', () => load(false));
+  $('mn-kpis').addEventListener('click', (e) => {
+   const k = e.target.closest('.mn-kpi');
+   if (!k) return;
+   const kind = k.dataset.kpi;
+   if (kind === 'scaled') { st.sort = 'score'; setView('offers', true); }
+   else if (kind === 'ads' || kind === 'new') { st.sort = 'recent'; setView('ads', true); }
+   else if (kind === 'niches') { openDrawer(); $('mn-f-niche').focus(); }
+  });
+  if ('IntersectionObserver' in window) {
+   io = new IntersectionObserver((entries) => {
+    if (entries.some((en) => en.isIntersecting) && st.infinite && !loading && !done && shown > 0) load(false);
+   }, { rootMargin: '400px 0px' });
+   io.observe(sentinel);
+  }
+  window.addEventListener('hashchange', () => {
+   const qs = hashQuery();
+   if (qs === null || qs === stateToQuery()) return;
+   st = queryToState(qs);
+   buildSortOptions();
+   syncControls();
+   applyChange(true);
+  });
+
+  // ---------- abertura da aba ----------
+  let started = false;
+  function open() {
+   if (!started) {
+    started = true;
+    const hq = hashQuery();
+    let qs = hq;
+    if (qs === null) { try { qs = localStorage.getItem(STORE_KEY); } catch (e) { qs = null; } }
+    st = queryToState(qs || '');
+    buildSortOptions();
+    populateFilterOptions();
+    syncControls();
+    persist();
+    lastSig = signature();
+    loadStats();
+    loadFilterOptions(true);
+    load(true);
+    return;
+   }
+   persist();
+   loadStats();
+   loadFilterOptions(false);
+  }
+  mnOpenHook = open;
+  if ($('pane-step-mineracao').classList.contains('active')) open();
+ })();
+
 
  // ================= ESTÚDIO DE TRANSCRIÇÃO & REMODELAGEM DE CRIATIVOS COM IA =================
  const tabBtnTranscribe = document.getElementById('tab-btn-transcribe');
