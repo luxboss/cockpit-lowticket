@@ -1116,6 +1116,12 @@ input:focus, select:focus, textarea:focus {
 .mn-root { display: flex; flex-direction: column; gap: 16px; min-width: 0; margin-bottom: 28px; }
 .mn-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .mn-head h2 { margin: 0; }
+.mn-mode-switcher { display: inline-flex; align-items: center; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 3px; gap: 4px; margin-top: 6px; }
+.mn-mode-btn { display: inline-flex; align-items: center; justify-content: center; padding: 6px 14px; border-radius: var(--radius-xs); border: none; background: transparent; color: var(--text-muted); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
+.mn-mode-btn:hover { color: var(--text-main); }
+.mn-mode-btn.active, .mn-mode-btn[aria-selected="true"] { background: var(--theme-accent); color: var(--theme-accent-contrast); box-shadow: 0 2px 8px var(--theme-accent-glow); }
+.mn-live-quota { font-size: 0.74rem; font-weight: 700; color: var(--theme-accent); background: var(--theme-accent-soft); border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); padding: 4px 8px; white-space: nowrap; margin-right: 4px; flex: 0 0 auto; }
+.mn-hint.mn-warn-ia { color: var(--accent-amber); display: block; margin-top: 5px; font-size: 0.74rem; font-weight: 600; }
 .mn-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
 .mn-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-main); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: none; min-height: 36px; }
 .mn-btn:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
@@ -1873,6 +1879,10 @@ input:focus, select:focus, textarea:focus {
       <div class="mn-head">
        <div>
         <h2>Minerador de Ofertas</h2>
+        <div class="mn-mode-switcher" id="mn-mode-switcher" role="tablist" aria-label="Modo do minerador">
+         <button type="button" class="mn-mode-btn active" id="mn-mode-ranking" data-mode="ranking" role="tab" aria-selected="true">Ranking de escaladas</button>
+         <button type="button" class="mn-mode-btn" id="mn-mode-live" data-mode="live" role="tab" aria-selected="false">Pesquisa ao vivo</button>
+        </div>
        </div>
        <div class="mn-head-actions">
         <button type="button" class="mn-btn" id="mn-btn-searches">Buscas automáticas</button>
@@ -1927,7 +1937,8 @@ input:focus, select:focus, textarea:focus {
           <option value="advertiser">Anunciante</option>
          </select>
          <input type="text" class="mn-search" id="mn-q" placeholder="Pesquisar por palavra-chave" maxlength="200" autocomplete="off" aria-label="Buscar">
-         <button type="button" class="mn-btn primary sm mn-btn-search-trigger" id="mn-btn-do-search" aria-label="Pesquisar">Pesquisar</button>
+         <span class="mn-live-quota" id="mn-live-quota" style="display:none;" aria-live="polite"></span>
+         <button type="button" class="mn-btn primary sm mn-btn-search-trigger" id="mn-btn-do-search" aria-label="Filtrar">Filtrar</button>
         </div>
        </div>
       </div>
@@ -1956,7 +1967,7 @@ input:focus, select:focus, textarea:focus {
          </div>
         </div>
         <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Veiculação <span class="mn-hint">(só em Anúncios)</span></span><div class="mn-checks" id="mn-f-placements"></div></div>
-        <div class="mn-fgroup" data-scope="ads"><label for="mn-f-language">Idioma <span class="mn-hint">(só em Anúncios)</span></label>
+        <div class="mn-fgroup" data-scope="ads" id="mn-fg-language"><label for="mn-f-language">Idioma <span class="mn-hint">(só em Anúncios)</span></label>
          <select id="mn-f-language"><option value="">Todos</option></select></div>
         <div class="mn-fgroup"><label for="mn-f-media">Formato do criativo</label>
          <select id="mn-f-media"><option value="">Todos</option><option value="IMAGE">Imagem</option><option value="VIDEO">Vídeo</option><option value="CAROUSEL" data-scope="ads">Carrossel (só em Anúncios)</option></select></div>
@@ -1970,7 +1981,7 @@ input:focus, select:focus, textarea:focus {
          <div class="mn-frow"><input type="number" id="mn-f-mindays" min="0" max="100000" placeholder="Mín." aria-label="Mínimo de dias"><input type="number" id="mn-f-maxdays" data-scope="ads" min="0" max="100000" placeholder="Máx." aria-label="Máximo de dias"></div>
          <span class="mn-hint">O máximo vale só em Anúncios.</span>
         </div>
-        <div class="mn-fgroup"><label for="mn-f-format">Formato do produto (IA)</label><select id="mn-f-format"><option value="">Todos</option></select></div>
+        <div class="mn-fgroup" id="mn-fg-format"><label for="mn-f-format">Formato do produto (IA)</label><select id="mn-f-format"><option value="">Todos</option></select><span class="mn-hint mn-warn-ia" id="mn-f-format-warn" style="display:none;">Aguardando classificação da IA</span></div>
         <div class="mn-fgroup" data-scope="ads"><label for="mn-f-domain">Domínio <span class="mn-hint">(só em Anúncios)</span></label><input type="text" id="mn-f-domain" placeholder="exemplo.com" maxlength="253" autocomplete="off"></div>
         <div class="mn-fgroup"><label for="mn-f-page">Anunciante (ID da página)</label><input type="text" id="mn-f-page" placeholder="Ex.: 1234567890" maxlength="100" autocomplete="off"></div>
        </aside>
@@ -4158,6 +4169,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   if (!$('mn-root')) return;
 
   const STORE_KEY = 'cockpit_miner_ui';
+  const MODE_KEY = 'cockpit_miner_mode';
   const TOKEN_KEY = 'cockpit_api_token';
   const PAGE = 30;
   const NICHES = {
@@ -4180,8 +4192,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   const DENSITY_KEY = 'cockpit_miner_density';
   const LANGUAGES = { pt: 'Português', es: 'Espanhol', en: 'Inglês', outro: 'Outro' };
   const SORTS = {
-   offers: [['score', 'Score'], ['activeAds', 'Anúncios ativos'], ['days', 'Dias no ar'], ['growth', 'Crescimento (7 dias)']],
-   ads: [['days', 'Dias no ar'], ['recent', 'Mais recentes'], ['collation', 'Mais repetidos'], ['score', 'Score da oferta']],
+   offers: [['score', 'Score'], ['growth', 'Crescimento (7 dias)'], ['activeAds', 'Anúncios ativos'], ['days', 'Dias no ar']],
+   ads: [['recent', 'Mais recentes'], ['days', 'Dias no ar'], ['collation', 'Mais repetidos'], ['score', 'Score da oferta']],
    saved: [['recent', 'Mais recentes']]
   };
   const DEFAULT_SORT = { offers: 'score', ads: 'recent', saved: 'recent' };
@@ -4319,6 +4331,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   const btnCollNew = $('mn-btn-coll-new');
   const chipsBox = $('mn-chips');
   const btnDoSearch = $('mn-btn-do-search');
+  const btnModeRanking = $('mn-mode-ranking');
+  const btnModeLive = $('mn-mode-live');
+  const liveQuotaEl = $('mn-live-quota');
   const liveSummaryBox = $('mn-live-summary');
   let liveSearchActive = false;
   let livePollingTimer = null;
@@ -4438,7 +4453,13 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    return f;
   }
   function defaults() {
+   let defMode = 'ranking';
+   try {
+    const sm = localStorage.getItem(MODE_KEY);
+    if (sm === 'live' || sm === 'ranking') defMode = sm;
+   } catch (e) {}
    return {
+    mode: defMode,
     view: 'offers',
     sort: 'score',
     q: '',
@@ -4478,6 +4499,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   function stateToQuery() {
    const p = new URLSearchParams();
+   if (st.mode) p.set('mode', st.mode);
    if (st.view !== 'offers') p.set('view', st.view);
    if (st.view === 'saved' && st.collId) p.set('coll', String(st.collId));
    if (st.sort !== DEFAULT_SORT[st.view]) p.set('sort', st.sort);
@@ -4494,8 +4516,11 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function queryToState(qs) {
    const p = new URLSearchParams(qs || '');
    const s = defaults();
+   const m = p.get('mode');
+   if (m === 'live' || m === 'ranking') s.mode = m;
    const v = p.get('view');
    if (v === 'ads' || v === 'saved') s.view = v;
+   else if (v === 'offers') s.view = 'offers';
    s.sort = DEFAULT_SORT[s.view];
    const so = p.get('sort');
    if (so && SORTS[s.view] && SORTS[s.view].some((x) => x[0] === so)) s.sort = so;
@@ -4519,6 +4544,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function persist() {
    const qs = stateToQuery();
    try { localStorage.setItem(STORE_KEY, qs); } catch (e) {}
+   try { localStorage.setItem(MODE_KEY, st.mode || 'ranking'); } catch (e) {}
    try {
     if ($('pane-step-mineracao').classList.contains('active')) history.replaceState(null, '', '#mineracao' + (qs ? '?' + qs : ''));
    } catch (e) {}
@@ -4526,6 +4552,68 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function hashQuery() {
    const hsh = window.location.hash.replace('#', '');
    return hsh.indexOf('mineracao?') === 0 ? hsh.slice('mineracao?'.length) : null;
+  }
+  function updateModeUI() {
+   const isRanking = st.mode === 'ranking';
+   if (btnModeRanking) {
+    btnModeRanking.classList.toggle('active', isRanking);
+    btnModeRanking.setAttribute('aria-selected', String(isRanking));
+   }
+   if (btnModeLive) {
+    btnModeLive.classList.toggle('active', !isRanking);
+    btnModeLive.setAttribute('aria-selected', String(!isRanking));
+   }
+   if (btnDoSearch) {
+    btnDoSearch.textContent = isRanking ? 'Filtrar' : 'Pesquisar';
+    btnDoSearch.setAttribute('aria-label', isRanking ? 'Filtrar' : 'Pesquisar');
+   }
+   if (isRanking) {
+    if (liveQuotaEl) liveQuotaEl.style.display = 'none';
+    if (liveSummaryBox) liveSummaryBox.style.display = 'none';
+    liveSearchActive = false;
+   } else {
+    updateQuotaUI();
+   }
+   updatePlaceholder();
+  }
+  function updateQuotaUI() {
+   if (!liveQuotaEl) return;
+   if (st.mode !== 'live') {
+    liveQuotaEl.style.display = 'none';
+    return;
+   }
+   const c = stats && stats.collect;
+   const today = c ? (c.liveTodayAds !== undefined ? c.liveTodayAds : c.todayAds) : 0;
+   const limit = c ? (c.liveDailyLimit !== undefined ? c.liveDailyLimit : c.dailyLimit) : 300;
+   liveQuotaEl.textContent = fmtInt(today) + ' de ' + fmtInt(limit) + ' hoje';
+   liveQuotaEl.style.display = 'inline-block';
+  }
+  function updatePlaceholder() {
+   if (!inpQ) return;
+   inpQ.placeholder = st.searchIn === 'advertiser' ? 'Pesquisar por nome ou ID do anunciante' : 'Pesquisar por palavra-chave';
+  }
+  function setMode(m) {
+   if (st.mode === m) return;
+   st.mode = m;
+   try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
+   if (m === 'ranking') {
+    liveSearchActive = false;
+    currentLiveSearch = null;
+    st.q = '';
+    if (inpQ) inpQ.value = '';
+    st.view = 'offers';
+    st.sort = 'score';
+   } else {
+    st.view = 'ads';
+    st.sort = 'recent';
+   }
+   buildSortOptions();
+   updateModeUI();
+   updateQuotaUI();
+   updatePlaceholder();
+   syncControls();
+   loadFilterOptions(true);
+   applyChange(true);
   }
   function activeCount() {
    if (st.view === 'saved') return 0;
@@ -4640,14 +4728,43 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     selCountry.value = st.country || '';
    }
    updateCountryTrigger();
-   setOptions($('mn-f-format'), Object.keys(FORMATS).map((c) => [c, FORMATS[c]]), st.f.format);
-   const langList = (fo.languages && fo.languages.length) ? fo.languages : Object.keys(LANGUAGES);
-   setOptions($('mn-f-language'), langList.map((l) => [l, LANGUAGES[l] || l]), st.f.language);
+
+   // AC-04: Formato do produto (IA) mostra o aviso Aguardando classificação da IA quando /filters.niches estiver vazio
+   const selFormat = $('mn-f-format');
+   const warnFormat = $('mn-f-format-warn');
+   const hasNiches = !!(fo.niches && fo.niches.length > 0);
+   if (selFormat) {
+    if (!hasNiches) {
+     selFormat.disabled = true;
+     selFormat.style.display = 'none';
+     if (warnFormat) warnFormat.style.display = 'block';
+    } else {
+     selFormat.disabled = false;
+     selFormat.style.display = '';
+     if (warnFormat) warnFormat.style.display = 'none';
+     setOptions(selFormat, Object.keys(FORMATS).map((c) => [c, FORMATS[c]]), st.f.format);
+    }
+   }
+
+   // AC-04: Idioma lista só os idiomas de /filters.languages (esconder o grupo se vazio)
+   const fgLang = $('mn-fg-language') || ($('mn-f-language') && $('mn-f-language').closest('.mn-fgroup'));
+   const langList = (fo.languages && fo.languages.length) ? fo.languages : [];
+   if (fgLang) {
+    if (!langList.length) {
+     fgLang.style.display = 'none';
+    } else {
+     fgLang.style.display = '';
+     setOptions($('mn-f-language'), langList.map((l) => [l, LANGUAGES[l] || l]), st.f.language);
+    }
+   }
+
+   // AC-04: Veiculação lista os placements de /filters (incluindo Threads e WhatsApp)
    const box = $('mn-f-placements');
    if (box) {
     box.replaceChildren();
     const selected = new Set(st.f.placements ? st.f.placements.split(',') : []);
-    const list = (fo.placements && fo.placements.length) ? fo.placements.filter((p) => PLACEMENTS[p]) : Object.keys(PLACEMENTS);
+    const rawList = (fo.placements && fo.placements.length) ? fo.placements : Object.keys(PLACEMENTS);
+    const list = rawList.map((p) => String(p).toUpperCase()).filter((p) => PLACEMENTS[p]);
     list.forEach((p) => {
      const lab = document.createElement('label');
      const c = document.createElement('input');
@@ -4662,9 +4779,10 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    }
   }
   function syncControls() {
+   updateModeUI();
    inpQ.value = st.q;
    if (selSearchIn) selSearchIn.value = st.searchIn || 'keyword';
-   inpQ.placeholder = st.searchIn === 'advertiser' ? 'Pesquisar por nome ou ID do anunciante' : 'Pesquisar por palavra-chave';
+   updatePlaceholder();
    if (selCategory) selCategory.value = st.adCategory || 'all';
    updateCountryTrigger();
    chkInf.checked = st.infinite;
@@ -4870,30 +4988,47 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    });
   }
   let statsReady = Promise.resolve();
+  let statsCtrl = null;
   function loadStats(quiet) {
    if (!quiet) setKpis(true);
+   if (statsCtrl) statsCtrl.abort();
+   statsCtrl = new AbortController();
+   const myCtrl = statsCtrl;
    statsReady = (async () => {
     const p = new URLSearchParams();
-    if (liveSearchActive) p.set('liveSearch', 'current');
+    if (st.mode === 'live' && liveSearchActive) p.set('liveSearch', 'current');
     if (st.country) p.set('country', st.country);
     if (st.adCategory && st.adCategory !== 'all') p.set('adCategory', st.adCategory);
     if (st.q) p.set('q', st.q);
     if (st.searchIn) p.set('searchIn', st.searchIn);
     const qs = p.toString();
-    const r = await call('/api/miner/stats' + (qs ? '?' + qs : ''));
-    if (r.ok) { stats = r.data; } else { stats = null; }
-    setKpis(false);
-    if (!r.ok) {
-     $('mn-kpis').querySelectorAll('[data-v]').forEach((v) => { v.classList.remove('mn-skel'); v.textContent = '—'; });
+    try {
+     const r = await call('/api/miner/stats' + (qs ? '?' + qs : ''), { signal: myCtrl.signal });
+     if (myCtrl.signal.aborted) return;
+     if (r.ok) { stats = r.data; } else { stats = null; }
+     setKpis(false);
+     updateQuotaUI();
+     if (!r.ok) {
+      $('mn-kpis').querySelectorAll('[data-v]').forEach((v) => { v.classList.remove('mn-skel'); v.textContent = '—'; });
+     }
+    } catch (e) {
+     if (e && e.name === 'AbortError') return;
+     stats = null;
+     setKpis(false);
     }
    })();
    return statsReady;
   }
+  let filterOptsMode = null;
   async function loadFilterOptions(force) {
-   if (!force && filterOpts && Date.now() - filtersAt < 60000) return;
-   const r = await call('/api/miner/filters');
+   const isLive = st.mode === 'live' && liveSearchActive;
+   const modeKey = isLive ? 'live' : 'ranking';
+   if (!force && filterOpts && filterOptsMode === modeKey && Date.now() - filtersAt < 60000) return;
+   const path = '/api/miner/filters' + (isLive ? '?liveSearch=current' : '');
+   const r = await call(path);
    if (r.ok) {
     filterOpts = r.data;
+    filterOptsMode = modeKey;
     filtersAt = Date.now();
     populateFilterOptions();
     setKpis(false);
@@ -5448,6 +5583,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const names = (o.pageNames || []).filter((n) => !hasTpl(n));
    if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
    const badges = h('div', 'mn-badges');
+   if (o.scaled) badges.appendChild(badge('Escalada', 'accent'));
    if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') badges.appendChild(badge(platLabel(o.checkout.platform), 'accent'));
    if (o.checkout && typeof o.checkout.priceMin === 'number') badges.appendChild(badge('a partir de ' + fmtMoney(o.checkout.priceMin), 'amber'));
    if (o.ai && o.ai.niche) badges.appendChild(badge(nicheLabel(o.ai.niche)));
@@ -5541,6 +5677,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const of = ad.offer;
    if (of) {
     if (typeof of.score === 'number') badges.appendChild(badge('Score ' + fmtScore(of.score)));
+    if (of.scaled) badges.appendChild(badge('Escalada', 'accent'));
     if (of.checkoutPlatform && of.checkoutPlatform !== 'unknown') badges.appendChild(badge(platLabel(of.checkoutPlatform)));
     if (typeof of.priceMin === 'number') badges.appendChild(badge(fmtMoney(of.priceMin), 'amber'));
     if (of.niche) badges.appendChild(badge(nicheLabel(of.niche)));
@@ -6112,10 +6249,12 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
       ]));
       $('mn-total').textContent = '';
       await loadStats();
+      loadFilterOptions(true);
       return;
      }
      setStatus(null);
      await loadStats();
+     loadFilterOptions(true);
      load(true);
      return;
     }
@@ -6249,14 +6388,17 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const code = r.data && r.data.error;
    let node;
    const retry = btn('Tentar novamente', 'primary', () => { if (append) load(false); else load(true); });
-   if (r.status === 401) {
+   const clearBtn = btn('Limpar filtros', 'primary', clearAll);
+   if (r.status === 400) {
+    node = stateBox('err', 'Filtros inválidos', (ERR[code] || 'Não foi possível carregar os resultados com os parâmetros atuais.') + ' Tente limpar os filtros para continuar.', [clearBtn, retry]);
+   } else if (r.status === 401) {
     node = stateBox('err', 'Token de acesso inválido', 'O servidor recusou o token. Informe o APP_TOKEN configurado no servidor.', [btn('Informar token', 'primary', () => { if (askToken()) { loadStats(); loadFilterOptions(true); load(true); } })]);
    } else if (r.status === 503 && code === 'db_offline') {
     node = stateBox('err', 'Banco de dados indisponível', ERR.db_offline + ' O Minerador precisa do PostgreSQL ligado.', [retry]);
    } else if (r.status === 503 && code === 'miner_requires_app_token') {
     node = stateBox('err', 'Servidor sem token de acesso', ERR.miner_requires_app_token, [retry]);
    } else {
-    node = stateBox('err', 'Não foi possível carregar', errMsg(r.status, code), [retry]);
+    node = stateBox('err', 'Não foi possível carregar', errMsg(r.status, code), [clearBtn, retry]);
    }
    setStatus(node);
   }
@@ -6305,121 +6447,123 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const my = seq;
    ctrl = new AbortController();
 
-   if (st.view === 'saved') {
-    if (!st.collId || !collectionsList.length) {
-     await fetchCollections();
-     if (collectionsList.length && !st.collId) st.collId = String(collectionsList[0].id);
-    }
-    populateSavedCollectionsBar();
-    if (!st.collId) {
-     loading = false;
+   try {
+    if (st.view === 'saved') {
+     if (!st.collId || !collectionsList.length) {
+      await fetchCollections();
+      if (collectionsList.length && !st.collId) st.collId = String(collectionsList[0].id);
+     }
+     populateSavedCollectionsBar();
+     if (!st.collId) {
+      if (reset) grid.replaceChildren();
+      setStatus(stateBox('', 'Nenhuma coleção encontrada', 'Crie sua primeira coleção para salvar anúncios e ofertas.'));
+      return;
+     }
+     const p = new URLSearchParams();
+     p.set('limit', String(PAGE));
+     if (cursor) p.set('cursor', cursor);
+     let r;
+     try {
+      r = await call('/api/miner/collections/' + st.collId + '/items?' + p.toString(), { signal: ctrl.signal });
+     } catch (e) { return; }
+     if (my !== seq) return;
+     if (!r.ok) {
+      if (reset) grid.replaceChildren();
+      showApiError(r, !reset);
+      return;
+     }
+     const items = r.data.items || [];
      if (reset) grid.replaceChildren();
-     setStatus(stateBox('', 'Nenhuma coleção encontrada', 'Crie sua primeira coleção para salvar anúncios e ofertas.'));
+     setStatus(null);
+     let added = 0;
+     items.forEach((it) => {
+      const key = String(it.id);
+      if (seen.has(key)) return;
+      seen.add(key);
+      if (it.missing) {
+       grid.appendChild(missingCard(it));
+      } else if (it.kind === 'ad' && it.ad) {
+       grid.appendChild(adCard(it.ad, it));
+      } else if (it.kind === 'offer' && it.offer) {
+       grid.appendChild(offerCard(it.offer, it));
+      } else {
+       grid.appendChild(missingCard(it));
+      }
+      added++;
+     });
+     shown += added;
+     cursor = r.data.nextCursor || null;
+     done = !cursor || items.length === 0;
+
+     if (reset && items.length === 0) {
+      setStatus(stateBox('', 'Coleção vazia', 'Você ainda não salvou nenhum anúncio ou oferta nesta coleção. Use o ícone de estrela nos cards para salvar.', [btn('Explorar anúncios', 'primary', () => setView('ads'))]));
+      $('mn-total').textContent = '';
+      return;
+     }
+
+     updateTotal();
+     btnMore.hidden = done || (st.infinite && !!io);
+     if (io) { io.unobserve(sentinel); io.observe(sentinel); }
      return;
     }
-    const p = new URLSearchParams();
-    p.set('limit', String(PAGE));
-    if (cursor) p.set('cursor', cursor);
+
+    const p = listQuery();
+    if (st.view === 'ads') { if (cursor) p.set('cursor', cursor); } else p.set('offset', String(offset));
     let r;
     try {
-     r = await call('/api/miner/collections/' + st.collId + '/items?' + p.toString(), { signal: ctrl.signal });
+     r = await call('/api/miner/' + (st.view === 'ads' ? 'ads' : 'offers') + '?' + p.toString(), { signal: ctrl.signal });
     } catch (e) { return; }
     if (my !== seq) return;
-    loading = false;
     if (!r.ok) {
      if (reset) grid.replaceChildren();
      showApiError(r, !reset);
      return;
     }
-    const items = r.data.items || [];
+    const items = st.view === 'ads' ? (r.data.ads || []) : (r.data.offers || []);
     if (reset) grid.replaceChildren();
     setStatus(null);
     let added = 0;
+    const batchRefs = [];
     items.forEach((it) => {
-     const key = String(it.id);
+     const key = st.view === 'ads' ? String(it.adArchiveId) : String(it.domain);
      if (seen.has(key)) return;
      seen.add(key);
-     if (it.missing) {
-      grid.appendChild(missingCard(it));
-     } else if (it.kind === 'ad' && it.ad) {
-      grid.appendChild(adCard(it.ad, it));
-     } else if (it.kind === 'offer' && it.offer) {
-      grid.appendChild(offerCard(it.offer, it));
-     } else {
-      grid.appendChild(missingCard(it));
-     }
+     grid.appendChild(st.view === 'ads' ? adCard(it) : offerCard(it));
+     batchRefs.push(st.view === 'ads' ? ('ad:' + it.adArchiveId) : ('offer:' + it.domain));
      added++;
     });
     shown += added;
-    cursor = r.data.nextCursor || null;
-    done = !cursor || items.length === 0;
-
+    if (st.view === 'ads') {
+     cursor = r.data.nextCursor || null;
+     done = !cursor;
+    } else {
+     total = r.data.total;
+     offset += items.length;
+     done = items.length === 0 || offset >= total;
+    }
+    if (batchRefs.length) {
+     fetchSavedForItems(batchRefs);
+    }
     if (reset && items.length === 0) {
-     setStatus(stateBox('', 'Coleção vazia', 'Você ainda não salvou nenhum anúncio ou oferta nesta coleção. Use o ícone de estrela nos cards para salvar.', [btn('Explorar anúncios', 'primary', () => setView('ads'))]));
+     if (my !== seq) return;
+     if (st.mode === 'live' && liveSearchActive && currentLiveSearch && currentLiveSearch.q) {
+      setStatus(stateBox('', 'Nenhum anúncio encontrado para ' + currentLiveSearch.q, 'Tente pesquisar com outro termo, país ou categoria.', [btn('Nova pesquisa', 'primary', () => { if (inpQ) inpQ.focus(); })]));
+     } else {
+      setStatus(hasAnyFilter()
+       ? stateBox('', 'Nenhum resultado para estes filtros', 'Tente afrouxar os filtros ou limpar a busca.', [btn('Limpar filtros', 'primary', clearAll)])
+       : (st.mode === 'ranking' ? onboarding() : emptyInviteBox()));
+     }
      $('mn-total').textContent = '';
      return;
     }
-
     updateTotal();
     btnMore.hidden = done || (st.infinite && !!io);
     if (io) { io.unobserve(sentinel); io.observe(sentinel); }
-    return;
-   }
-
-   const p = listQuery();
-   if (st.view === 'ads') { if (cursor) p.set('cursor', cursor); } else p.set('offset', String(offset));
-   let r;
-   try {
-    r = await call('/api/miner/' + (st.view === 'ads' ? 'ads' : 'offers') + '?' + p.toString(), { signal: ctrl.signal });
-   } catch (e) { return; }
-   if (my !== seq) return;
-   loading = false;
-   if (!r.ok) {
-    if (reset) grid.replaceChildren();
-    showApiError(r, !reset);
-    return;
-   }
-   const items = st.view === 'ads' ? (r.data.ads || []) : (r.data.offers || []);
-   if (reset) grid.replaceChildren();
-   setStatus(null);
-   let added = 0;
-   const batchRefs = [];
-   items.forEach((it) => {
-    const key = st.view === 'ads' ? String(it.adArchiveId) : String(it.domain);
-    if (seen.has(key)) return;
-    seen.add(key);
-    grid.appendChild(st.view === 'ads' ? adCard(it) : offerCard(it));
-    batchRefs.push(st.view === 'ads' ? ('ad:' + it.adArchiveId) : ('offer:' + it.domain));
-    added++;
-   });
-   shown += added;
-   if (st.view === 'ads') {
-    cursor = r.data.nextCursor || null;
-    done = !cursor;
-   } else {
-    total = r.data.total;
-    offset += items.length;
-    done = items.length === 0 || offset >= total;
-   }
-   if (batchRefs.length) {
-    fetchSavedForItems(batchRefs);
-   }
-   if (reset && items.length === 0) {
-    await statsReady;
-    if (my !== seq) return;
-    if (liveSearchActive && currentLiveSearch && currentLiveSearch.q) {
-     setStatus(stateBox('', 'Nenhum anúncio encontrado para ' + currentLiveSearch.q, 'Tente pesquisar com outro termo, país ou categoria.', [btn('Nova pesquisa', 'primary', () => { if (inpQ) inpQ.focus(); })]));
-    } else {
-     setStatus(hasAnyFilter()
-      ? stateBox('', 'Nenhum resultado para estes filtros', 'Tente afrouxar os filtros ou limpar a busca.', [btn('Limpar filtros', 'primary', clearAll)])
-      : emptyInviteBox());
+   } finally {
+    if (my === seq) {
+     loading = false;
     }
-    $('mn-total').textContent = '';
-    return;
    }
-   updateTotal();
-   btnMore.hidden = done || (st.infinite && !!io);
-   if (io) { io.unobserve(sentinel); io.observe(sentinel); }
   }
 
   // ---------- reações a mudanças ----------
@@ -6454,7 +6598,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    if (liveSummaryBox) liveSummaryBox.style.display = 'none';
    st.f = emptyFilters();
    syncControls();
-   applyChange(false);
+   applyChange(true);
   }
   function openDrawer() { filtersBox.classList.add('open'); backdrop.classList.add('open'); }
   function closeDrawer() { filtersBox.classList.remove('open'); backdrop.classList.remove('open'); }
@@ -6465,23 +6609,33 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    return f;
   }
 
+  function handleSearchTrigger() {
+   if (st.mode === 'ranking') {
+    readControls();
+    applyChange(true);
+   } else {
+    startLiveSearch();
+   }
+  }
+
   // listeners (todos nos elementos do próprio dashboard)
-  const debouncedChange = debounced(onFilterChange, 400);
+  const debouncedChange = debounced(onFilterChange, 300);
   inpQ.addEventListener('input', () => {
-   if (!liveSearchActive) debouncedChange();
+   if (st.mode === 'ranking') debouncedChange();
   });
-  // Se liveSearchActive for true, a pesquisa e disparada via Enter ou botao Pesquisar
   inpQ.addEventListener('keydown', (e) => {
    if (e.key === 'Enter') {
     e.preventDefault();
-    startLiveSearch();
+    handleSearchTrigger();
    }
   });
   if (btnDoSearch) {
    btnDoSearch.addEventListener('click', () => {
-    startLiveSearch();
+    handleSearchTrigger();
    });
   }
+  if (btnModeRanking) btnModeRanking.addEventListener('click', () => setMode('ranking'));
+  if (btnModeLive) btnModeLive.addEventListener('click', () => setMode('live'));
   TEXT_CTRL.forEach((k) => {
    const el = $(CTRL[k]);
    if (el) el.addEventListener('input', debouncedChange);
@@ -6685,39 +6839,44 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     loadFilterOptions(true);
     load(true);
 
-    // AC-05: Ao abrir a aba, se houver pesquisa concluída, mostrar os resultados dela
-    call('/api/miner/live-search/current').then((r) => {
-     if (r.ok && r.data) {
-      const cur = r.data;
-      if (cur.status === 'succeeded' && cur.q) {
-       liveSearchActive = true;
-       currentLiveSearch = cur;
-       st.q = cur.q;
-       if (cur.searchIn) st.searchIn = cur.searchIn;
-       if (cur.country && cur.country !== 'ALL') st.country = cur.country;
-       if (cur.adCategory) st.adCategory = cur.adCategory;
-       syncControls();
-       renderLiveSummary(cur);
-       loadStats();
-       load(true);
-      } else if (cur.status === 'running') {
-       showLiveSearchLoading(cur.q);
-       pollLiveSearch();
+    // No modo Pesquisa ao vivo, se houver pesquisa concluída, mostrar os resultados dela
+    if (st.mode === 'live') {
+     call('/api/miner/live-search/current').then((r) => {
+      if (r.ok && r.data) {
+       const cur = r.data;
+       if (cur.status === 'succeeded' && cur.q) {
+        liveSearchActive = true;
+        currentLiveSearch = cur;
+        st.q = cur.q;
+        if (cur.searchIn) st.searchIn = cur.searchIn;
+        if (cur.country && cur.country !== 'ALL') st.country = cur.country;
+        if (cur.adCategory) st.adCategory = cur.adCategory;
+        syncControls();
+        renderLiveSummary(cur);
+        loadStats();
+        loadFilterOptions(true);
+        load(true);
+       } else if (cur.status === 'running') {
+        showLiveSearchLoading(cur.q);
+        pollLiveSearch();
+       }
       }
-     }
-    }).catch(() => {});
+     }).catch(() => {});
+    }
     return;
    }
    persist();
    loadStats();
    loadFilterOptions(false);
-   call('/api/miner/live-search/current').then((r) => {
-    if (r.ok && r.data && r.data.status === 'succeeded' && r.data.q) {
-     liveSearchActive = true;
-     currentLiveSearch = r.data;
-     renderLiveSummary(r.data);
-    }
-   }).catch(() => {});
+   if (st.mode === 'live') {
+    call('/api/miner/live-search/current').then((r) => {
+     if (r.ok && r.data && r.data.status === 'succeeded' && r.data.q) {
+      liveSearchActive = true;
+      currentLiveSearch = r.data;
+      renderLiveSummary(r.data);
+     }
+    }).catch(() => {});
+   }
   }
   mnOpenHook = open;
   if ($('pane-step-mineracao').classList.contains('active')) open();

@@ -24,7 +24,11 @@
  *   BE-012: searchIn=keyword|advertiser e adCategory=all|political|housing|employment|financial em /ads, /offers e /stats (q, searchIn, country, adCategory);
  *   miner_ads.ad_categories (categoria da Biblioteca), miner_searches.ad_category (busca automatica por categoria), adCategories[] em /filters.
  *   BE-012 (emenda): POST /api/miner/live-search (coleta ao vivo de 30 anuncios), GET /api/miner/live-search/current, liveSearch=current em /ads, /offers e /stats;
- *   ao concluir, apaga os anuncios anteriores que nao estao salvos em colecoes.
+ *   (BE-013 troca a regra de apagar: ver abaixo).
+ *   BE-013: dois modos. Sem liveSearch = Ranking (so anuncios de busca automatica / extensao, miner_ads.in_ranking); liveSearch=current = pesquisa ao vivo isolada
+ *   (miner_live_search_ads). Pesquisa ao vivo so apaga anuncios cuja unica origem sao pesquisas ao vivo antigas (MINER_LIVE_KEEP_SEARCHES, padrao 1) e nao salvos.
+ *   Cota propria MINER_LIVE_DAILY_AD_LIMIT (padrao 300); /stats.collect.liveTodayAds/liveDailyLimit. Idioma detectado (miner_ads.language: pt|es|en|null),
+ *   placements THREADS e WHATSAPP, catalogo por {{product., fila da IA com prioridade e escalada com sinal real (MINER_SCALED_MIN_ADS padrao 3, MINER_SCALED_MIN_GROWTH padrao 1).
  *   BE-010: /api/miner/collections[/:id[/items[/:itemId]]], /api/miner/saved?refs=, /api/miner/media/download?ad=&kind=&index= (so download em streaming, nada e gravado);
  *   filtros novos em /ads (minCollation, maxCollation, language, seenWithin, activeWithin), activeWithin em /offers e /stats, languages[] em /filters.
  *   MINER_MEDIA_TEST_HOSTMAP (JSON host->IP) so vale com NODE_ENV=test.
@@ -116,6 +120,10 @@ const MINER_AI_RECHECK_HOURS = 6;        // entrada igual: so volta a comparar d
 const MINER_ADS_DEFAULT_LIMIT = 30;
 const MINER_ADS_MAX_LIMIT = 60;
 const MINER_SCALED_SCORE = Number.isFinite(parseFloat(process.env.MINER_SCALED_SCORE)) ? parseFloat(process.env.MINER_SCALED_SCORE) : 20; // oferta escalada: score >= isto
+// BE-013: escalada exige tambem sinal real: pelo menos N anuncios ativos OU crescimento de pelo menos G anuncios em 7 dias
+const MINER_SCALED_MIN_ADS = Number.isFinite(parseInt(process.env.MINER_SCALED_MIN_ADS, 10)) ? Math.max(0, parseInt(process.env.MINER_SCALED_MIN_ADS, 10)) : 3;
+const MINER_SCALED_MIN_GROWTH = Number.isFinite(parseInt(process.env.MINER_SCALED_MIN_GROWTH, 10)) ? Math.max(1, parseInt(process.env.MINER_SCALED_MIN_GROWTH, 10)) : 1;
+const MINER_AI_PRIORITY_TOP = 20;       // BE-013: as N primeiras ofertas do ranking passam na frente na fila da IA
 const MINER_TOP_N = 5;                   // topNiches e topCheckouts
 const MINER_TOP_CTAS = 30;               // CTAs mais frequentes em /api/miner/filters
 const MINER_SPARKLINE_DAYS = 14;         // historico por oferta em /api/miner/offers
@@ -137,6 +145,11 @@ const MINER_COLLECT_OK_HOURS = 24;       // proxima coleta apos sucesso
 const MINER_COLLECT_DEFAULT_MAX_ADS = 300;
 const MINER_COLLECT_MAX_ADS = 1000;
 const MINER_LIVE_SEARCH_MAX_ADS = 30;   // pesquisa ao vivo: limite fixo de anuncios por pesquisa
+// BE-013: cota diaria propria da pesquisa ao vivo (nao consome a da coleta automatica) e quantas pesquisas ao vivo concluidas ficam guardadas
+const MINER_LIVE_DAILY_AD_LIMIT = Number.isFinite(parseInt(process.env.MINER_LIVE_DAILY_AD_LIMIT, 10)) ? Math.max(0, parseInt(process.env.MINER_LIVE_DAILY_AD_LIMIT, 10)) : 300;
+const MINER_LIVE_KEEP_SEARCHES = Number.isFinite(parseInt(process.env.MINER_LIVE_KEEP_SEARCHES, 10)) ? Math.max(1, parseInt(process.env.MINER_LIVE_KEEP_SEARCHES, 10)) : 1;
+// Prefixo do submitter (miner_ad_sources) das ingestoes da pesquisa ao vivo: e assim que se sabe que a origem do anuncio e so pesquisa ao vivo
+const MINER_LIVE_SOURCE_PREFIX = 'live:';
 // q e searchIn nos KPIs do /stats levaram o p95 a 180-190 ms com 50 mil anuncios (limite do ticket: 100 ms): ficam validados mas nao aplicados; country, adCategory e liveSearch filtram
 const MINER_STATS_Q_FILTER = false;
 
@@ -423,6 +436,23 @@ async function initDatabase() {
       );
       CREATE UNIQUE INDEX IF NOT EXISTS ux_miner_live_searches_running ON miner_live_searches (status) WHERE status = 'running';
       CREATE INDEX IF NOT EXISTS idx_miner_live_searches_user ON miner_live_searches (user_id, id DESC);
+      -- BE-013: dois modos. Vinculo pesquisa ao vivo -> anuncio (liveSearch=current le daqui; miner_ads.live_search_id fica como legado);
+      -- in_ranking = o anuncio tem origem em busca automatica ou extensao (FALSE = veio so de pesquisa ao vivo); idioma detectado no servidor;
+      -- cota propria da pesquisa ao vivo (miner_live_usage, mesmo formato de miner_collect_usage)
+      CREATE TABLE IF NOT EXISTS miner_live_search_ads (
+        live_search_id BIGINT NOT NULL,
+        ad_archive_id  VARCHAR(30) NOT NULL,
+        PRIMARY KEY (live_search_id, ad_archive_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_miner_live_search_ads_ad ON miner_live_search_ads (ad_archive_id);
+      ALTER TABLE miner_ads ADD COLUMN IF NOT EXISTS in_ranking BOOLEAN NOT NULL DEFAULT TRUE;
+      ALTER TABLE miner_ads ADD COLUMN IF NOT EXISTS language VARCHAR(2);
+      CREATE INDEX IF NOT EXISTS idx_miner_ads_language ON miner_ads (language) WHERE language IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_miner_ads_not_ranking ON miner_ads (ad_archive_id) WHERE NOT in_ranking;
+      CREATE TABLE IF NOT EXISTS miner_live_usage (
+        day DATE PRIMARY KEY,
+        ads INTEGER NOT NULL DEFAULT 0
+      );
       -- Backfill idempotente: linhas legadas herdam a versao de data.updatedAt (so inteiro valido, so onde ainda e 0, sem tombstones)
       UPDATE projects
          SET client_updated_at = CASE WHEN data->>'updatedAt' ~ '^[0-9]{1,15}$' THEN (data->>'updatedAt')::bigint ELSE 0 END
@@ -786,13 +816,50 @@ function minerPrimaryConds(p, o, params) {
   }
   if (o.country) { params.push(o.country.toUpperCase()); conds.push(p + 'countries @> ARRAY[$' + params.length + ']::text[]'); }
   if (o.adCategory && o.adCategory !== 'all') { params.push(o.adCategory); conds.push(p + 'ad_categories @> ARRAY[$' + params.length + ']::text[]'); }
-  if (o.liveSearchId !== undefined && o.liveSearchId !== null) { params.push(o.liveSearchId); conds.push(p + 'live_search_id = $' + params.length + '::bigint'); } // liveSearch=current
+  // BE-013: com liveSearch=current le o vinculo da pesquisa; sem liveSearch e o modo Ranking (so anuncios de busca automatica / extensao)
+  if (o.liveSearchId !== undefined && o.liveSearchId !== null) {
+    params.push(o.liveSearchId);
+    conds.push(p + 'ad_archive_id IN (SELECT lsa.ad_archive_id FROM miner_live_search_ads lsa WHERE lsa.live_search_id = $' + params.length + '::bigint)'); // sub-select sem correlacao: o Postgres a usa como semi-join ou hash unico
+  } else conds.push(p + 'in_ranking');
   return conds;
 }
 
 // Anuncio de catalogo dinamico (DPA): texto com marcadores {{product.name}}
 const MINER_TEMPLATE_RE = /\{\{[^{}]*\}\}/;
-const minerHasTemplate = (v) => typeof v === 'string' && MINER_TEMPLATE_RE.test(v);
+const minerHasTemplate = (v) => typeof v === 'string' && (MINER_TEMPLATE_RE.test(v) || v.includes('{{product.'));
+
+// Idioma do anuncio (BE-013): heuristica por palavras frequentes de pt, es e en no texto; so conta a palavra exclusiva de um idioma
+// (as que existem em mais de um ficam de fora). Sem sinal claro (misto, curto demais, outro idioma) devolve null.
+const MINER_LANG_WORDS = {
+  pt: 'de a o que e do da em um para é com não uma os no se na por mais as dos como mas foi ao ele das tem à seu sua ou ser quando muito há nos já está eu também só pelo pela até isso ela entre era depois sem mesmo aos ter seus quem nas me esse eles estão você tinha foram essa num nem suas meu às minha têm numa pelos elas havia seja qual será nós tenho lhe deles essas esses pelas este fosse dele vc pra obrigado hoje agora grátis desconto comprar aproveite frete garantia saiba clique aqui resultado resultados seu sua nosso nossa produto emagrecer queimar gordura barriga',
+  es: 'de la que el en y a los del se las por un para con no una su al lo como más pero sus le ya o este sí porque esta entre cuando muy sin sobre también me hasta hay donde quien desde todo nos durante todos uno les ni contra otros ese eso ante ellos e esto mí antes algunos qué unos yo otro otras otra él tanto esa estos mucho quienes nada muchos cual poco ella estar estas algunas algo nosotros mi mis tú te ti tu tus ellas es son está hoy ahora gratis descuento comprar aprovecha envío garantía haz clic aquí resultado resultados nuestro nuestra producto adelgazar quemar grasa vientre',
+  en: 'the of and to a in is that it for as with was on be by at this have from or an they which you are but not what all were we when your can said there use each do how if will up other about out many then them these so some her would make like him into time has look two more write go see no way could people my than first been who its now find today free discount buy shop shipping guarantee learn click here result results our product lose burn fat belly weight'
+};
+const MINER_LANG_SETS = (() => {
+  const raw = {};
+  const count = new Map();
+  for (const [lang, str] of Object.entries(MINER_LANG_WORDS)) {
+    raw[lang] = new Set(str.split(/\s+/).filter(Boolean));
+    for (const w of raw[lang]) count.set(w, (count.get(w) || 0) + 1);
+  }
+  const out = {};
+  for (const lang of Object.keys(raw)) out[lang] = new Set(Array.from(raw[lang]).filter((w) => count.get(w) === 1));
+  return out;
+})();
+/** pt | es | en | null: conta palavras exclusivas de cada idioma; vence quem tem ao menos 2 acertos e o dobro do segundo (ou 1 acerto sozinho em texto curto). */
+function minerDetectLanguage(text) {
+  if (typeof text !== 'string' || !text) return null;
+  const clean = text.slice(0, 6000).toLowerCase().replace(/https?:\/\/\S+/g, ' ').replace(/\{\{[^{}]*\}\}/g, ' ').replace(/[#@]\S+/g, ' ');
+  const words = clean.match(/\p{L}+/gu);
+  if (!words || !words.length) return null;
+  const hits = { pt: 0, es: 0, en: 0 };
+  for (const w of words) for (const lang of ['pt', 'es', 'en']) if (MINER_LANG_SETS[lang].has(w)) hits[lang]++;
+  const ranked = Object.entries(hits).sort((x, y) => y[1] - x[1]);
+  const [best, second] = [ranked[0], ranked[1]];
+  if (best[1] >= 2 && best[1] >= 2 * second[1]) return best[0];
+  if (best[1] === 1 && second[1] === 0 && words.length <= 8) return best[0];
+  return null;
+}
 // Data de inicio valida: > 0 e no maximo 1 dia no futuro; fora disso e desconhecida (null no JSON, fora do MIN(start_date) e dos filtros de dias).
 const MINER_VALID_START_SQL = (col) => '(' + col + ' > 0 AND ' + col + ' <= EXTRACT(EPOCH FROM NOW()) + 86400)';
 // versao para agregacoes: o teto (agora + 1 dia) sai de um sub-select sem correlacao (calculado uma vez por consulta). Nos filtros do feed o
@@ -840,7 +907,8 @@ function normalizeMinerAd(raw) {
       linkUrl,
       landingDomain: target ? target.domain : null,
       landingUrl: target ? target.url : null,
-      isCatalog: minerHasTemplate(minerText(raw.body, 5000)) || minerHasTemplate(minerText(raw.title, 500)),
+      isCatalog: minerHasTemplate(minerText(raw.body, 5000)) || minerHasTemplate(minerText(raw.title, 500)) || minerHasTemplate(minerText(raw.caption, 500)),
+      language: minerDetectLanguage([minerText(raw.body, 5000), minerText(raw.title, 500), minerText(raw.caption, 500)].join(' ')),
       adCategories: minerNormalizeAdCategories(raw.adCategories !== undefined ? raw.adCategories : (raw.ad_categories !== undefined ? raw.ad_categories : raw.categories)),
       destinationType: minerDestinationType(target ? target.domain : null),
       media: { images: minerUrlList(raw.images, MINER_MAX_IMAGES), videos }
@@ -865,8 +933,8 @@ function normalizeMinerContext(ctx) {
 const MINER_UPSERT_AD_SQL = `
   INSERT INTO miner_ads (ad_archive_id, page_id, page_name, is_active, start_date, end_date, collation_id, collation_count,
                          platforms, display_format, body, title, caption, cta_text, link_url, landing_domain, media,
-                         countries, queries, is_catalog, destination_type, ad_categories, live_search_id, first_seen_at, last_seen_at)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), NOW())
+                         countries, queries, is_catalog, destination_type, ad_categories, language, in_ranking, first_seen_at, last_seen_at)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW(), NOW())
   ON CONFLICT (ad_archive_id) DO UPDATE SET
     page_id = EXCLUDED.page_id, page_name = EXCLUDED.page_name, is_active = EXCLUDED.is_active,
     start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date,
@@ -879,7 +947,8 @@ const MINER_UPSERT_AD_SQL = `
                                    GROUP BY q ORDER BY o LIMIT ${MINER_MAX_QUERIES}) s ORDER BY o),
     is_catalog = EXCLUDED.is_catalog, destination_type = EXCLUDED.destination_type,
     ad_categories = ARRAY(SELECT DISTINCT c FROM unnest(miner_ads.ad_categories || EXCLUDED.ad_categories) AS c ORDER BY c),
-    live_search_id = COALESCE(EXCLUDED.live_search_id, miner_ads.live_search_id),
+    language = COALESCE(EXCLUDED.language, miner_ads.language),
+    in_ranking = miner_ads.in_ranking OR EXCLUDED.in_ranking,
     last_seen_at = NOW()
   RETURNING (xmax = 0) AS inserted`;
 
@@ -891,7 +960,7 @@ const MINER_SNAPSHOT_SQL = `
          COUNT(DISTINCT COALESCE(collation_id, ad_archive_id)) FILTER (WHERE is_active AND last_seen_at >= NOW() - INTERVAL '${MINER_ACTIVE_WINDOW_HOURS} hours'),
          NOW()
     FROM miner_ads
-   WHERE landing_domain = ANY($1)
+   WHERE landing_domain = ANY($1) AND in_ranking
    GROUP BY landing_domain
   ON CONFLICT (day, landing_domain) DO UPDATE SET
     active_ads = EXCLUDED.active_ads, distinct_creatives = EXCLUDED.distinct_creatives, updated_at = NOW()`;
@@ -936,7 +1005,7 @@ async function ingestMinerBatch(submitterId, contextRaw, ads, meta) {
         ad.adArchiveId, ad.pageId, ad.pageName, ad.isActive, String(ad.startDate), ad.endDate === null ? null : String(ad.endDate),
         ad.collationId, ad.collationCount, JSON.stringify(ad.platforms), ad.displayFormat,
         ad.body, ad.title, ad.caption, ad.ctaText, ad.linkUrl, ad.landingDomain, JSON.stringify(ad.media),
-        countries, queries, ad.isCatalog, ad.destinationType, ad.adCategories, liveId
+        countries, queries, ad.isCatalog, ad.destinationType, ad.adCategories, ad.language, !liveId
       ]);
       if (r.rows[0].inserted) inserted++; else updated++;
       if (ad.landingDomain) {
@@ -957,7 +1026,12 @@ async function ingestMinerBatch(submitterId, contextRaw, ads, meta) {
         [Array.from(byId.keys()), submitterId]
       );
     }
-    if (domains.size > 0) await client.query(MINER_SNAPSHOT_SQL, [Array.from(domains)]);
+    // BE-013: o vinculo pesquisa ao vivo -> anuncio cobre TODOS os anuncios retornados, inclusive os que ja existiam (busca automatica / extensao)
+    if (liveId && byId.size > 0) {
+      await client.query('INSERT INTO miner_live_search_ads (live_search_id, ad_archive_id) SELECT $1::bigint, UNNEST($2::text[]) ON CONFLICT DO NOTHING', [liveId, Array.from(byId.keys())]);
+    }
+    // pesquisa ao vivo nao escreve historico: a fotografia diaria e so do ranking
+    if (domains.size > 0 && !liveId) await client.query(MINER_SNAPSHOT_SQL, [Array.from(domains)]);
     if (samples.size > 0) {
       // Fase 2a: dominio novo entra na fila de enriquecimento; existente so atualiza o sample_url.
       await client.query(
@@ -981,8 +1055,8 @@ async function ingestMinerBatch(submitterId, contextRaw, ads, meta) {
   } finally {
     client.release();
   }
-  // Pontuacao materializada: recalcula so os dominios do lote (erro aqui nao muda a resposta da ingestao).
-  await minerScoresRefreshDomains(touchedDomains);
+  // Pontuacao materializada: recalcula so os dominios do lote (erro aqui nao muda a resposta da ingestao). Pesquisa ao vivo nao entra no ranking.
+  if (!liveId) await minerScoresRefreshDomains(touchedDomains);
   return { received: ads.length, inserted, updated, rejected };
 }
 
@@ -1070,7 +1144,7 @@ async function handleMinerOffers(req, res, searchParams) {
   const narrowActive = activeWithin !== undefined && activeWithin !== '7d';
   const adLevel = !!(q || countryRaw || pageIdRaw || mediaType !== 'ALL' || narrowActive || destAll || adCategory !== 'all' || liveSearchId !== undefined);
   const params = [];
-  const where = [(narrowActive || destAll) ? minerScoreActiveWhereFor(activeWithin, destAll) : MINER_SCORE_ACTIVE_WHERE];
+  const where = [(narrowActive || destAll) ? minerScoreActiveWhereFor(activeWithin, destAll) : MINER_SCORE_ACTIVE_BASE];
   // BE-012: q conforme searchIn (keyword sem page_name; advertiser = page_name e page_id) e categoria do anuncio
   for (const cnd of minerPrimaryConds('', { q, searchIn, adCategory, liveSearchId }, params)) where.push(cnd);
   if (countryRaw) { params.push(countryRaw.toUpperCase()); where.push(`$${params.length} = ANY(countries)`); }
@@ -1183,6 +1257,7 @@ async function handleMinerOffers(req, res, searchParams) {
     maxDaysRunning: r.max_days_running,
     growth7d: r.growth7d,
     score: r.score,
+    scaled: minerIsScaled(r), // BE-013: mesma regra do scaledOffers de /stats
     lastSeenAt: r.last_seen_at,
     checkout: r.c_enriched_at ? minerEnrichmentToJson({ checkout_platform: r.c_platform, checkout_url: r.c_url, prices: r.c_prices, price_min: r.c_price_min, page_title: r.c_title, enriched_at: r.c_enriched_at }) : null,
     ai: r.ai_classified_at && r.ai_result ? minerAiToJson(r.ai_result, r.ai_classified_at) : null,
@@ -1202,7 +1277,8 @@ function minerAdToJson(r) {
     linkUrl: r.link_url, landingDomain: r.landing_domain, images: media.images || [], videos: media.videos || [],
     countries: r.countries, queries: r.queries, firstSeenAt: r.first_seen_at, lastSeenAt: r.last_seen_at,
     isCatalog: !!r.is_catalog, destinationType: r.destination_type || minerDestinationType(r.landing_domain),
-    adCategories: Array.isArray(r.ad_categories) ? r.ad_categories : []
+    adCategories: Array.isArray(r.ad_categories) ? r.ad_categories : [],
+    language: r.language || null
   };
 }
 
@@ -1864,9 +1940,27 @@ const MINER_AI_PLACEHOLDER_SQL = `
      LIMIT 200) d
   ON CONFLICT (landing_domain) DO NOTHING`;
 
+// BE-013 (AC-08): dominios prioritarios = os da ultima pesquisa ao vivo concluida (vinculo) + as primeiras ofertas do ranking por score.
+// O limite diario e o backoff continuam valendo: so muda a ordem em que os elegiveis sao reservados.
+const MINER_AI_PRIORITY_CTE = `prio AS (
+    SELECT DISTINCT a.landing_domain FROM miner_live_search_ads l JOIN miner_ads a ON a.ad_archive_id = l.ad_archive_id
+     WHERE l.live_search_id = (SELECT MAX(id) FROM miner_live_searches WHERE status = 'succeeded') AND a.landing_domain IS NOT NULL
+    UNION
+    SELECT landing_domain FROM (SELECT landing_domain FROM miner_domain_scores ORDER BY score DESC, landing_domain LIMIT ${MINER_AI_PRIORITY_TOP}) top
+  )`;
+// linhas-guia dos prioritarios (o PLACEHOLDER acima pega no maximo 200 em ordem qualquer)
+const MINER_AI_PRIO_PLACEHOLDER_SQL = `
+  WITH ${MINER_AI_PRIORITY_CTE}
+  INSERT INTO miner_ai (landing_domain)
+  SELECT p.landing_domain FROM prio p
+   WHERE NOT EXISTS (SELECT 1 FROM miner_ai m WHERE m.landing_domain = p.landing_domain)
+     AND EXISTS (SELECT 1 FROM miner_ads a WHERE a.landing_domain = p.landing_domain AND a.is_active AND a.destination_type = 'offer' AND a.last_seen_at >= NOW() - ($1::int * INTERVAL '1 day'))
+  ON CONFLICT (landing_domain) DO NOTHING`;
+
 // Elegivel: sem classificacao, ou falha com backoff vencido, ou classificado ha mais de N dias (a entrada
 // so e reclassificada se o hash mudar). Reserva por next_classify_at; nunca classificados primeiro, depois mais anuncios ativos.
 const MINER_AI_RESERVE_SQL = `
+  WITH ${MINER_AI_PRIORITY_CTE}
   UPDATE miner_ai SET next_classify_at = NOW() + ($2::int * INTERVAL '1 minute')
    WHERE landing_domain IN (
      SELECT m.landing_domain FROM miner_ai m
@@ -1874,7 +1968,7 @@ const MINER_AI_RESERVE_SQL = `
         AND (m.classified_at IS NULL OR m.attempts > 0 OR m.classified_at <= NOW() - ($3::int * INTERVAL '1 day'))
         AND EXISTS (SELECT 1 FROM miner_ads a WHERE a.landing_domain = m.landing_domain AND a.is_active AND a.destination_type = 'offer'
                      AND a.last_seen_at >= NOW() - ($4::int * INTERVAL '1 day'))
-      ORDER BY (m.classified_at IS NULL) DESC,
+      ORDER BY (m.landing_domain IN (SELECT landing_domain FROM prio)) DESC, (m.classified_at IS NULL) DESC,
                (SELECT COUNT(*) FROM miner_ads a WHERE a.landing_domain = m.landing_domain AND a.is_active) DESC, m.landing_domain
       LIMIT $1
       FOR UPDATE OF m SKIP LOCKED)
@@ -2025,6 +2119,7 @@ async function minerAiTick() {
   minerAiRunning = true;
   try {
     if (!(await minerAiBudgetLeft())) return; // limite do dia esgotado: espera o dia seguinte
+    await pool.query(MINER_AI_PRIO_PLACEHOLDER_SQL, [MINER_OFFER_WINDOW_DAYS]);
     await pool.query(MINER_AI_PLACEHOLDER_SQL, [MINER_OFFER_WINDOW_DAYS]);
     const reserved = await pool.query(MINER_AI_RESERVE_SQL, [MINER_AI_BATCH, MINER_AI_RESERVE_MINUTES, MINER_AI_RECLASSIFY_DAYS, MINER_OFFER_WINDOW_DAYS]);
     const queue = reserved.rows;
@@ -2063,7 +2158,7 @@ async function handleMinerNiches(req, res) {
   const r = await pool.query(
     `SELECT m.niche AS id, COUNT(*)::int AS count FROM miner_ai m
       WHERE m.niche IS NOT NULL AND m.classified_at IS NOT NULL
-        AND EXISTS (SELECT 1 FROM miner_ads a WHERE a.landing_domain = m.landing_domain AND a.is_active
+        AND EXISTS (SELECT 1 FROM miner_ads a WHERE a.landing_domain = m.landing_domain AND a.is_active AND a.in_ranking
                      AND a.last_seen_at >= NOW() - ($1::int * INTERVAL '1 day'))
       GROUP BY m.niche ORDER BY count DESC, id ASC`, [MINER_OFFER_WINDOW_DAYS]);
   return sendJson(res, 200, { ok: true, niches: r.rows });
@@ -2102,7 +2197,7 @@ async function handleMinerDomainClassify(req, res, rest) {
 // ---------------------------------------------------------------------------
 // Dashboard do minerador (SPEC-005): feed de anuncios com cursor, KPIs e valores de filtros
 // ---------------------------------------------------------------------------
-const MINER_PLACEMENTS = ['FACEBOOK', 'INSTAGRAM', 'MESSENGER', 'AUDIENCE_NETWORK'];
+const MINER_PLACEMENTS = ['FACEBOOK', 'INSTAGRAM', 'MESSENGER', 'AUDIENCE_NETWORK', 'THREADS', 'WHATSAPP'];
 const MINER_ADS_MEDIA_TYPES = ['ALL', 'IMAGE', 'VIDEO', 'CAROUSEL'];
 const MINER_ADS_SORTS = ['days', 'recent', 'collation', 'score'];
 
@@ -2150,7 +2245,9 @@ function minerCursorDecode(str, sort) {
 }
 
 // Anuncios que contam para a pontuacao: ativos, com dominio e vistos na janela (mesma base do ranking de ofertas).
-const MINER_SCORE_ACTIVE_WHERE = `is_active AND landing_domain IS NOT NULL AND destination_type = 'offer' AND last_seen_at >= NOW() - INTERVAL '${MINER_OFFER_WINDOW_DAYS} days'`;
+// BASE = sem a origem; MINER_SCORE_ACTIVE_WHERE (materializada) conta so anuncios do ranking. Os filtros dos handlers acrescentam in_ranking ou o vinculo da pesquisa ao vivo (minerPrimaryConds).
+const MINER_SCORE_ACTIVE_BASE = `is_active AND landing_domain IS NOT NULL AND destination_type = 'offer' AND last_seen_at >= NOW() - INTERVAL '${MINER_OFFER_WINDOW_DAYS} days'`;
+const MINER_SCORE_ACTIVE_WHERE = `${MINER_SCORE_ACTIVE_BASE} AND in_ranking`;
 
 /**
  * DEFINICAO UNICA do calculo por dominio (SPEC-004/005): CTEs agg (agregacao dos anuncios) e scored (growth7d e score).
@@ -2202,6 +2299,10 @@ function minerScoredCte(baseWhere, opts) {
     )`;
 }
 
+// Oferta escalada (BE-013): score minimo E sinal real (anuncios ativos suficientes OU crescimento em 7 dias). Mesma regra em JS e em SQL.
+const minerIsScaled = (r) => r.score >= MINER_SCALED_SCORE && (r.active_ads >= MINER_SCALED_MIN_ADS || r.growth7d >= MINER_SCALED_MIN_GROWTH);
+const minerScaledSql = (pScore, pAds, pGrowth) => `(score >= ${pScore} AND (active_ads >= ${pAds} OR growth7d >= ${pGrowth}))`;
+
 // ---- Pontuacao materializada (miner_domain_scores): mesma formula, atualizada por lote e periodicamente.
 /** Upsert da pontuacao: domainFilter '' (todos os dominios) ou 'landing_domain = ANY($1::text[])'. Ordenado para evitar deadlock. */
 function minerScoresUpsertSql(domainFilter) {
@@ -2217,7 +2318,7 @@ function minerScoresPruneSql(domainFilter) {
   return `DELETE FROM miner_domain_scores s
            WHERE ${domainFilter ? 's.' + domainFilter + ' AND ' : ''}NOT EXISTS (
              SELECT 1 FROM miner_ads a WHERE a.landing_domain = s.landing_domain AND a.is_active AND a.destination_type = 'offer'
-                AND a.last_seen_at >= NOW() - INTERVAL '${MINER_OFFER_WINDOW_DAYS} days')`;
+                AND a.in_ranking AND a.last_seen_at >= NOW() - INTERVAL '${MINER_OFFER_WINDOW_DAYS} days')`;
 }
 const MINER_SCORES_PRUNE_ALL_SQL = minerScoresPruneSql('');
 const MINER_SCORES_BATCH_SQL = minerScoresUpsertSql('landing_domain = ANY($1::text[])');
@@ -2341,7 +2442,7 @@ async function minerScoreFeedRows(o) {
     const v = P(o.cursor.v); const i = P(o.cursor.i);
     dw.push(`ds.score <= ${v}::float8`, `(ds.score, x.ad_archive_id) < (${v}::float8, ${i}::text)`); // o <= usa o indice de score
   }
-  const active = o.activeOnly ? ` AND ${o.activeSql || MINER_ACTIVE_AD_SQL}` : '';
+  const active = (o.activeOnly ? ` AND ${o.activeSql || MINER_ACTIVE_AD_SQL}` : '') + ' AND a.in_ranking'; // modo Ranking (BE-013)
   const scored = await pool.query(
     `SELECT x.ad_archive_id, ds.score AS sort_score FROM miner_domain_scores ds ${joins.join(' ')}
        CROSS JOIN LATERAL (SELECT a.ad_archive_id FROM miner_ads a WHERE a.landing_domain = ds.landing_domain${active} ORDER BY a.ad_archive_id DESC) x
@@ -2478,12 +2579,13 @@ async function handleMinerAds(req, res, sp) {
   if (startFrom) where.push(`${MINER_VALID_START_SQL('a.start_date')} AND a.start_date >= EXTRACT(EPOCH FROM (${P(startFrom)}::date::timestamp AT TIME ZONE 'America/Sao_Paulo'))`);
   if (startTo) where.push(`${MINER_VALID_START_SQL('a.start_date')} AND a.start_date < EXTRACT(EPOCH FROM ((${P(startTo)}::date + 1)::timestamp AT TIME ZONE 'America/Sao_Paulo'))`);
   if (platformRaw) { joins.push('LEFT JOIN miner_domains md ON md.landing_domain = a.landing_domain'); where.push(`md.checkout_platform = ${P(platformRaw)}`); }
-  if (nicheRaw || formatRaw || languageRaw) {
+  if (nicheRaw || formatRaw) {
     joins.push('LEFT JOIN miner_ai ma ON ma.landing_domain = a.landing_domain');
     if (nicheRaw) where.push(`ma.niche = ${P(nicheRaw)}`);
     if (formatRaw) where.push(`ma.format = ${P(formatRaw)}`);
-    if (languageRaw) where.push(`ma.result->>'language' = ${P(languageRaw)}`);
   }
+  // BE-013: idioma = coluna detectada no servidor; cai para o idioma da IA so quando a coluna e nula (EXISTS por linha, sem juntar miner_ai ao feed)
+  if (languageRaw) { const pl = P(languageRaw); where.push(`(a.language = ${pl} OR (a.language IS NULL AND EXISTS (SELECT 1 FROM miner_ai ml WHERE ml.landing_domain = a.landing_domain AND ml.result->>'language' = ${pl})))`); }
   if (domainRaw) where.push(`a.landing_domain = ${P(domainRaw)}`);
   if (pageIdRaw) where.push(`a.page_id = ${P(pageIdRaw)}`);
   if (cta) where.push(`a.cta_text = ${P(cta)}`);
@@ -2552,8 +2654,8 @@ async function handleMinerStats(req, res, sp) {
               COUNT(*) FILTER (WHERE a.first_seen_at >= NOW() - INTERVAL '24 hours'${cntExtra})::int AS new_ads_24h
          FROM miner_ads a`, pCnt),
     narrow
-      ? pool.query(`${dyn} SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE score >= $${pDyn.length + 1})::int AS scaled FROM scored`, pDyn.concat([MINER_SCALED_SCORE]))
-      : pool.query('SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE score >= $1)::int AS scaled FROM miner_domain_scores', [MINER_SCALED_SCORE]),
+      ? pool.query(`${dyn} SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE ${minerScaledSql('$' + (pDyn.length + 1), '$' + (pDyn.length + 2), '$' + (pDyn.length + 3))})::int AS scaled FROM scored`, pDyn.concat([MINER_SCALED_SCORE, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH]))
+      : pool.query(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE ${minerScaledSql('$1', '$2', '$3')})::int AS scaled FROM miner_domain_scores`, [MINER_SCALED_SCORE, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH]),
     pool.query(
       `${dyn} SELECT m.niche AS id, COUNT(*)::int AS count FROM miner_ai m JOIN ${narrow ? 'scored' : 'miner_domain_scores'} s ON s.landing_domain = m.landing_domain
         WHERE m.niche IS NOT NULL AND m.classified_at IS NOT NULL
@@ -2565,6 +2667,7 @@ async function handleMinerStats(req, res, sp) {
     pool.query('SELECT MAX(created_at) AS at FROM miner_ingest_batches'),
     pool.query(
       `SELECT COALESCE((SELECT ads FROM miner_collect_usage WHERE day = ${MINER_SP_TODAY_SQL}), 0)::int AS today_ads,
+              COALESCE((SELECT ads FROM miner_live_usage WHERE day = ${MINER_SP_TODAY_SQL}), 0)::int AS live_today_ads,
               (SELECT MAX(finished_at) FROM miner_collect_runs) AS last_run_at,
               (SELECT COUNT(*) FROM miner_searches WHERE active)::int AS active_searches`),
     pool.query('SELECT value FROM app_state WHERE key = $1', [MINER_SCORE_STATE_KEY])
@@ -2575,25 +2678,36 @@ async function handleMinerStats(req, res, sp) {
     topNiches: niches.rows, topCheckouts: checkouts.rows, lastIngestAt: last.rows[0].at,
     collect: {
       configured: minerCollectConfigured(), actor: MINER_APIFY_ACTOR, todayAds: coll.rows[0].today_ads, dailyLimit: MINER_COLLECT_DAILY_AD_LIMIT,
+      liveTodayAds: coll.rows[0].live_today_ads, liveDailyLimit: MINER_LIVE_DAILY_AD_LIMIT,
       lastRunAt: coll.rows[0].last_run_at, activeSearches: coll.rows[0].active_searches
     },
     scoresComputedAt: scoresState.rows[0] && scoresState.rows[0].value && scoresState.rows[0].value.at ? scoresState.rows[0].value.at : null
   });
 }
 
-async function handleMinerFilters(req, res) {
+async function handleMinerFilters(req, res, sp) {
   if (!getRequestUserId(req)) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
   if (req.method !== 'GET') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
-  const act = `FROM miner_ads a WHERE ${MINER_ACTIVE_AD_SQL}`;
+  // BE-013: sem liveSearch so os anuncios do ranking; com liveSearch=current (opcional) so os da ultima pesquisa ao vivo
+  const liveF = await minerLiveParam(sp ? sp.get('liveSearch') : null, getRequestUserId(req));
+  if (liveF.error) return sendJson(res, 400, { ok: false, error: 'invalid_live_search' });
+  const fParams = [];
+  const scope = liveF.id === undefined ? 'a.in_ranking' : (fParams.push(liveF.id), `a.ad_archive_id IN (SELECT lsa.ad_archive_id FROM miner_live_search_ads lsa WHERE lsa.live_search_id = $1::bigint)`);
+  const act = `FROM miner_ads a WHERE ${MINER_ACTIVE_AD_SQL} AND ${scope}`;
   const activeDomains = `SELECT DISTINCT a.landing_domain ${act} AND a.landing_domain IS NOT NULL`;
   const [countries, ctas, placements, checkouts, niches, languages, adCats] = await Promise.all([
-    pool.query(`SELECT DISTINCT c AS v FROM (SELECT UNNEST(a.countries) AS c ${act}) t ORDER BY v`),
-    pool.query(`SELECT a.cta_text AS v, COUNT(*) AS n ${act} AND a.cta_text <> '' GROUP BY a.cta_text ORDER BY n DESC, v ASC LIMIT ${MINER_TOP_CTAS}`),
-    pool.query(`SELECT DISTINCT p AS v FROM (SELECT jsonb_array_elements_text(a.platforms) AS p ${act}) t ORDER BY v`),
-    pool.query(`SELECT DISTINCT d.checkout_platform AS v FROM miner_domains d WHERE d.checkout_platform IS NOT NULL AND d.landing_domain IN (${activeDomains}) ORDER BY v`),
-    pool.query(`SELECT DISTINCT m.niche AS v FROM miner_ai m WHERE m.niche IS NOT NULL AND m.classified_at IS NOT NULL AND m.landing_domain IN (${activeDomains}) ORDER BY v`),
-    pool.query(`SELECT DISTINCT m.result->>'language' AS v FROM miner_ai m WHERE m.classified_at IS NOT NULL AND m.result->>'language' IS NOT NULL AND m.landing_domain IN (${activeDomains}) ORDER BY v`),
-    pool.query(`SELECT DISTINCT c AS v FROM (SELECT UNNEST(a.ad_categories) AS c ${act} AND a.ad_categories <> '{}') t ORDER BY v`) // BE-012
+    pool.query(`SELECT DISTINCT c AS v FROM (SELECT UNNEST(a.countries) AS c ${act}) t ORDER BY v`, fParams),
+    pool.query(`SELECT a.cta_text AS v, COUNT(*) AS n ${act} AND a.cta_text <> '' GROUP BY a.cta_text ORDER BY n DESC, v ASC LIMIT ${MINER_TOP_CTAS}`, fParams),
+    pool.query(`SELECT DISTINCT p AS v FROM (SELECT jsonb_array_elements_text(a.platforms) AS p ${act}) t ORDER BY v`, fParams),
+    pool.query(`SELECT DISTINCT d.checkout_platform AS v FROM miner_domains d WHERE d.checkout_platform IS NOT NULL AND d.landing_domain IN (${activeDomains}) ORDER BY v`, fParams),
+    pool.query(`SELECT DISTINCT m.niche AS v FROM miner_ai m WHERE m.niche IS NOT NULL AND m.classified_at IS NOT NULL AND m.landing_domain IN (${activeDomains}) ORDER BY v`, fParams),
+    // BE-013: idiomas presentes = coluna miner_ads.language; o idioma da IA entra so para dominios com anuncio sem idioma detectado (mesmo criterio do filtro language)
+    pool.query(`SELECT v FROM (
+        SELECT DISTINCT a.language AS v ${act} AND a.language IS NOT NULL
+        UNION
+        SELECT DISTINCT m.result->>'language' FROM miner_ai m WHERE m.classified_at IS NOT NULL AND m.result->>'language' IS NOT NULL
+           AND m.landing_domain IN (SELECT DISTINCT a.landing_domain ${act} AND a.language IS NULL AND a.landing_domain IS NOT NULL)) t WHERE v IS NOT NULL ORDER BY v`, fParams),
+    pool.query(`SELECT DISTINCT c AS v FROM (SELECT UNNEST(a.ad_categories) AS c ${act} AND a.ad_categories <> '{}') t ORDER BY v`, fParams) // BE-012
   ]);
   const vals = (x) => x.rows.map((r) => r.v);
   return sendJson(res, 200, {
@@ -2777,16 +2891,19 @@ const MINER_SP_TODAY_SQL = "(NOW() AT TIME ZONE 'America/Sao_Paulo')::date";
  * Reserva atomica de ate maxAds anuncios do limite diario (linha do dia travada com FOR UPDATE).
  * Retorna {reserved, day}; reserved = 0 se nao houver saldo minimo.
  */
-async function minerCollectReserve(maxAds) {
-  if (MINER_COLLECT_DAILY_AD_LIMIT <= 0) return { reserved: 0, day: null };
+async function minerCollectReserve(maxAds, live) {
+  // BE-013: a pesquisa ao vivo tem cota propria (tabela miner_live_usage, MINER_LIVE_DAILY_AD_LIMIT); a coleta automatica usa miner_collect_usage / MINER_COLLECT_DAILY_AD_LIMIT
+  const limit = live ? MINER_LIVE_DAILY_AD_LIMIT : MINER_COLLECT_DAILY_AD_LIMIT;
+  const tbl = live ? 'miner_live_usage' : 'miner_collect_usage';
+  if (limit <= 0) return { reserved: 0, day: null };
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query(`INSERT INTO miner_collect_usage (day, ads) VALUES (${MINER_SP_TODAY_SQL}, 0) ON CONFLICT (day) DO NOTHING`);
-    const cur = await client.query(`SELECT day::text AS day, ads FROM miner_collect_usage WHERE day = ${MINER_SP_TODAY_SQL} FOR UPDATE`);
-    const remaining = MINER_COLLECT_DAILY_AD_LIMIT - cur.rows[0].ads;
+    await client.query(`INSERT INTO ${tbl} (day, ads) VALUES (${MINER_SP_TODAY_SQL}, 0) ON CONFLICT (day) DO NOTHING`);
+    const cur = await client.query(`SELECT day::text AS day, ads AS used FROM ${tbl} WHERE day = ${MINER_SP_TODAY_SQL} FOR UPDATE`);
+    const remaining = limit - cur.rows[0].used;
     const reserved = remaining >= Math.min(MINER_COLLECT_MIN_RESERVE, maxAds) ? Math.min(maxAds, remaining) : 0;
-    if (reserved > 0) await client.query('UPDATE miner_collect_usage SET ads = ads + $2 WHERE day = $1::date', [cur.rows[0].day, reserved]);
+    if (reserved > 0) await client.query(`UPDATE ${tbl} SET ads = ads + $2 WHERE day = $1::date`, [cur.rows[0].day, reserved]);
     await client.query('COMMIT');
     return { reserved, day: cur.rows[0].day };
   } catch (err) {
@@ -2796,9 +2913,10 @@ async function minerCollectReserve(maxAds) {
     client.release();
   }
 }
-async function minerCollectRefund(day, amount) {
+async function minerCollectRefund(day, amount, live) {
   if (!day || !(amount > 0)) return;
-  await pool.query('UPDATE miner_collect_usage SET ads = GREATEST(ads - $2, 0) WHERE day = $1::date', [day, amount]);
+  const tbl = live ? 'miner_live_usage' : 'miner_collect_usage';
+  await pool.query(`UPDATE ${tbl} SET ads = GREATEST(ads - $2, 0) WHERE day = $1::date`, [day, amount]);
 }
 async function minerCollectRemaining() {
   const r = await pool.query(`SELECT ads FROM miner_collect_usage WHERE day = ${MINER_SP_TODAY_SQL}`);
@@ -2810,7 +2928,7 @@ async function minerCollectRemaining() {
  * Retorna {budget:true} sem saldo, {running:true} se a busca ja esta rodando, ou {run}.
  */
 async function minerCollectPrepare(search, recordBudget) {
-  const { reserved, day } = await minerCollectReserve(search.max_ads);
+  const { reserved, day } = await minerCollectReserve(search.max_ads, !!search.live);
   if (reserved <= 0) {
     if (recordBudget) {
       await pool.query(
@@ -2831,7 +2949,7 @@ async function minerCollectPrepare(search, recordBudget) {
     row.reserved_day = row.reserved_day_txt; // texto YYYY-MM-DD (o driver converteria DATE para Date local)
     return { run: row };
   } catch (err) {
-    await minerCollectRefund(day, reserved).catch(() => {});
+    await minerCollectRefund(day, reserved, !!search.live).catch(() => {});
     if (err && err.code === '23505') return { running: true };
     throw err;
   }
@@ -2844,7 +2962,7 @@ async function minerCollectFinish(search, run, status, counters, errText, cost) 
     `UPDATE miner_collect_runs SET status = $2, items_received = $3, inserted = $4, updated = $5, rejected = $6, est_cost_usd = $7,
             finished_at = NOW(), error = $8 WHERE id = $1`,
     [run.id, status, counters.received, counters.inserted, counters.updated, counters.rejected, cost, errText]);
-  await minerCollectRefund(run.reserved_day, run.reserved_ads - used);
+  await minerCollectRefund(run.reserved_day, run.reserved_ads - used, !!search.live);
   if (!search.id) return; // pesquisa ao vivo: nao ha busca salva para reagendar
   if (status === 'succeeded') {
     await pool.query(
@@ -2864,7 +2982,7 @@ async function minerCollectExecute(search, run, live) {
   const counters = { received: 0, inserted: 0, updated: 0, rejected: 0 };
   let apifyRunId = null;
   let terminal = false;
-  const submitterId = ('apify:' + MINER_APIFY_ACTOR).slice(0, 100);
+  const submitterId = ((live ? MINER_LIVE_SOURCE_PREFIX : '') + 'apify:' + MINER_APIFY_ACTOR).slice(0, 100); // origem: live: = so pesquisa ao vivo (BE-013)
   const context = { q: search.q, country: search.country === 'ALL' ? null : search.country, mediaType: search.media_type.toLowerCase() };
   const buffer = [];
   // Ingere em lotes de MINER_COLLECT_INGEST_BATCH; force=true descarrega o resto. Itens sem mapeamento (null) viram rejeitados na ingestao.
@@ -3110,10 +3228,12 @@ async function minerLiveSweep() {
 }
 
 /**
- * Substituicao dos resultados (AC-08), numa unica transacao: apaga os anuncios que NAO sao desta pesquisa e nao estao salvos
- * (item de colecao kind ad com o id do anuncio, nem kind offer com o dominio dele), as contribuicoes sem anuncio, e os dominios orfaos
- * (sem anuncio e sem item salvo) com fotografias, pontuacao, IA e enriquecimento. Depois recalcula as pontuacoes dos dominios afetados.
- * Itens de colecao nao sao tocados: o alvo apagado volta como missing:true. Retorna {deleted, domains}.
+ * Limpeza apos uma pesquisa ao vivo concluida com sucesso (BE-013; substitui a substituicao destrutiva do BE-012), numa unica transacao.
+ * ORIGEM do anuncio: miner_ads.in_ranking = TRUE quando alguma busca automatica ou a extensao o trouxe (miner_ad_sources com submitter SEM o prefixo
+ * `live:`); FALSE quando so pesquisas ao vivo o trouxeram (submitter `live:apify:...`). Apaga so anuncios in_ranking = FALSE que nao pertencem as
+ * ultimas MINER_LIVE_KEEP_SEARCHES pesquisas concluidas de cada usuario e que nao estao salvos (item de colecao kind ad com o id, nem kind offer com o
+ * dominio). Depois remove vinculos dos apagados e de pesquisas antigas, contribuicoes sem anuncio e dominios orfaos (sem anuncio e sem item salvo) com
+ * fotografias, pontuacao, IA e enriquecimento. Anuncios do ranking nunca sao tocados. Retorna {deleted, domains}.
  */
 async function minerLiveReplace(liveId) {
   const client = await pool.connect();
@@ -3121,14 +3241,23 @@ async function minerLiveReplace(liveId) {
   let deleted = 0;
   try {
     await client.query('BEGIN');
+    const keepRows = await client.query(
+      "SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY id DESC) AS rn FROM miner_live_searches WHERE status = 'succeeded' AND id <> $1) t WHERE rn <= $2",
+      [liveId, MINER_LIVE_KEEP_SEARCHES - 1]);
+    const keep = [liveId].concat(keepRows.rows.map((x) => Number(x.id)));
     const del = await client.query(
-      "DELETE FROM miner_ads a WHERE a.live_search_id IS DISTINCT FROM $1"
+      "DELETE FROM miner_ads a WHERE NOT a.in_ranking"
+      + " AND NOT EXISTS (SELECT 1 FROM miner_live_search_ads l WHERE l.ad_archive_id = a.ad_archive_id AND l.live_search_id = ANY($1::bigint[]))"
       + " AND NOT EXISTS (SELECT 1 FROM miner_collection_items i WHERE i.kind = 'ad' AND i.ref = a.ad_archive_id)"
       + " AND NOT (a.landing_domain IS NOT NULL AND EXISTS (SELECT 1 FROM miner_collection_items i WHERE i.kind = 'offer' AND i.ref = a.landing_domain))"
-      + " RETURNING a.landing_domain", [liveId]);
+      + " RETURNING a.ad_archive_id, a.landing_domain", [keep]);
     deleted = del.rowCount;
+    const ids = del.rows.map((x) => x.ad_archive_id);
     domains = Array.from(new Set(del.rows.map((x) => x.landing_domain).filter(Boolean)));
-    await client.query('DELETE FROM miner_ad_sources s WHERE NOT EXISTS (SELECT 1 FROM miner_ads a WHERE a.ad_archive_id = s.ad_archive_id)');
+    if (ids.length) await client.query('DELETE FROM miner_ad_sources WHERE ad_archive_id = ANY($1::text[])', [ids]);
+    await client.query(
+      "DELETE FROM miner_live_search_ads l WHERE (NOT (l.live_search_id = ANY($1::bigint[])) AND NOT EXISTS (SELECT 1 FROM miner_live_searches s WHERE s.id = l.live_search_id AND s.status = 'running'))"
+      + " OR NOT EXISTS (SELECT 1 FROM miner_ads a WHERE a.ad_archive_id = l.ad_archive_id)", [keep]);
     if (domains.length) {
       const orphans = (await client.query(
         "SELECT t.d FROM UNNEST($1::text[]) AS t(d) WHERE NOT EXISTS (SELECT 1 FROM miner_ads a WHERE a.landing_domain = t.d)"
@@ -3146,8 +3275,6 @@ async function minerLiveReplace(liveId) {
   } finally {
     client.release();
   }
-  // pontuacoes dos dominios que perderam anuncios (e remocao dos que ficaram sem anuncio ativo)
-  for (let i = 0; i < domains.length; i += MINER_SCORE_CHUNK) await minerScoresRefreshDomains(domains.slice(i, i + MINER_SCORE_CHUNK));
   return { deleted, domains };
 }
 
@@ -3163,7 +3290,7 @@ async function minerLiveSearchRun(live, search, run) {
   let error = out && out.error ? String(out.error).slice(0, 200) : (out && out.status !== 'succeeded' ? String(out && out.status || 'failed') : null);
   let found = 0;
   try {
-    found = (await pool.query('SELECT COUNT(*)::int AS n FROM miner_ads WHERE live_search_id = $1', [live.id])).rows[0].n;
+    found = (await pool.query('SELECT COUNT(*)::int AS n FROM miner_live_search_ads WHERE live_search_id = $1', [live.id])).rows[0].n;
     if (out && out.status === 'succeeded') {
       if (found > 0) await minerLiveReplace(Number(live.id));
       status = 'succeeded';
@@ -3217,7 +3344,7 @@ async function handleMinerLiveSearch(req, res, rest) {
   }
   // Mesmo limite diario da coleta (reserva atomica); a pesquisa ao vivo nao tem busca salva (search_id nulo no run).
   const search = {
-    id: null, q, country, media_type: 'ALL', ad_category: adCategory, max_ads: MINER_LIVE_SEARCH_MAX_ADS, live_search_in: searchIn,
+    id: null, live: true, q, country, media_type: 'ALL', ad_category: adCategory, max_ads: MINER_LIVE_SEARCH_MAX_ADS, live_search_in: searchIn,
     // advertiser por nome: a Biblioteca nao tem busca so por anunciante no actor; pesquisa o termo e mantem so anuncios cujo page_name o contem
     live_name_filter: searchIn === 'advertiser' && !/^[0-9]{1,100}$/.test(q) ? q.toLowerCase() : null
   };
@@ -3364,7 +3491,7 @@ async function minerHydrateOffers(domains) {
     out.set(r.dom, {
       domain: r.dom, destinationType: minerDestinationType(r.dom), pageNames: r.page_names || [], activeAds: r.active_ads === null ? 0 : r.active_ads,
       distinctCreatives: r.distinct_creatives === null ? 0 : r.distinct_creatives, maxDaysRunning: r.max_days_running === null ? 0 : r.max_days_running,
-      growth7d: r.growth7d === null ? 0 : r.growth7d, score: r.score === null ? null : r.score, lastSeenAt: r.last_seen_at,
+      growth7d: r.growth7d === null ? 0 : r.growth7d, score: r.score === null ? null : r.score, scaled: r.score === null ? false : minerIsScaled(r), lastSeenAt: r.last_seen_at,
       checkout: r.c_enriched_at ? minerEnrichmentToJson({ checkout_platform: r.c_platform, checkout_url: r.c_url, prices: r.c_prices, price_min: r.c_price_min, page_title: r.c_title, enriched_at: r.c_enriched_at }) : null,
       ai: r.ai_classified_at && r.ai_result ? minerAiToJson(r.ai_result, r.ai_classified_at) : null,
       sparkline: sparkBy.get(r.dom) || [], sampleAds: sampleBy.get(r.dom) || []
@@ -3705,13 +3832,73 @@ async function handleMinerMediaDownload(req, res, sp) {
 // ---------------------------------------------------------------------------
 // BE-011: backfill idempotente no arranque (sem apagar linhas): catalogo, tipo de destino e fila dos nao-ofertas. Retorna 1 se mudou algo.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// BE-013: migracao unica (marcada em app_state) dos anuncios de pesquisas ao vivo do BE-012 e backfill de idioma em lotes.
+//  - anuncio com live_search_id (legado) vira so-pesquisa-ao-vivo: ganha o vinculo em miner_live_search_ads, in_ranking = FALSE e a contribuicao
+//    apify:* vira live:apify:*. Um anuncio que a busca automatica tambem trouxe antes dessa migracao nao e distinguivel e e tratado como ao vivo;
+//    volta ao ranking sozinho na proxima coleta automatica (upsert marca in_ranking = TRUE).
+//  - idioma: detecta pelo texto (body, title, caption) os anuncios com language nulo, em lotes de 500; roda uma vez, em segundo plano.
+// ---------------------------------------------------------------------------
+const MINER_BE013_STATE_KEY = 'miner_be013_migration';
+const MINER_BE013_LANG_KEY = 'miner_be013_language_backfill';
+async function minerBe013Migrate() {
+  const mark = await pool.query('SELECT 1 FROM app_state WHERE key = $1', [MINER_BE013_STATE_KEY]);
+  if (mark.rowCount) return 0;
+  await pool.query('INSERT INTO miner_live_search_ads (live_search_id, ad_archive_id) SELECT live_search_id, ad_archive_id FROM miner_ads WHERE live_search_id IS NOT NULL ON CONFLICT DO NOTHING');
+  await pool.query(
+    `UPDATE miner_ad_sources s SET submitter_id = LEFT('${MINER_LIVE_SOURCE_PREFIX}' || s.submitter_id, 100)
+      WHERE s.submitter_id LIKE 'apify:%' AND EXISTS (SELECT 1 FROM miner_ads a WHERE a.ad_archive_id = s.ad_archive_id AND a.live_search_id IS NOT NULL)
+        AND NOT EXISTS (SELECT 1 FROM miner_ad_sources o WHERE o.ad_archive_id = s.ad_archive_id AND o.submitter_id = LEFT('${MINER_LIVE_SOURCE_PREFIX}' || s.submitter_id, 100))`);
+  await pool.query('UPDATE miner_ads SET in_ranking = FALSE WHERE live_search_id IS NOT NULL');
+  // fotografias diarias de dominios que so tem anuncios de pesquisa ao vivo nao fazem parte do historico do ranking
+  await pool.query('DELETE FROM miner_snapshots sn WHERE NOT EXISTS (SELECT 1 FROM miner_ads a WHERE a.landing_domain = sn.landing_domain AND a.in_ranking)');
+  await pool.query(
+    `INSERT INTO app_state (key, value, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+    [MINER_BE013_STATE_KEY, JSON.stringify({ at: new Date().toISOString(), version: 1 })]);
+  return 1;
+}
+
+let minerLangBackfilling = false;
+/** Idioma dos anuncios ja gravados, em lotes (id crescente, sem prender o banco). Marca o fim em app_state; reiniciar no meio recomeca do zero. Nunca lanca. */
+async function minerLanguageBackfill() {
+  if (minerLangBackfilling || !pool || !isDbConnected) return;
+  minerLangBackfilling = true;
+  try {
+    const mark = await pool.query('SELECT 1 FROM app_state WHERE key = $1', [MINER_BE013_LANG_KEY]);
+    if (mark.rowCount) return;
+    let last = '';
+    for (;;) {
+      const r = await pool.query(
+        `SELECT ad_archive_id, body, title, caption FROM miner_ads WHERE language IS NULL AND ad_archive_id > $1 ORDER BY ad_archive_id LIMIT 500`, [last]);
+      if (!r.rows.length) break;
+      last = r.rows[r.rows.length - 1].ad_archive_id;
+      const ids = []; const langs = [];
+      for (const x of r.rows) {
+        const l = minerDetectLanguage([x.body, x.title, x.caption].join(' '));
+        if (l) { ids.push(x.ad_archive_id); langs.push(l); }
+      }
+      if (ids.length) await pool.query('UPDATE miner_ads a SET language = t.l FROM UNNEST($1::text[], $2::text[]) AS t(i, l) WHERE a.ad_archive_id = t.i AND a.language IS NULL', [ids, langs]);
+      await minerSleep(20);
+    }
+    await pool.query(
+      `INSERT INTO app_state (key, value, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+      [MINER_BE013_LANG_KEY, JSON.stringify({ at: new Date().toISOString(), version: 1 })]);
+  } catch (err) {
+    console.error('[Minerador] backfill de idioma falhou:', String(err && err.message).slice(0, 120));
+  } finally {
+    minerLangBackfilling = false;
+  }
+}
+
 const MINER_BE011_STATE_KEY = 'miner_be011_backfill';
 async function minerQualityBackfill() {
   if (!pool || !isDbConnected) return 0;
   let changed = 0;
   try {
     await minerLiveSweep(); // pesquisa ao vivo que ficou "running" quando o processo caiu
-    const cat = await pool.query(`UPDATE miner_ads SET is_catalog = TRUE WHERE NOT is_catalog AND (body ~ '\\{\\{[^{}]*\\}\\}' OR title ~ '\\{\\{[^{}]*\\}\\}')`);
+    changed += await minerBe013Migrate(); // BE-013: vinculo e origem dos anuncios de pesquisas ao vivo antigas (uma vez)
+    minerLanguageBackfill().catch(() => {}); // BE-013: idioma dos anuncios existentes, em lotes e em segundo plano
+    const cat = await pool.query(`UPDATE miner_ads SET is_catalog = TRUE WHERE NOT is_catalog AND (body ~ '\\{\\{[^{}]*\\}\\}' OR title ~ '\\{\\{[^{}]*\\}\\}' OR caption ~ '\\{\\{[^{}]*\\}\\}' OR body LIKE '%{{product.%' OR title LIKE '%{{product.%' OR caption LIKE '%{{product.%')`);
     changed += cat.rowCount;
     const doms = await pool.query('SELECT DISTINCT landing_domain FROM miner_ads WHERE landing_domain IS NOT NULL');
     const nonOffer = [];
@@ -3867,7 +4054,7 @@ async function handleApi(req, res, pathname, searchParams) {
     if (pathname === '/api/miner/niches') return await handleMinerNiches(req, res);
     if (pathname === '/api/miner/ads') return await handleMinerAds(req, res, searchParams);
     if (pathname === '/api/miner/stats') return await handleMinerStats(req, res, searchParams);
-    if (pathname === '/api/miner/filters') return await handleMinerFilters(req, res);
+    if (pathname === '/api/miner/filters') return await handleMinerFilters(req, res, searchParams);
     if (pathname === '/api/miner/searches') return await handleMinerSearches(req, res);
     if (pathname.startsWith('/api/miner/searches/')) return await handleMinerSearchItem(req, res, pathname.slice('/api/miner/searches/'.length));
     if (pathname === '/api/miner/collect/runs') return await handleMinerCollectRuns(req, res, searchParams);
@@ -4034,4 +4221,4 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err && err.message ? err.message : err));
 
 // Funcoes internas expostas para os testes unitarios (o servidor roda como script principal).
-module.exports = { __minerTest: { minerLiveLibraryUrl, minerNormalizeAdCategories, parseSearchIn, parseAdCategory, minerSearchCond, minerDestinationType, minerHasTemplate, minerValidStart, MINER_NON_OFFER_HOSTS, minerAiErrorCode, minerAiStatusOf, normalizeMinerAd, isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS, minerScoredCte, minerScoresUpsertSql, minerScoresPruneSql, MINER_SCORES_BATCH_SQL, MINER_SCORE_CHUNK, MINER_SCORE_LOCK_KEY, mapApifyAdItem, toEpochSeconds, plainText, minerAdLibraryUrl, MINER_APIFY_ADAPTERS, normalizeMinerAd, scrubKey, minerCursorEncode, minerCursorDecode, parseIsoDate, parseNonNegNumber, validateAiResult, buildAiInput, buildAiRequest, aiInputHash, canonicalJson, aiClean, MINER_AI_RESPONSE_SCHEMA, MINER_AI_NICHES, MINER_AI_FORMATS, MINER_AI_ANGLES, MINER_AI_LANGUAGES } };
+module.exports = { __minerTest: { MINER_AI_RESERVE_SQL, MINER_AI_PRIO_PLACEHOLDER_SQL, MINER_AI_PLACEHOLDER_SQL, minerDetectLanguage, minerIsScaled, MINER_PLACEMENTS, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH, minerLiveLibraryUrl, minerNormalizeAdCategories, parseSearchIn, parseAdCategory, minerSearchCond, minerDestinationType, minerHasTemplate, minerValidStart, MINER_NON_OFFER_HOSTS, minerAiErrorCode, minerAiStatusOf, normalizeMinerAd, isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS, minerScoredCte, minerScoresUpsertSql, minerScoresPruneSql, MINER_SCORES_BATCH_SQL, MINER_SCORE_CHUNK, MINER_SCORE_LOCK_KEY, mapApifyAdItem, toEpochSeconds, plainText, minerAdLibraryUrl, MINER_APIFY_ADAPTERS, normalizeMinerAd, scrubKey, minerCursorEncode, minerCursorDecode, parseIsoDate, parseNonNegNumber, validateAiResult, buildAiInput, buildAiRequest, aiInputHash, canonicalJson, aiClean, MINER_AI_RESPONSE_SCHEMA, MINER_AI_NICHES, MINER_AI_FORMATS, MINER_AI_ANGLES, MINER_AI_LANGUAGES } };
