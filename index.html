@@ -1136,6 +1136,28 @@ input:focus, select:focus, textarea:focus {
 .mn-skel { position: relative; overflow: hidden; background: var(--bg-input); border-radius: var(--radius-xs); color: transparent !important; }
 .mn-skel::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); animation: mn-shimmer 1.2s infinite; }
 @keyframes mn-shimmer { to { transform: translateX(100%); } }
+.mn-primary-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 14px; }
+.mn-pfilter { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.mn-pfilter-country { flex: 1 1 200px; max-width: 280px; }
+.mn-pfilter-cat { flex: 1 1 220px; max-width: 320px; }
+.mn-pfilter-search { flex: 2 1 320px; min-width: 0; }
+.mn-plabel { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.mn-search-bar { display: flex; align-items: center; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-input); min-width: 0; min-height: 38px; }
+.mn-search-bar:focus-within { outline: 2px solid var(--theme-accent); outline-offset: 1px; }
+.mn-search-mode { border: 0 !important; background: var(--bg-card) !important; color: var(--text-main) !important; font-size: 0.8rem !important; font-weight: 700 !important; padding: 0 10px !important; border-right: 1px solid var(--border-subtle) !important; border-radius: 0 !important; min-height: 38px !important; cursor: pointer; flex: 0 0 auto; width: auto !important; }
+.mn-search-bar .mn-search { border: 0 !important; background: transparent !important; border-radius: 0 !important; min-height: 38px !important; flex: 1 1 auto; padding: 8px 12px !important; outline: none !important; min-width: 0; }
+.mn-btn-search-trigger { margin-right: 4px; white-space: nowrap; flex: 0 0 auto; }
+.mn-country-picker { position: relative; width: 100%; min-width: 0; }
+.mn-country-combo { display: flex; align-items: center; position: relative; }
+.mn-country-input { padding-right: 28px !important; cursor: pointer; }
+.mn-country-arrow { position: absolute; right: 8px; background: none; border: 0; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 0.65rem; pointer-events: auto; }
+.mn-country-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 240px; overflow-y: auto; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); z-index: 1000; scrollbar-width: thin; scrollbar-color: var(--border-hover) transparent; }
+.mn-country-dropdown[hidden] { display: none; }
+.mn-country-item { padding: 8px 12px; font-size: 0.82rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-subtle); }
+.mn-country-item:last-child { border-bottom: none; }
+.mn-country-item:hover, .mn-country-item.highlighted { background: var(--bg-card-hover); color: var(--theme-accent); }
+.mn-country-item[aria-selected="true"] { background: var(--theme-accent-soft); font-weight: 700; }
+.mn-country-select-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; opacity: 0; pointer-events: none; }
 .mn-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .mn-tabs { display: inline-flex; padding: 3px; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px solid var(--border-subtle); }
 .mn-tab { border: 0; background: transparent; color: var(--text-muted); font: inherit; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
@@ -1297,6 +1319,8 @@ input:focus, select:focus, textarea:focus {
  .mn-cols { grid-template-columns: minmax(0, 1fr); }
  .mn-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
  .mn-form .mn-q { grid-column: 1 / -1; }
+ .mn-primary-filters { flex-direction: column; align-items: stretch; gap: 10px; }
+ .mn-pfilter-country, .mn-pfilter-cat, .mn-pfilter-search { flex: 1 1 100%; max-width: none; }
 }
 @media (max-width: 520px) {
  .mn-kpi-value { font-size: 1.3rem; }
@@ -1863,13 +1887,59 @@ input:focus, select:focus, textarea:focus {
        <button type="button" class="mn-kpi" data-kpi="niches"><span class="mn-kpi-label">Nichos ativos</span><span class="mn-kpi-value mn-skel" data-v>0000</span><span class="mn-kpi-sub" data-s></span></button>
       </div>
 
+      <!-- Filtros primários no topo (AC-01) -->
+      <div class="mn-primary-filters" id="mn-primary-filters">
+       <!-- 1. País: seletor pesquisável estilo Biblioteca do Meta -->
+       <div class="mn-pfilter mn-pfilter-country" id="mn-pfilter-country-wrap">
+        <label for="mn-country-input" class="mn-plabel">País</label>
+        <div class="mn-country-picker" id="mn-country-picker">
+         <div class="mn-country-combo" id="mn-country-combo">
+          <input type="text" class="mn-field mn-country-input" id="mn-country-input" placeholder="Todos os países" autocomplete="off" aria-label="Pesquisar país">
+          <button type="button" class="mn-country-arrow" id="mn-country-arrow" aria-label="Abrir lista de países" tabindex="-1">▼</button>
+         </div>
+         <div class="mn-country-dropdown" id="mn-country-dropdown" hidden>
+          <div class="mn-country-list" id="mn-country-list" role="listbox"></div>
+         </div>
+         <select id="mn-p-country" class="mn-country-select-hidden" aria-hidden="true" tabindex="-1">
+          <option value="">Todos os países</option>
+         </select>
+        </div>
+       </div>
+
+       <!-- 2. Categoria do anúncio -->
+       <div class="mn-pfilter mn-pfilter-cat">
+        <label for="mn-p-category" class="mn-plabel">Categoria do anúncio</label>
+        <select id="mn-p-category" class="mn-field" aria-label="Categoria do anúncio">
+         <option value="all">Todos os anúncios</option>
+         <option value="political">Temas sociais, eleições ou política</option>
+         <option value="housing">Habitação</option>
+         <option value="employment">Emprego</option>
+         <option value="financial">Produtos e serviços financeiros</option>
+        </select>
+       </div>
+
+       <!-- 3. Barra de pesquisa com seletor Palavra-chave | Anunciante -->
+       <div class="mn-pfilter mn-pfilter-search">
+        <label for="mn-q" class="mn-plabel">Pesquisar</label>
+        <div class="mn-search-bar" id="mn-search-bar">
+         <select id="mn-search-in" class="mn-search-mode" aria-label="Modo de busca">
+          <option value="keyword">Palavra-chave</option>
+          <option value="advertiser">Anunciante</option>
+         </select>
+         <input type="text" class="mn-search" id="mn-q" placeholder="Pesquisar por palavra-chave" maxlength="200" autocomplete="off" aria-label="Buscar">
+         <button type="button" class="mn-btn primary sm mn-btn-search-trigger" id="mn-btn-do-search" aria-label="Pesquisar">Pesquisar</button>
+        </div>
+       </div>
+      </div>
+
+      <div id="mn-live-summary" class="mn-live-summary" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:0.84rem;color:var(--text-main);align-items:center;justify-content:space-between;gap:8px;"></div>
+
       <div class="mn-toolbar">
        <div class="mn-tabs" role="tablist" aria-label="Vista">
         <button type="button" class="mn-tab" role="tab" id="mn-tab-offers" data-view="offers" aria-selected="true">Ofertas escaladas</button>
         <button type="button" class="mn-tab" role="tab" id="mn-tab-ads" data-view="ads" aria-selected="false">Anúncios</button>
         <button type="button" class="mn-tab" role="tab" id="mn-tab-saved" data-view="saved" aria-selected="false">Salvos</button>
        </div>
-       <input type="text" class="mn-search" id="mn-q" placeholder="Buscar por texto, página ou termo..." maxlength="200" autocomplete="off" aria-label="Buscar">
        <label class="mn-sort">Ordenar <select id="mn-sort" aria-label="Ordenar"></select></label>
        <button type="button" class="mn-btn sm" id="mn-btn-density" title="Alternar densidade da grelha">Densidade: Confortável</button>
        <label class="mn-switch"><input type="checkbox" id="mn-infinite" checked> Scroll contínuo</label>
@@ -1885,16 +1955,9 @@ input:focus, select:focus, textarea:focus {
           <button type="button" class="mn-btn sm mn-only-narrow" id="mn-btn-filters-close" aria-label="Fechar filtros">✕</button>
          </div>
         </div>
-        <div class="mn-fgroup"><label for="mn-f-activewithin">Visto ativo nas últimas</label>
-         <select id="mn-f-activewithin"><option value="48h" selected>48 h (Padrão)</option><option value="24h">24 h</option><option value="7d">7 dias</option></select></div>
-        <div class="mn-fgroup"><label for="mn-f-country">País</label><select id="mn-f-country"><option value="">Todos</option></select></div>
         <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Veiculação <span class="mn-hint">(só em Anúncios)</span></span><div class="mn-checks" id="mn-f-placements"></div></div>
-        <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Mesmo criativo <span class="mn-hint">(escala)</span></span>
-         <div class="mn-frow"><input type="number" id="mn-f-mincollation" min="1" max="1000000" placeholder="Mín." aria-label="Mínimo com o mesmo criativo"><input type="number" id="mn-f-maxcollation" min="1" max="1000000" placeholder="Máx." aria-label="Máximo com o mesmo criativo"></div></div>
         <div class="mn-fgroup" data-scope="ads"><label for="mn-f-language">Idioma <span class="mn-hint">(só em Anúncios)</span></label>
          <select id="mn-f-language"><option value="">Todos</option></select></div>
-        <div class="mn-fgroup" data-scope="ads"><label for="mn-f-seenwithin">Vistos pela primeira vez <span class="mn-hint">(só em Anúncios)</span></label>
-         <select id="mn-f-seenwithin"><option value="">Todos</option><option value="24h">Últimas 24 h</option><option value="3d">Últimos 3 dias</option><option value="7d">Últimos 7 dias</option></select></div>
         <div class="mn-fgroup"><label for="mn-f-media">Formato do criativo</label>
          <select id="mn-f-media"><option value="">Todos</option><option value="IMAGE">Imagem</option><option value="VIDEO">Vídeo</option><option value="CAROUSEL" data-scope="ads">Carrossel (só em Anúncios)</option></select></div>
         <div class="mn-fgroup"><span class="mn-flabel">Dias ativo</span>
@@ -1907,12 +1970,7 @@ input:focus, select:focus, textarea:focus {
          <div class="mn-frow"><input type="number" id="mn-f-mindays" min="0" max="100000" placeholder="Mín." aria-label="Mínimo de dias"><input type="number" id="mn-f-maxdays" data-scope="ads" min="0" max="100000" placeholder="Máx." aria-label="Máximo de dias"></div>
          <span class="mn-hint">O máximo vale só em Anúncios.</span>
         </div>
-        <div class="mn-fgroup" data-scope="offers"><label for="mn-f-minads">Mínimo de anúncios <span class="mn-hint">(só em Ofertas)</span></label><input type="number" id="mn-f-minads" min="0" max="100000" placeholder="0"></div>
-        <div class="mn-fgroup"><label for="mn-f-platform">Checkout</label><select id="mn-f-platform"><option value="">Todos</option></select></div>
         <div class="mn-fgroup"><label for="mn-f-format">Formato do produto (IA)</label><select id="mn-f-format"><option value="">Todos</option></select></div>
-        <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Data de início <span class="mn-hint">(só em Anúncios)</span></span>
-         <div class="mn-frow"><input type="date" id="mn-f-from" aria-label="Início de"><input type="date" id="mn-f-to" aria-label="Início até"></div></div>
-        <div class="mn-fgroup" data-scope="ads"><label for="mn-f-cta">CTA <span class="mn-hint">(só em Anúncios)</span></label><select id="mn-f-cta"><option value="">Todos</option></select></div>
         <div class="mn-fgroup" data-scope="ads"><label for="mn-f-domain">Domínio <span class="mn-hint">(só em Anúncios)</span></label><input type="text" id="mn-f-domain" placeholder="exemplo.com" maxlength="253" autocomplete="off"></div>
         <div class="mn-fgroup"><label for="mn-f-page">Anunciante (ID da página)</label><input type="text" id="mn-f-page" placeholder="Ex.: 1234567890" maxlength="100" autocomplete="off"></div>
        </aside>
@@ -4127,20 +4185,74 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    saved: [['recent', 'Mais recentes']]
   };
   const DEFAULT_SORT = { offers: 'score', ads: 'recent', saved: 'recent' };
-  const FILTER_KEYS = ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'minAds', 'platform', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId', 'activeWithin', 'minCollation', 'maxCollation', 'language', 'seenWithin'];
+  const FILTER_KEYS = ['placements', 'language', 'mediaType', 'minDays', 'maxDays', 'format', 'domain', 'pageId'];
   const SCOPE = {
-   offers: ['activeWithin', 'country', 'mediaType', 'minDays', 'minAds', 'platform', 'format', 'pageId'],
-   ads: ['activeWithin', 'country', 'placements', 'minCollation', 'maxCollation', 'language', 'seenWithin', 'mediaType', 'minDays', 'maxDays', 'platform', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId'],
+   offers: ['mediaType', 'minDays', 'format', 'pageId'],
+   ads: ['placements', 'language', 'mediaType', 'minDays', 'maxDays', 'format', 'domain', 'pageId'],
    saved: []
   };
   const CTRL = {
-   country: 'mn-f-country', mediaType: 'mn-f-media', minDays: 'mn-f-mindays', maxDays: 'mn-f-maxdays', minAds: 'mn-f-minads', platform: 'mn-f-platform',
-   format: 'mn-f-format', startFrom: 'mn-f-from', startTo: 'mn-f-to',
-   cta: 'mn-f-cta', domain: 'mn-f-domain', pageId: 'mn-f-page',
-   activeWithin: 'mn-f-activewithin', minCollation: 'mn-f-mincollation', maxCollation: 'mn-f-maxcollation',
-   language: 'mn-f-language', seenWithin: 'mn-f-seenwithin'
+   placements: 'mn-f-placements', language: 'mn-f-language', mediaType: 'mn-f-media',
+   minDays: 'mn-f-mindays', maxDays: 'mn-f-maxdays', format: 'mn-f-format',
+   domain: 'mn-f-domain', pageId: 'mn-f-page'
   };
-  const TEXT_CTRL = ['minDays', 'maxDays', 'minAds', 'domain', 'pageId', 'minCollation', 'maxCollation'];
+  const TEXT_CTRL = ['minDays', 'maxDays', 'domain', 'pageId'];
+
+  const AD_CATEGORIES = [
+   ['all', 'Todos os anúncios'],
+   ['political', 'Temas sociais, eleições ou política'],
+   ['housing', 'Habitação'],
+   ['employment', 'Emprego'],
+   ['financial', 'Produtos e serviços financeiros']
+  ];
+  const AD_CAT_MAP = Object.fromEntries(AD_CATEGORIES);
+  const adCategoryLabel = (cat) => AD_CAT_MAP[cat] || 'Todos os anúncios';
+  const LIBRARY_AD_TYPE = {
+   all: 'all',
+   political: 'political_and_issue_ads',
+   housing: 'housing_ads',
+   employment: 'employment_ads',
+   financial: 'financial_products_and_services_ads'
+  };
+
+  const ISO_COUNTRIES = [
+   'AF','ZA','AL','DE','AD','AO','AI','AQ','AG','SA','DZ','AR','AM','AW','AU','AT','AZ',
+   'BS','BD','BB','BH','BE','BZ','BJ','BM','BY','BO','BA','BW','BR','BN','BG','BF','BI','BT',
+   'CV','CM','KH','CA','QA','KZ','TD','CL','CN','CY','VA','CO','KM','CG','CD','KP','KR','CI',
+   'CR','HR','CU','CW','DK','DJ','DM','EG','SV','AE','EC','ER','SK','SI','ES','US','EE','SZ',
+   'ET','FJ','PH','FI','FR','GA','GM','GH','GE','GI','GD','GR','GL','GP','GU','GT','GG','GN',
+   'GW','GQ','GY','GF','HT','HN','HK','HU','YE','BV','CX','IM','NF','AX','KY','CC','CK','FK',
+   'FO','GS','HM','MP','MH','PN','SB','TC','UM','VG','VI','IN','ID','IR','IQ','IE','IS','IL',
+   'IT','JM','JP','JE','JO','KW','LA','LS','LV','LB','LR','LY','LI','LT','LU','MO','MK','MG',
+   'MY','MW','MV','ML','MT','MA','MQ','MU','MR','YT','MX','MM','FM','MZ','MD','MC','MN','ME',
+   'MS','NA','NR','NP','NI','NE','NG','NU','NO','NC','NZ','OM','NL','BQ','PW','PA','PG','PK',
+   'PY','PE','PF','PL','PR','PT','KE','KG','KI','GB','CF','DO','CZ','RE','RO','RW','RU','EH',
+   'WS','AS','SM','SH','LC','BL','MF','PM','ST','VC','SN','SL','RS','SC','SG','SX','SY','SO',
+   'LK','SD','SS','SE','CH','SR','SJ','TJ','TH','TW','TZ','IO','TF','PS','TL','TG','TK','TO',
+   'TT','TN','TM','TR','TV','UG','UA','AE','GB','US','UM','UY','UZ','VU','VE','VN','WF','ZM','ZW'
+  ];
+  const _dn = new Intl.DisplayNames(['pt-BR'], { type: 'region' });
+  function countryFlag(code) {
+   if (!code || code.length !== 2) return '';
+   const c = code.toUpperCase();
+   return String.fromCodePoint(c.charCodeAt(0) + 127397, c.charCodeAt(1) + 127397);
+  }
+  function countryNameOnly(code) {
+   if (!code || code === 'ALL') return 'Todos os países';
+   try { return _dn.of(code.toUpperCase()) || code; } catch (e) { return code; }
+  }
+  function countryLabel(code) {
+   if (!code || code === 'ALL') return 'Todos os países';
+   const name = countryNameOnly(code);
+   const flag = countryFlag(code);
+   return flag ? flag + ' ' + name : name;
+  }
+  const ALL_COUNTRIES = ISO_COUNTRIES.map((c) => ({
+   code: c,
+   name: countryNameOnly(c),
+   flag: countryFlag(c)
+  })).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
   const ERR = {
    unauthorized: 'Token de acesso inválido ou ausente.',
    db_offline: 'O servidor está sem conexão com o banco de dados.',
@@ -4174,6 +4286,28 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   const btnMore = $('mn-loadmore');
   const selSort = $('mn-sort');
   const inpQ = $('mn-q');
+  const selSearchIn = $('mn-search-in');
+  const selCategory = $('mn-p-category');
+  const selCountry = $('mn-p-country');
+  function initCountrySelect() {
+   if (!selCountry) return;
+   selCountry.replaceChildren();
+   const opt0 = document.createElement('option');
+   opt0.value = '';
+   opt0.textContent = 'Todos os países';
+   selCountry.appendChild(opt0);
+   ALL_COUNTRIES.forEach((c) => {
+    const o = document.createElement('option');
+    o.value = c.code;
+    o.textContent = (c.flag ? c.flag + ' ' : '') + c.name;
+    selCountry.appendChild(o);
+   });
+  }
+  initCountrySelect();
+  const inpCountry = $('mn-country-input');
+  const countryDropdown = $('mn-country-dropdown');
+  const countryList = $('mn-country-list');
+  const countryArrow = $('mn-country-arrow');
   const chkInf = $('mn-infinite');
   const filtersBox = $('mn-filters');
   const backdrop = $('mn-backdrop');
@@ -4184,6 +4318,13 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   const btnCollDel = $('mn-btn-coll-del');
   const btnCollNew = $('mn-btn-coll-new');
   const chipsBox = $('mn-chips');
+  const btnDoSearch = $('mn-btn-do-search');
+  const liveSummaryBox = $('mn-live-summary');
+  let liveSearchActive = false;
+  let livePollingTimer = null;
+  let liveSearchCancelled = false;
+  let currentLiveSearch = null;
+  let lastSuccessfulSearch = null;
   const ovOffer = $('mn-overlay');
   const ovSearches = $('mn-overlay-searches');
   const ovColl = $('mn-overlay-coll') || document.createElement('div');
@@ -4294,10 +4435,21 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function emptyFilters() {
    const f = {};
    FILTER_KEYS.forEach((k) => { f[k] = ''; });
-   f.activeWithin = '48h';
    return f;
   }
-  function defaults() { return { view: 'offers', sort: 'score', q: '', infinite: true, collId: '', f: emptyFilters() }; }
+  function defaults() {
+   return {
+    view: 'offers',
+    sort: 'score',
+    q: '',
+    searchIn: 'keyword',
+    country: '',
+    adCategory: 'all',
+    infinite: true,
+    collId: '',
+    f: emptyFilters()
+   };
+  }
   let st = defaults();
   let stats = null;
   let filterOpts = null;
@@ -4309,23 +4461,16 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function sanitizeFilter(k, v) {
    if (typeof v !== 'string') return '';
    v = v.trim();
-   if (!v) return k === 'activeWithin' ? '48h' : '';
+   if (!v) return '';
    switch (k) {
-    case 'activeWithin': return ['24h', '48h', '7d'].includes(v) ? v : '48h';
-    case 'country': return /^[A-Za-z]{2,3}$/.test(v) ? v.toUpperCase() : '';
     case 'placements': {
      const parts = Array.from(new Set(v.split(',').map((x) => x.trim().toUpperCase()).filter((x) => PLACEMENTS[x])));
      return parts.join(',');
     }
-    case 'minCollation': case 'maxCollation': return /^\d{1,7}$/.test(v) ? String(parseInt(v, 10)) : '';
     case 'language': return ['pt', 'es', 'en', 'outro'].includes(v.toLowerCase()) ? v.toLowerCase() : '';
-    case 'seenWithin': return ['24h', '3d', '7d'].includes(v) ? v : '';
     case 'mediaType': return ['IMAGE', 'VIDEO', 'CAROUSEL'].includes(v.toUpperCase()) ? v.toUpperCase() : '';
-    case 'minDays': case 'maxDays': case 'minAds': return /^\d{1,6}$/.test(v) ? String(parseInt(v, 10)) : '';
-    case 'platform': return /^[a-z0-9_]{1,30}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
+    case 'minDays': case 'maxDays': return /^\d{1,6}$/.test(v) ? String(parseInt(v, 10)) : '';
     case 'format': return /^[a-z_]{1,40}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
-    case 'startFrom': case 'startTo': return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
-    case 'cta': return (v.length <= 500 && !/[\u0000-\u001f]/.test(v)) ? v : '';
     case 'domain': return /^[a-z0-9.-]{1,253}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
     case 'pageId': return /^[A-Za-z0-9_.-]{1,100}$/.test(v) ? v : '';
     default: return '';
@@ -4336,13 +4481,12 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    if (st.view !== 'offers') p.set('view', st.view);
    if (st.view === 'saved' && st.collId) p.set('coll', String(st.collId));
    if (st.sort !== DEFAULT_SORT[st.view]) p.set('sort', st.sort);
+   if (st.country) p.set('country', st.country);
+   if (st.adCategory && st.adCategory !== 'all') p.set('adCategory', st.adCategory);
    if (st.q) p.set('q', st.q);
+   if (st.searchIn && st.searchIn !== 'keyword') p.set('searchIn', st.searchIn);
    FILTER_KEYS.forEach((k) => {
-    if (k === 'activeWithin') {
-     if (st.f.activeWithin && st.f.activeWithin !== '48h') p.set(k, st.f.activeWithin);
-    } else if (st.f[k]) {
-     p.set(k, st.f[k]);
-    }
+    if (st.f[k]) p.set(k, st.f[k]);
    });
    if (!st.infinite) p.set('inf', '0');
    return p.toString();
@@ -4356,7 +4500,18 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const so = p.get('sort');
    if (so && SORTS[s.view] && SORTS[s.view].some((x) => x[0] === so)) s.sort = so;
    if (p.get('coll')) s.collId = p.get('coll');
+
+   const c = (p.get('country') || '').trim().toUpperCase();
+   s.country = /^[A-Z]{2,3}$/.test(c) ? c : '';
+
+   const cat = (p.get('adCategory') || '').trim().toLowerCase();
+   s.adCategory = ['political', 'housing', 'employment', 'financial'].includes(cat) ? cat : 'all';
+
+   const si = (p.get('searchIn') || '').trim().toLowerCase();
+   s.searchIn = si === 'advertiser' ? 'advertiser' : 'keyword';
+
    s.q = (p.get('q') || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
+
    FILTER_KEYS.forEach((k) => { s.f[k] = sanitizeFilter(k, p.get(k) || ''); });
    s.infinite = p.get('inf') !== '0';
    return s;
@@ -4374,13 +4529,14 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   function activeCount() {
    if (st.view === 'saved') return 0;
-   return (SCOPE[st.view] || []).filter((k) => {
-    if (k === 'activeWithin') return st.f.activeWithin && st.f.activeWithin !== '48h';
+   let n = (SCOPE[st.view] || []).filter((k) => {
     if (k === 'mediaType' && st.view === 'offers' && st.f[k] === 'CAROUSEL') return false;
     return Boolean(st.f[k]);
    }).length;
+   if (st.country) n++;
+   return n;
   }
-  function hasAnyFilter() { return activeCount() > 0 || !!st.q; }
+  function hasAnyFilter() { return activeCount() > 0 || !!st.q || !!st.country || (st.adCategory && st.adCategory !== 'all'); }
 
   // ---------- densidade ----------
   function initDensity() {
@@ -4422,12 +4578,69 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    }
    sel.value = current || '';
   }
+  function updateCountryTrigger() {
+   if (!inpCountry) return;
+   const c = st.country;
+   if (!c) {
+    inpCountry.value = '';
+    inpCountry.placeholder = 'Todos os países';
+   } else {
+    inpCountry.value = countryLabel(c);
+   }
+   if (selCountry && selCountry.value !== (c || '')) {
+    selCountry.value = c || '';
+   }
+  }
+  function renderCountryList(filterText) {
+   if (!countryList) return;
+   countryList.replaceChildren();
+   const q = (filterText || '').trim().toLowerCase();
+
+   const allItem = h('div', 'mn-country-item');
+   allItem.textContent = '🌐 Todos os países';
+   if (!st.country) allItem.setAttribute('aria-selected', 'true');
+   allItem.addEventListener('click', () => {
+    st.country = '';
+    updateCountryTrigger();
+    closeCountryDropdown();
+    applyChange(false);
+   });
+   countryList.appendChild(allItem);
+
+   ALL_COUNTRIES.filter((c) => {
+    if (!q) return true;
+    return c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q);
+   }).forEach((c) => {
+    const it = h('div', 'mn-country-item');
+    it.textContent = (c.flag ? c.flag + ' ' : '') + c.name + ' (' + c.code + ')';
+    if (st.country === c.code) it.setAttribute('aria-selected', 'true');
+    it.addEventListener('click', () => {
+     st.country = c.code;
+     updateCountryTrigger();
+     closeCountryDropdown();
+     applyChange(false);
+    });
+    countryList.appendChild(it);
+   });
+  }
+  function openCountryDropdown() {
+   if (!countryDropdown) return;
+   countryDropdown.hidden = false;
+   renderCountryList(inpCountry ? inpCountry.value : '');
+  }
+  function closeCountryDropdown() {
+   if (!countryDropdown) return;
+   countryDropdown.hidden = true;
+  }
+
   function populateFilterOptions() {
    const fo = filterOpts || {};
-   setOptions($('mn-f-country'), (fo.countries || []).map((c) => [c, countryLabel(c)]), st.f.country);
-   setOptions($('mn-f-platform'), (fo.checkoutPlatforms || []).map((c) => [c, platLabel(c)]), st.f.platform);
+   if (selCountry) {
+    if (!selCountry.options || selCountry.options.length <= 1) initCountrySelect();
+    selCountry.value = st.country || '';
+   }
+   updateCountryTrigger();
    setOptions($('mn-f-format'), Object.keys(FORMATS).map((c) => [c, FORMATS[c]]), st.f.format);
-   setOptions($('mn-f-cta'), (fo.ctas || []).map((c) => [c, c]), st.f.cta);
    const langList = (fo.languages && fo.languages.length) ? fo.languages : Object.keys(LANGUAGES);
    setOptions($('mn-f-language'), langList.map((l) => [l, LANGUAGES[l] || l]), st.f.language);
    const box = $('mn-f-placements');
@@ -4450,6 +4663,10 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   function syncControls() {
    inpQ.value = st.q;
+   if (selSearchIn) selSearchIn.value = st.searchIn || 'keyword';
+   inpQ.placeholder = st.searchIn === 'advertiser' ? 'Pesquisar por nome ou ID do anunciante' : 'Pesquisar por palavra-chave';
+   if (selCategory) selCategory.value = st.adCategory || 'all';
+   updateCountryTrigger();
    chkInf.checked = st.infinite;
    FILTER_KEYS.forEach((k) => {
     if (k === 'placements') return;
@@ -4458,7 +4675,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     if (el.tagName === 'SELECT' && st.f[k] && !Array.prototype.some.call(el.options, (o) => o.value === st.f[k])) {
      const o = document.createElement('option');
      o.value = st.f[k];
-     o.textContent = k === 'platform' ? platLabel(st.f[k]) : (k === 'language' ? (LANGUAGES[st.f[k]] || st.f[k]) : st.f[k]);
+     o.textContent = k === 'language' ? (LANGUAGES[st.f[k]] || st.f[k]) : st.f[k];
      el.appendChild(o);
     }
     el.value = st.f[k];
@@ -4470,6 +4687,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   function readControls() {
    st.q = inpQ.value.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
+   if (selSearchIn) st.searchIn = selSearchIn.value === 'advertiser' ? 'advertiser' : 'keyword';
+   if (selCategory) st.adCategory = selCategory.value || 'all';
+   if (selCountry) st.country = (selCountry.value || '').trim().toUpperCase();
    st.infinite = chkInf.checked;
    FILTER_KEYS.forEach((k) => {
     if (k === 'placements') return;
@@ -4495,8 +4715,12 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   function libraryUrl() {
    const p = new URLSearchParams({
-    active_status: 'active', ad_type: 'all', country: st.f.country || 'ALL', q: st.q || '',
-    search_type: 'keyword_unordered', media_type: ({ IMAGE: 'image', VIDEO: 'video' })[st.f.mediaType] || 'all'
+    active_status: 'active',
+    ad_type: (st.adCategory && st.adCategory !== 'all') ? (LIBRARY_AD_TYPE[st.adCategory] || 'all') : 'all',
+    country: st.country || 'ALL',
+    q: st.q || '',
+    search_type: st.searchIn === 'advertiser' ? 'page' : 'keyword_unordered',
+    media_type: ({ IMAGE: 'image', VIDEO: 'video' })[st.f.mediaType] || 'all'
    });
    return 'https://www.facebook.com/ads/library/?' + p.toString();
   }
@@ -4508,38 +4732,43 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     return;
    }
    const chips = [];
-   if (st.q) {
+
+   // Filtros primários
+   if (st.country) {
     chips.push({
-     label: 'Busca: "' + st.q + '"',
-     remove: () => { st.q = ''; inpQ.value = ''; applyChange(false); }
+     label: 'País: ' + countryNameOnly(st.country),
+     remove: () => {
+      st.country = '';
+      if (selCountry) selCountry.value = '';
+      updateCountryTrigger();
+      if (liveSearchActive) toast('Selecione os parâmetros e clique em Pesquisar para buscar novamente.');
+      else applyChange(false);
+     }
     });
    }
-   if (st.f.activeWithin && st.f.activeWithin !== '48h') {
+   if (st.adCategory && st.adCategory !== 'all') {
     chips.push({
-     label: 'Ativo em: ' + st.f.activeWithin,
-     remove: () => { st.f.activeWithin = '48h'; const el = $(CTRL.activeWithin); if (el) el.value = '48h'; applyChange(false); }
+     label: 'Categoria: ' + adCategoryLabel(st.adCategory),
+     remove: () => {
+      st.adCategory = 'all';
+      if (selCategory) selCategory.value = 'all';
+      if (liveSearchActive) toast('Selecione os parâmetros e clique em Pesquisar para buscar novamente.');
+      else applyChange(false);
+     }
     });
    }
+
+   // Filtros da lateral (7 existentes)
    (SCOPE[st.view] || []).forEach((k) => {
-    if (k === 'activeWithin') return;
     const v = st.f[k];
     if (!v) return;
     let lab = k + ': ' + v;
-    if (k === 'country') lab = 'País: ' + v;
-    else if (k === 'placements') lab = 'Veiculação: ' + v;
+    if (k === 'placements') lab = 'Veiculação: ' + v;
+    else if (k === 'language') lab = 'Idioma: ' + (LANGUAGES[v] || v);
     else if (k === 'mediaType') lab = 'Formato: ' + (MEDIA_LABEL[v] || v);
     else if (k === 'minDays') lab = 'Dias mín.: ' + v;
     else if (k === 'maxDays') lab = 'Dias máx.: ' + v;
-    else if (k === 'minAds') lab = 'Anúncios mín.: ' + v;
-    else if (k === 'minCollation') lab = 'Mesmo criativo mín.: ' + v;
-    else if (k === 'maxCollation') lab = 'Mesmo criativo máx.: ' + v;
-    else if (k === 'language') lab = 'Idioma: ' + (LANGUAGES[v] || v);
-    else if (k === 'seenWithin') lab = 'Visto 1ª vez: ' + v;
-    else if (k === 'platform') lab = 'Checkout: ' + platLabel(v);
-    else if (k === 'format') lab = 'Formato: ' + formatLabel(v);
-    else if (k === 'startFrom') lab = 'Início de: ' + v;
-    else if (k === 'startTo') lab = 'Início até: ' + v;
-    else if (k === 'cta') lab = 'CTA: ' + v;
+    else if (k === 'format') lab = 'Formato (IA): ' + formatLabel(v);
     else if (k === 'domain') lab = 'Domínio: ' + v;
     else if (k === 'pageId') lab = 'Página: ' + v;
     chips.push({
@@ -4556,6 +4785,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      }
     });
    });
+
 
    if (!chips.length) {
     chipsBox.style.display = 'none';
@@ -4632,7 +4862,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     if (kind === 'scaled') { v.textContent = fmtInt(stats.scaledOffers); s.textContent = 'de ' + plural(stats.activeOffers, 'oferta ativa', 'ofertas ativas'); }
     if (kind === 'new') { v.textContent = fmtInt(stats.newAds24h); s.textContent = 'vistos pela primeira vez em 24 h'; }
     if (kind === 'niches') {
-     const n = filterOpts && Array.isArray(filterOpts.niches) ? filterOpts.niches.length : (stats.topNiches || []).length;
+     const n = Array.isArray(stats.topNiches) ? stats.topNiches.length : 0;
      v.textContent = fmtInt(n);
      const top = (stats.topNiches || [])[0];
      s.textContent = top ? 'top: ' + nicheLabel(top.id) + ' (' + top.count + ')' : 'sem nichos classificados';
@@ -4643,8 +4873,14 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function loadStats(quiet) {
    if (!quiet) setKpis(true);
    statsReady = (async () => {
-    const active = st.f.activeWithin || '48h';
-    const r = await call('/api/miner/stats?activeWithin=' + encodeURIComponent(active));
+    const p = new URLSearchParams();
+    if (liveSearchActive) p.set('liveSearch', 'current');
+    if (st.country) p.set('country', st.country);
+    if (st.adCategory && st.adCategory !== 'all') p.set('adCategory', st.adCategory);
+    if (st.q) p.set('q', st.q);
+    if (st.searchIn) p.set('searchIn', st.searchIn);
+    const qs = p.toString();
+    const r = await call('/api/miner/stats' + (qs ? '?' + qs : ''));
     if (r.ok) { stats = r.data; } else { stats = null; }
     setKpis(false);
     if (!r.ok) {
@@ -5250,6 +5486,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function adCard(ad, savedItem) {
    const card = h('article', 'mn-card');
    card.dataset.ad = ad.adArchiveId;
+   if (ad.landingDomain) card.dataset.domain = ad.landingDomain;
    const head = h('div', 'mn-card-body');
    head.style.flex = '0 0 auto';
    const ah = h('div', 'mn-adhead');
@@ -5315,9 +5552,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    }
 
    const act = h('div', 'mn-actions');
+   if (ad.landingDomain) act.appendChild(btn('Ver oferta', 'primary sm', () => openOffer(ad.landingDomain, null)));
    const lib = libraryAdUrl(ad);
    if (lib) act.appendChild(linkEl(lib, 'Ver na Biblioteca', 'mn-btn sm'));
-   if (ad.landingDomain) act.appendChild(btn('Ver oferta', 'sm', () => openOffer(ad.landingDomain, null)));
    const targetUrl = safeUrl(ad.linkUrl) || (ad.landingDomain ? 'https://' + ad.landingDomain : '');
    if (targetUrl) {
     act.appendChild(linkEl(targetUrl, 'Página de vendas', 'mn-btn sm'));
@@ -5407,17 +5644,12 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    return dl;
   }
 
-  // Modal da oferta
-  let offerChart = null;
-  closers.set(ovOffer, () => { if (offerChart) { offerChart.destroy(); offerChart = null; } offerSeq++; });
+  // Modal da oferta (enxuto conforme AC-03: apenas botão fechar e seção Anúncios da oferta)
+  closers.set(ovOffer, () => { offerSeq++; });
   let offerSeq = 0;
   async function openOffer(domain, preset) {
    const m = openModal(ovOffer, false);
    const my = ++offerSeq;
-   const head = h('div', 'mn-mhead');
-   head.appendChild(h('h3', '', domain));
-   head.appendChild(starBtn('offer', domain));
-   m.appendChild(head);
    const content = h('div');
    content.style.cssText = 'display:flex;flex-direction:column;gap:16px;min-width:0';
    const loading = h('div', 'mn-box');
@@ -5435,113 +5667,19 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     content.appendChild(e);
     return;
    }
-   const d = r.data;
+   const d = r.data || {};
    const ads = d.ads || [];
-   const snaps = d.snapshots || [];
-   const last = snaps[snaps.length - 1];
-   const o = preset || {};
-   const badges = h('div', 'mn-badges');
-   if (typeof o.score === 'number') badges.appendChild(badge('Score ' + fmtScore(o.score), 'accent'));
-   const activeAds = typeof o.activeAds === 'number' ? o.activeAds : ads.filter((a) => a.isActive).length;
-   badges.appendChild(badge('Anúncios ativos: ' + fmtInt(activeAds)));
-   badges.appendChild(badge('Criativos distintos: ' + fmtInt(typeof o.distinctCreatives === 'number' ? o.distinctCreatives : (last ? last.distinctCreatives : null))));
-   badges.appendChild(badge('Dias no ar: ' + fmtInt(typeof o.maxDaysRunning === 'number' ? o.maxDaysRunning : (ads.length ? Math.max.apply(null, ads.map(daysOf).filter((n) => n !== null).concat([0])) : null))));
-   if (typeof o.growth7d === 'number') badges.appendChild(badge('Crescimento (7 dias): ' + (o.growth7d > 0 ? '+' : '') + o.growth7d));
-   head.appendChild(badges);
-
-   const chartBox = box('Últimos 30 dias');
-   if (snaps.length && typeof Chart !== 'undefined') {
-    const wrap = h('div', 'mn-chart');
-    const cv = document.createElement('canvas');
-    cv.setAttribute('role', 'img');
-    cv.setAttribute('aria-label', 'Anúncios ativos e criativos distintos nos últimos 30 dias');
-    wrap.appendChild(cv);
-    chartBox.appendChild(wrap);
-    content.appendChild(chartBox);
-    const cs = getComputedStyle(document.documentElement);
-    const accent = cs.getPropertyValue('--theme-accent').trim() || '#00f59b';
-    const amber = cs.getPropertyValue('--accent-amber').trim() || '#ffb703';
-    const muted = cs.getPropertyValue('--text-muted').trim() || '#94a3b8';
-    offerChart = new Chart(cv.getContext('2d'), {
-     type: 'line',
-     data: {
-      labels: snaps.map((s) => s.day.slice(5).split('-').reverse().join('/')),
-      datasets: [
-       { label: 'Anúncios ativos', data: snaps.map((s) => s.activeAds), borderColor: accent, backgroundColor: accent, tension: 0.3, pointRadius: 2 },
-       { label: 'Criativos distintos', data: snaps.map((s) => s.distinctCreatives), borderColor: amber, backgroundColor: amber, tension: 0.3, pointRadius: 2 }
-      ]
-     },
-     options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: muted } } },
-      scales: { x: { ticks: { color: muted, maxTicksLimit: 8 }, grid: { color: 'rgba(148,163,184,0.1)' } }, y: { beginAtZero: true, ticks: { color: muted, precision: 0 }, grid: { color: 'rgba(148,163,184,0.1)' } } }
-     }
-    });
-   } else {
-    chartBox.appendChild(h('p', '', snaps.length ? 'Gráfico indisponível (biblioteca de gráficos não carregou).' : 'Ainda não há histórico diário para esta oferta.'));
-    content.appendChild(chartBox);
-   }
-
-   const cols = h('div', 'mn-cols');
-   const aiBox = box('Ficha da IA');
-   const ai = d.ai;
-   if (ai) {
-    aiBox.appendChild(kv([
-     ['Nicho', nicheLabel(ai.niche)], ['Subnicho', ai.subniche], ['Promessa', ai.promise], ['Formato', formatLabel(ai.format)],
-     ['Público', ai.audience], ['Confiança', typeof ai.confidence === 'number' ? Math.round(ai.confidence * 100) + '%' : '—'], ['Classificada', fmtDateTime(ai.classifiedAt)]
-    ]));
-    if ((ai.angles || []).length) {
-     const chips = h('div', 'mn-badges');
-     ai.angles.forEach((a) => chips.appendChild(badge(String(a))));
-     aiBox.appendChild(h('h4', '', 'Ângulos'));
-     aiBox.appendChild(chips);
-    }
-    if (ai.summary) aiBox.appendChild(h('p', '', ai.summary));
-   } else {
-    aiBox.appendChild(h('p', '', 'Aguardando classificação pela IA. Use o botão Reclassificar para pedir a análise.'));
-   }
-   const ckBox = box('Checkout e preços');
-   const en = d.enrichment;
-   if (en && en.enrichedAt) {
-    const pr = h('span', '', (en.prices || []).length ? en.prices.map((p) => fmtMoney(Number(p))).join(' · ') : '—');
-    ckBox.appendChild(kv([
-     ['Plataforma', platLabel(en.platform)],
-     ['Link do checkout', en.checkoutUrl ? linkEl(en.checkoutUrl, en.checkoutUrl, '') : '—'],
-     ['Preços', pr], ['Preço mínimo', typeof en.priceMin === 'number' ? fmtMoney(en.priceMin) : '—'],
-     ['Título da página', en.pageTitle], ['Analisada', fmtDateTime(en.enrichedAt)]
-    ]));
-   } else {
-    ckBox.appendChild(h('p', '', 'Aguardando análise da página. Use o botão Reanalisar página para detectar o checkout e os preços.'));
-    if (en && en.lastError) ckBox.appendChild(h('p', 'mn-sub', 'Último erro: ' + en.lastError));
-   }
-   cols.append(aiBox, ckBox);
-   content.appendChild(cols);
-
-   const actBox = h('div', 'mn-row');
-   const msg = h('div', 'mn-msg');
-   msg.setAttribute('role', 'status');
-   const run = (label, path) => {
-    const b = btn(label, 'sm');
-    b.addEventListener('click', async () => {
-     b.disabled = true;
-     msg.className = 'mn-msg';
-     msg.textContent = 'Enviando…';
-     const rr = await call('/api/miner/domains/' + encodeURIComponent(domain) + path, { method: 'POST' });
-     b.disabled = false;
-     if (my !== offerSeq) return;
-     if (rr.status === 202) { msg.className = 'mn-msg ok'; msg.textContent = 'Agendado. A ficha será atualizada em instantes; reabra a oferta para ver o resultado.'; }
-     else { msg.className = 'mn-msg bad'; msg.textContent = errMsg(rr.status, rr.data && rr.data.error); }
-    });
-    return b;
-   };
-   actBox.append(run('Reanalisar página', '/enrich'), run('Reclassificar', '/classify'), msg);
-   content.appendChild(actBox);
-
    const adsBox = box('Anúncios da oferta (' + ads.length + ')');
    const g = h('div', 'mn-grid');
    ads.forEach((a) => g.appendChild(adCard(a)));
+   if (!ads.length) {
+    g.appendChild(h('p', 'mn-sub', 'Nenhum anúncio encontrado para esta oferta.'));
+   }
    adsBox.appendChild(g);
    content.appendChild(adsBox);
+   if (ads.length) {
+    fetchSavedForItems(ads.map((a) => 'ad:' + a.adArchiveId));
+   }
   }
 
   // Modal do anúncio
@@ -5714,11 +5852,14 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const codes = Array.from(new Set(['BR', 'PT', 'US', 'GB', 'CA', 'AU', 'DE', 'FR', 'ES', 'MX', 'AR', 'CL', 'CO'].concat((filterOpts && filterOpts.countries) || [])));
    codes.forEach((c) => { const o = document.createElement('option'); o.value = c; o.textContent = countryLabel(c); ic.appendChild(o); });
    ic.value = 'BR';
+   const icat = document.createElement('select'); icat.setAttribute('aria-label', 'Categoria');
+   AD_CATEGORIES.forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; icat.appendChild(o); });
+   icat.value = 'all';
    const im = document.createElement('select'); im.setAttribute('aria-label', 'Formato');
    [['ALL', 'Todos'], ['IMAGE', 'Imagem'], ['VIDEO', 'Vídeo']].forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; im.appendChild(o); });
    const ix = document.createElement('input'); ix.type = 'number'; ix.min = '1'; ix.max = '1000'; ix.value = '300'; ix.setAttribute('aria-label', 'Máximo de anúncios');
    const create = btn('Criar busca', 'primary'); create.type = 'submit';
-   form.append(lab('Termo', iq, 'mn-q'), lab('País', ic), lab('Formato', im), lab('Máx. anúncios', ix), create);
+   form.append(lab('Termo', iq, 'mn-q'), lab('País', ic), lab('Categoria', icat), lab('Formato', im), lab('Máx. anúncios', ix), create);
    const fmsg = h('div', 'mn-msg'); fmsg.setAttribute('role', 'status');
    formBox.append(form, fmsg);
    m.appendChild(formBox);
@@ -5799,7 +5940,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     row.dataset.search = s.id;
     const l = h('div');
     l.appendChild(h('strong', '', s.q));
-    l.appendChild(h('div', 'mn-sub', 'País ' + s.country + ' · Formato ' + (MEDIA_LABEL[s.mediaType] || displayFormatLabel(s.mediaType)) + ' · máx. ' + fmtInt(s.maxAds) + ' anúncios · ' + (s.active ? 'Ativa' : 'Pausada')));
+    l.appendChild(h('div', 'mn-sub', 'País ' + s.country + ' · Categoria ' + adCategoryLabel(s.adCategory || 'all') + ' · Formato ' + (MEDIA_LABEL[s.mediaType] || displayFormatLabel(s.mediaType)) + ' · máx. ' + fmtInt(s.maxAds) + ' anúncios · ' + (s.active ? 'Ativa' : 'Pausada')));
     const lr = s.lastRun;
     const running = !!(lr && lr.status === 'running');
     l.appendChild(h('div', 'mn-sub' + (running ? ' mn-running' : ''), running
@@ -5848,7 +5989,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     const max = Number(ix.value);
     if (!Number.isInteger(max) || max < 1 || max > 1000) { say(fmsg, 'bad', ERR.invalid_max_ads); return; }
     create.disabled = true;
-    const r = await call('/api/miner/searches', jsonOpts('POST', { q, country: ic.value, mediaType: im.value, maxAds: max }));
+    const r = await call('/api/miner/searches', jsonOpts('POST', { q, country: ic.value, adCategory: icat.value, mediaType: im.value, maxAds: max }));
     create.disabled = false;
     if (my !== searchesSeq) return;
     if (r.status === 201) { say(fmsg, 'ok', 'Busca criada. A primeira coleta começa em instantes.'); iq.value = ''; refresh(true); }
@@ -5856,6 +5997,168 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    });
    say(info, '', 'Carregando…');
    refresh();
+  }
+
+  // AC-05: Pesquisa ao vivo estilo Biblioteca do Meta
+  function handleLiveSearchFailure(title, message) {
+   if (lastSuccessfulSearch) {
+    if (inpQ) inpQ.value = lastSuccessfulSearch.q;
+    st.q = lastSuccessfulSearch.q;
+    if (selSearchIn && lastSuccessfulSearch.searchIn) selSearchIn.value = lastSuccessfulSearch.searchIn;
+    renderLiveSummary(lastSuccessfulSearch);
+   }
+   setStatus(stateBox('err', title, message));
+  }
+
+  async function startLiveSearch() {
+   const q = (inpQ ? inpQ.value : '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
+   if (!q) {
+    toast('Digite um termo para pesquisar.');
+    if (inpQ) inpQ.focus();
+    return;
+   }
+   liveSearchCancelled = false;
+   clearTimeout(livePollingTimer);
+   livePollingTimer = null;
+
+   showLiveSearchLoading(q);
+
+   try {
+    const payload = {
+     q,
+     searchIn: (selSearchIn ? selSearchIn.value : '') === 'advertiser' ? 'advertiser' : 'keyword',
+     country: (selCountry && selCountry.value ? selCountry.value : 'ALL').trim().toUpperCase(),
+     adCategory: (selCategory ? selCategory.value : 'all') || 'all'
+    };
+    const r = await call('/api/miner/live-search', jsonOpts('POST', payload));
+    if (liveSearchCancelled) return;
+
+    if (r.status === 202) {
+     pollLiveSearch(q);
+    } else if (r.status === 409) {
+     handleLiveSearchFailure('Pesquisa em andamento', 'Já existe uma pesquisa em andamento na Biblioteca. Aguarde a conclusão.');
+    } else if (r.status === 429) {
+     handleLiveSearchFailure('Limite diário atingido', 'Limite diário de anúncios atingido. Tente novamente amanhã.');
+    } else if (r.status === 503) {
+     handleLiveSearchFailure('Coleta não configurada', 'Coleta automática não configurada: defina APIFY_TOKEN no servidor.');
+    } else if (r.status === 404) {
+     st.q = q;
+     applyChange(true);
+    } else {
+     handleLiveSearchFailure('Não foi possível pesquisar', errMsg(r.status, r.data && r.data.error));
+    }
+   } catch (err) {
+    if (!liveSearchCancelled) {
+     handleLiveSearchFailure('Erro de conexão', 'Falha ao conectar com o servidor.');
+    }
+   }
+  }
+
+  function showLiveSearchLoading(q) {
+   const wrap = h('div', 'mn-state');
+   wrap.appendChild(h('h3', '', 'Pesquisando na Biblioteca de Anúncios…'));
+   wrap.appendChild(h('p', '', 'Buscando anúncios ao vivo para "' + q + '". Acompanhando a coleta no Meta.'));
+   const acts = h('div', 'mn-state-actions');
+   acts.appendChild(btn('Cancelar visualmente', 'sm', () => {
+    liveSearchCancelled = true;
+    clearTimeout(livePollingTimer);
+    livePollingTimer = null;
+    if (lastSuccessfulSearch) {
+     if (inpQ) inpQ.value = lastSuccessfulSearch.q;
+     st.q = lastSuccessfulSearch.q;
+     renderLiveSummary(lastSuccessfulSearch);
+     setStatus(null);
+     load(true);
+    } else {
+     load(true);
+    }
+   }));
+   wrap.appendChild(acts);
+   setStatus(wrap);
+   if (!lastSuccessfulSearch) {
+    grid.replaceChildren();
+    showSkeleton();
+   }
+  }
+
+  async function pollLiveSearch(targetQ) {
+   if (liveSearchCancelled) return;
+   try {
+    const r = await call('/api/miner/live-search/current');
+    if (liveSearchCancelled) return;
+    if (!r.ok) {
+     handleLiveSearchFailure('Erro ao verificar pesquisa', errMsg(r.status, r.data && r.data.error));
+     return;
+    }
+    const cur = r.data || {};
+    currentLiveSearch = cur;
+    if (cur.status === 'running') {
+     livePollingTimer = setTimeout(() => pollLiveSearch(targetQ), 3000);
+     return;
+    }
+    if (cur.status === 'succeeded') {
+     lastSuccessfulSearch = cur;
+     liveSearchActive = true;
+     st.q = cur.q || targetQ || st.q;
+     if (inpQ) inpQ.value = st.q;
+     if (selSearchIn && cur.searchIn) selSearchIn.value = cur.searchIn;
+     persist();
+     renderChips();
+     renderLiveSummary(cur);
+     if (cur.adsFound === 0) {
+      grid.replaceChildren();
+      setStatus(stateBox('', 'Nenhum anúncio encontrado para ' + st.q, 'Tente pesquisar com outro termo, país ou categoria.', [
+       btn('Nova pesquisa', 'primary', () => { if (inpQ) inpQ.focus(); })
+      ]));
+      $('mn-total').textContent = '';
+      await loadStats();
+      return;
+     }
+     setStatus(null);
+     await loadStats();
+     load(true);
+     return;
+    }
+    if (cur.status === 'failed') {
+     handleLiveSearchFailure('Pesquisa na Biblioteca falhou', cur.error || 'Não foi possível concluir a coleta dos anúncios.');
+     return;
+    }
+   } catch (e) {
+    if (!liveSearchCancelled) {
+     livePollingTimer = setTimeout(() => pollLiveSearch(targetQ), 3000);
+    }
+   }
+  }
+
+  function renderLiveSummary(cur) {
+   if (!liveSummaryBox) return;
+   if (!cur || !cur.q) {
+    liveSummaryBox.style.display = 'none';
+    return;
+   }
+   liveSummaryBox.style.display = 'flex';
+   liveSummaryBox.replaceChildren();
+   const cName = countryLabel(cur.country || 'ALL');
+   const catName = adCategoryLabel(cur.adCategory || 'all');
+   const n = typeof cur.adsFound === 'number' ? cur.adsFound : shown;
+   const countStr = fmtInt(n) + (n === 1 ? ' anúncio' : ' anúncios');
+   const isZero = n === 0;
+   const prefix = isZero ? ('Nenhum anúncio encontrado para ' + cur.q) : ('Resultados para ' + cur.q);
+   const text = prefix + ' (' + cName + ', ' + catName + ', ' + countStr + ')';
+   const span = h('span', '', text);
+   span.style.fontWeight = '700';
+   liveSummaryBox.appendChild(span);
+  }
+
+  function emptyInviteBox() {
+   const wrap = h('div', 'mn-state');
+   wrap.appendChild(h('h3', '', 'Pesquise na Biblioteca de Anúncios'));
+   wrap.appendChild(h('p', '', 'Digite uma palavra-chave ou anunciante acima, selecione o país e a categoria, e clique em Pesquisar para buscar anúncios em tempo real.'));
+   const acts = h('div', 'mn-state-actions');
+   acts.appendChild(btn('Pesquisar agora', 'primary', () => { if (inpQ) inpQ.focus(); }));
+   acts.appendChild(btn('Criar busca automática', '', openSearches));
+   wrap.appendChild(acts);
+   return wrap;
   }
 
   // ---------- lista ----------
@@ -5873,7 +6176,11 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
 
   function listQuery() {
    const p = new URLSearchParams();
-   if (st.q) p.set('q', st.q);
+   if (liveSearchActive) p.set('liveSearch', 'current');
+   if (st.country) p.set('country', st.country);
+   if (st.adCategory && st.adCategory !== 'all') p.set('adCategory', st.adCategory);
+   if (st.q && !liveSearchActive) p.set('q', st.q);
+   if (st.searchIn && !liveSearchActive) p.set('searchIn', st.searchIn);
    p.set('sort', st.sort);
    p.set('limit', String(PAGE));
    SCOPE[st.view].forEach((k) => {
@@ -6100,9 +6407,13 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    if (reset && items.length === 0) {
     await statsReady;
     if (my !== seq) return;
-    setStatus(hasAnyFilter()
-     ? stateBox('', 'Nenhum resultado para estes filtros', 'Tente afrouxar os filtros ou limpar a busca.', [btn('Limpar filtros', 'primary', clearAll)])
-     : onboarding());
+    if (liveSearchActive && currentLiveSearch && currentLiveSearch.q) {
+     setStatus(stateBox('', 'Nenhum anúncio encontrado para ' + currentLiveSearch.q, 'Tente pesquisar com outro termo, país ou categoria.', [btn('Nova pesquisa', 'primary', () => { if (inpQ) inpQ.focus(); })]));
+    } else {
+     setStatus(hasAnyFilter()
+      ? stateBox('', 'Nenhum resultado para estes filtros', 'Tente afrouxar os filtros ou limpar a busca.', [btn('Limpar filtros', 'primary', clearAll)])
+      : emptyInviteBox());
+    }
     $('mn-total').textContent = '';
     return;
    }
@@ -6135,6 +6446,12 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   function clearAll() {
    st.q = '';
+   st.country = '';
+   st.adCategory = 'all';
+   liveSearchActive = false;
+   currentLiveSearch = null;
+   lastSuccessfulSearch = null;
+   if (liveSummaryBox) liveSummaryBox.style.display = 'none';
    st.f = emptyFilters();
    syncControls();
    applyChange(false);
@@ -6150,15 +6467,84 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
 
   // listeners (todos nos elementos do próprio dashboard)
   const debouncedChange = debounced(onFilterChange, 400);
-  inpQ.addEventListener('input', debouncedChange);
-  inpQ.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); debouncedChange.now(); } });
+  inpQ.addEventListener('input', () => {
+   if (!liveSearchActive) debouncedChange();
+  });
+  // Se liveSearchActive for true, a pesquisa e disparada via Enter ou botao Pesquisar
+  inpQ.addEventListener('keydown', (e) => {
+   if (e.key === 'Enter') {
+    e.preventDefault();
+    startLiveSearch();
+   }
+  });
+  if (btnDoSearch) {
+   btnDoSearch.addEventListener('click', () => {
+    startLiveSearch();
+   });
+  }
   TEXT_CTRL.forEach((k) => {
    const el = $(CTRL[k]);
    if (el) el.addEventListener('input', debouncedChange);
   });
-  ['country', 'mediaType', 'platform', 'format', 'cta', 'startFrom', 'startTo', 'activeWithin', 'language', 'seenWithin'].forEach((k) => {
+  ['placements', 'language', 'mediaType', 'format'].forEach((k) => {
    const el = $(CTRL[k]);
    if (el) el.addEventListener('change', onFilterChange);
+  });
+  if (selSearchIn) {
+   selSearchIn.addEventListener('change', () => {
+    st.searchIn = selSearchIn.value === 'advertiser' ? 'advertiser' : 'keyword';
+    inpQ.placeholder = st.searchIn === 'advertiser' ? 'Pesquisar por nome ou ID do anunciante' : 'Pesquisar por palavra-chave';
+    if (st.q) applyChange(false);
+   });
+  }
+  if (selCategory) {
+   selCategory.addEventListener('change', () => {
+    st.adCategory = selCategory.value || 'all';
+    applyChange(false);
+   });
+  }
+  if (selCountry) {
+   selCountry.addEventListener('change', () => {
+    st.country = (selCountry.value || '').trim().toUpperCase();
+    updateCountryTrigger();
+    applyChange(false);
+   });
+  }
+  if (inpCountry) {
+   inpCountry.addEventListener('focus', () => {
+    openCountryDropdown();
+    inpCountry.select();
+   });
+   inpCountry.addEventListener('input', () => {
+    openCountryDropdown();
+    renderCountryList(inpCountry.value);
+   });
+   inpCountry.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+     closeCountryDropdown();
+     updateCountryTrigger();
+    }
+   });
+  }
+  if (countryArrow) {
+   countryArrow.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (countryDropdown && !countryDropdown.hidden) {
+     closeCountryDropdown();
+    } else {
+     openCountryDropdown();
+     if (inpCountry) inpCountry.focus();
+    }
+   });
+  }
+  document.addEventListener('click', (e) => {
+   if (countryDropdown && !countryDropdown.hidden) {
+    const wrap = $('mn-country-picker');
+    if (wrap && !wrap.contains(e.target)) {
+     closeCountryDropdown();
+     updateCountryTrigger();
+    }
+   }
   });
   selSort.addEventListener('change', () => { st.sort = selSort.value; applyChange(true); });
   if (btnDensity) {
@@ -6298,11 +6684,40 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     loadStats();
     loadFilterOptions(true);
     load(true);
+
+    // AC-05: Ao abrir a aba, se houver pesquisa concluída, mostrar os resultados dela
+    call('/api/miner/live-search/current').then((r) => {
+     if (r.ok && r.data) {
+      const cur = r.data;
+      if (cur.status === 'succeeded' && cur.q) {
+       liveSearchActive = true;
+       currentLiveSearch = cur;
+       st.q = cur.q;
+       if (cur.searchIn) st.searchIn = cur.searchIn;
+       if (cur.country && cur.country !== 'ALL') st.country = cur.country;
+       if (cur.adCategory) st.adCategory = cur.adCategory;
+       syncControls();
+       renderLiveSummary(cur);
+       loadStats();
+       load(true);
+      } else if (cur.status === 'running') {
+       showLiveSearchLoading(cur.q);
+       pollLiveSearch();
+      }
+     }
+    }).catch(() => {});
     return;
    }
    persist();
    loadStats();
    loadFilterOptions(false);
+   call('/api/miner/live-search/current').then((r) => {
+    if (r.ok && r.data && r.data.status === 'succeeded' && r.data.q) {
+     liveSearchActive = true;
+     currentLiveSearch = r.data;
+     renderLiveSummary(r.data);
+    }
+   }).catch(() => {});
   }
   mnOpenHook = open;
   if ($('pane-step-mineracao').classList.contains('active')) open();
