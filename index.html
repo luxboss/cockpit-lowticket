@@ -1117,12 +1117,6 @@ input:focus, select:focus, textarea:focus {
 .mn-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .mn-head h2 { margin: 0; }
 .mn-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
-.mn-indicators { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
-.mn-ind { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: var(--radius-full); border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-muted); font-size: 0.76rem; font-weight: 600; max-width: 100%; }
-.mn-ind-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); flex: 0 0 auto; }
-.mn-ind.on .mn-ind-dot { background: var(--theme-accent); box-shadow: 0 0 8px var(--theme-accent-glow); }
-.mn-ind.warn .mn-ind-dot { background: var(--accent-amber); }
-.mn-ind.on { color: var(--text-main); }
 .mn-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-main); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: none; min-height: 36px; }
 .mn-btn:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
 .mn-btn:focus-visible, .mn-tab:focus-visible, .mn-kpi:focus-visible, .mn-x:focus-visible, .mn-chip-btn:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
@@ -1131,6 +1125,8 @@ input:focus, select:focus, textarea:focus {
 .mn-btn.danger { color: var(--accent-red); border-color: rgba(255, 77, 109, 0.4); }
 .mn-btn.sm { padding: 5px 10px; min-height: 30px; font-size: 0.74rem; }
 .mn-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+/* hidden precisa vencer o display das classes do minerador (.mn-btn inline-flex mostrava Carregar mais sem paginas) */
+.mn-btn[hidden], .mn-root [hidden], .mn-overlay [hidden] { display: none !important; }
 .mn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .mn-kpi { text-align: left; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px 16px; color: var(--text-main); font: inherit; cursor: pointer; min-width: 0; }
 .mn-kpi:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
@@ -1154,8 +1150,14 @@ input:focus, select:focus, textarea:focus {
 .mn-count { font-size: 0.76rem; color: var(--text-muted); font-weight: 600; }
 .mn-only-narrow { display: none; }
 .mn-body { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 16px; align-items: start; }
-.mn-filters { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
-.mn-filters-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mn-filters { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-hover) transparent; }
+.mn-filters::-webkit-scrollbar { width: 8px; }
+.mn-filters::-webkit-scrollbar-track { background: transparent; }
+.mn-filters::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 8px; }
+.mn-overlay { scrollbar-width: thin; scrollbar-color: var(--border-hover) transparent; }
+.mn-overlay::-webkit-scrollbar { width: 8px; }
+.mn-overlay::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 8px; }
+.mn-filters-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; position: sticky; top: -14px; z-index: 2; margin: -14px -14px 0; padding: 14px; background: inherit; border-bottom: 1px solid var(--border-subtle); }
 .mn-filters-head h3 { margin: 0; font-size: 0.95rem; color: var(--text-main); }
 .mn-fgroup { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .mn-fgroup > label, .mn-fgroup > .mn-flabel { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
@@ -1210,6 +1212,8 @@ input:focus, select:focus, textarea:focus {
 .mn-plat { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1px 4px; }
 .mn-text { font-size: 0.8rem; line-height: 1.45; color: var(--text-main); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; margin: 0; }
 .mn-text.open { -webkit-line-clamp: unset; line-clamp: unset; display: block; }
+.mn-dpa { margin: 0; padding: 6px 10px; border-radius: var(--radius-xs); border: 1px dashed var(--border-hover); background: var(--bg-input); color: var(--text-muted); font-size: 0.74rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.mn-running { color: var(--theme-accent); font-weight: 700; }
 .mn-more { align-self: flex-start; border: 0; background: none; color: var(--theme-accent); font: inherit; font-size: 0.74rem; font-weight: 700; cursor: pointer; padding: 0; }
 .mn-headline { font-size: 0.86rem; font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; margin: 0; }
 .mn-cta { align-self: flex-start; padding: 4px 10px; border-radius: var(--radius-xs); background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-main); font-size: 0.74rem; font-weight: 700; overflow-wrap: anywhere; }
@@ -1339,7 +1343,7 @@ input:focus, select:focus, textarea:focus {
    
 
        <!-- Indicador de Status do Banco de Dados PostgreSQL -->
-    <div id="db-status-pill" style="display:inline-flex; align-items:center; gap:7px; padding:6px 14px; border-radius:20px; font-size:0.75rem; background:rgba(0,0,0,0.4); border:1px solid var(--border-subtle); color:var(--text-muted); cursor:help; transition:all 0.3s; margin-right:8px;" title="Verificando conexão com o PostgreSQL...">
+    <div id="db-status-pill" style="display:none; align-items:center; gap:7px; padding:6px 14px; border-radius:20px; font-size:0.75rem; background:rgba(0,0,0,0.4); border:1px solid var(--border-subtle); color:var(--text-muted); cursor:help; transition:all 0.3s; margin-right:8px;" title="Verificando conexão com o PostgreSQL...">
       <span id="db-status-dot" style="width:7px; height:7px; border-radius:50%; background:#829a94; display:inline-block; transition:all 0.3s ease;"></span>
       <span id="db-status-text" style="font-weight:600;">PostgreSQL: Verificando...</span>
     </div>
@@ -1817,14 +1821,12 @@ input:focus, select:focus, textarea:focus {
       <div class="mn-head">
        <div>
         <h2>Minerador de Ofertas</h2>
-        <p class="pane-desc">Espione anúncios e ofertas escaladas com dados reais coletados da Biblioteca de Anúncios do Meta.</p>
        </div>
        <div class="mn-head-actions">
         <button type="button" class="mn-btn" id="mn-btn-searches">Buscas automáticas</button>
         <a class="mn-btn primary" id="mn-btn-library" href="https://www.facebook.com/ads/library/" target="_blank" rel="noopener noreferrer">Abrir Biblioteca de Anúncios ↗</a>
        </div>
       </div>
-      <div class="mn-indicators" id="mn-indicators" aria-live="polite"></div>
 
       <div class="mn-kpis" id="mn-kpis">
        <button type="button" class="mn-kpi" data-kpi="ads"><span class="mn-kpi-label">Anúncios ativos</span><span class="mn-kpi-value mn-skel" data-v>0000</span><span class="mn-kpi-sub" data-s></span></button>
@@ -1869,9 +1871,6 @@ input:focus, select:focus, textarea:focus {
         </div>
         <div class="mn-fgroup" data-scope="offers"><label for="mn-f-minads">Mínimo de anúncios <span class="mn-hint">(só em Ofertas)</span></label><input type="number" id="mn-f-minads" min="0" max="100000" placeholder="0"></div>
         <div class="mn-fgroup"><label for="mn-f-platform">Checkout</label><select id="mn-f-platform"><option value="">Todos</option></select></div>
-        <div class="mn-fgroup" data-scope="offers"><span class="mn-flabel">Faixa de preço (R$) <span class="mn-hint">(só em Ofertas)</span></span>
-         <div class="mn-frow"><input type="number" id="mn-f-pmin" min="0" step="0.01" placeholder="De" aria-label="Preço mínimo"><input type="number" id="mn-f-pmax" min="0" step="0.01" placeholder="Até" aria-label="Preço máximo"></div></div>
-        <div class="mn-fgroup"><label for="mn-f-niche">Nicho (IA)</label><select id="mn-f-niche"><option value="">Todos</option></select></div>
         <div class="mn-fgroup"><label for="mn-f-format">Formato do produto (IA)</label><select id="mn-f-format"><option value="">Todos</option></select></div>
         <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Data de início <span class="mn-hint">(só em Anúncios)</span></span>
          <div class="mn-frow"><input type="date" id="mn-f-from" aria-label="Início de"><input type="date" id="mn-f-to" aria-label="Início até"></div></div>
@@ -2919,6 +2918,7 @@ document.addEventListener('DOMContentLoaded', () => {
    if (dbDot) { dbDot.style.background = cfg[0]; dbDot.style.boxShadow = cfg[1]; }
    if (dbText) dbText.textContent = cfg[2];
    if (dbPill) {
+    dbPill.style.display = mode === 'ok' ? 'none' : 'inline-flex'; // conectado = nada visivel; so alerta (offline/token)
     dbPill.title = cfg[3];
     if (!dbPillBound) {
      dbPillBound = true;
@@ -4062,32 +4062,35 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    pdf_ebook: 'PDF / e-book', curso_online: 'Curso online', mentoria: 'Mentoria', planner_imprimivel: 'Planner imprimível',
    app_software: 'App / software', fisico: 'Produto físico', servico: 'Serviço', outro: 'Outro'
   };
-  const PLACEMENTS = { FACEBOOK: 'Facebook', INSTAGRAM: 'Instagram', MESSENGER: 'Messenger', AUDIENCE_NETWORK: 'Audience Network' };
-  const PLAT_SHORT = { FACEBOOK: 'FB', INSTAGRAM: 'IG', MESSENGER: 'MS', AUDIENCE_NETWORK: 'AN' };
+  const PLACEMENTS = { FACEBOOK: 'Facebook', INSTAGRAM: 'Instagram', MESSENGER: 'Messenger', AUDIENCE_NETWORK: 'Audience Network', THREADS: 'Threads', WHATSAPP: 'WhatsApp' };
+  const PLAT_SHORT = { FACEBOOK: 'FB', INSTAGRAM: 'IG', MESSENGER: 'MS', AUDIENCE_NETWORK: 'AN', THREADS: 'TH', WHATSAPP: 'WA' };
   const MEDIA_LABEL = { ALL: 'Todos', IMAGE: 'Imagem', VIDEO: 'Vídeo' };
+  const DISPLAY_FORMAT = { IMAGE: 'Imagem', VIDEO: 'Vídeo', CAROUSEL: 'Carrossel', DPA: 'Catálogo', DCO: 'Dinâmico' };
+  const displayFormatLabel = (v) => (typeof v === 'string' && v) ? (DISPLAY_FORMAT[v.toUpperCase()] || 'Outro') : '—';
+  const platName = (p) => PLACEMENTS[p] || (p ? String(p).charAt(0).toUpperCase() + String(p).slice(1).toLowerCase().replace(/_/g, ' ') : '');
   const SORTS = {
    offers: [['score', 'Score'], ['activeAds', 'Anúncios ativos'], ['days', 'Dias no ar'], ['growth', 'Crescimento (7 dias)']],
    ads: [['days', 'Dias no ar'], ['recent', 'Mais recentes'], ['collation', 'Mais repetidos'], ['score', 'Score da oferta']]
   };
   const DEFAULT_SORT = { offers: 'score', ads: 'recent' };
-  const FILTER_KEYS = ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'minAds', 'platform', 'priceMin', 'priceMax', 'niche', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId'];
+  const FILTER_KEYS = ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'minAds', 'platform', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId'];
   const SCOPE = {
-   offers: ['country', 'mediaType', 'minDays', 'minAds', 'platform', 'priceMin', 'priceMax', 'niche', 'format', 'pageId'],
-   ads: ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'platform', 'niche', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId']
+   offers: ['country', 'mediaType', 'minDays', 'minAds', 'platform', 'format', 'pageId'],
+   ads: ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'platform', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId']
   };
   const CTRL = {
    country: 'mn-f-country', mediaType: 'mn-f-media', minDays: 'mn-f-mindays', maxDays: 'mn-f-maxdays', minAds: 'mn-f-minads', platform: 'mn-f-platform',
-   priceMin: 'mn-f-pmin', priceMax: 'mn-f-pmax', niche: 'mn-f-niche', format: 'mn-f-format', startFrom: 'mn-f-from', startTo: 'mn-f-to',
+   format: 'mn-f-format', startFrom: 'mn-f-from', startTo: 'mn-f-to',
    cta: 'mn-f-cta', domain: 'mn-f-domain', pageId: 'mn-f-page'
   };
-  const TEXT_CTRL = ['minDays', 'maxDays', 'minAds', 'priceMin', 'priceMax', 'domain', 'pageId'];
+  const TEXT_CTRL = ['minDays', 'maxDays', 'minAds', 'domain', 'pageId'];
   const ERR = {
    unauthorized: 'Token de acesso inválido ou ausente.',
    db_offline: 'O servidor está sem conexão com o banco de dados.',
    miner_requires_app_token: 'O servidor está sem APP_TOKEN configurado; o Minerador exige o token.',
    collect_not_configured: 'Coleta automática não configurada: defina APIFY_TOKEN no servidor.',
    collect_daily_limit: 'Limite diário de anúncios da coleta atingido. Tente novamente amanhã.',
-   collect_already_running: 'Já existe uma coleta em andamento para esta busca.',
+   collect_already_running: 'Esta busca já está coletando. Aguarde terminar.',
    search_exists: 'Já existe uma busca igual a esta.',
    ai_not_configured: 'IA não configurada no servidor (defina GEMINI_API_KEY).',
    ai_daily_limit: 'Limite diário de classificações por IA atingido. Tente novamente amanhã.',
@@ -4097,8 +4100,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    invalid_media_type: 'Formato do criativo inválido.',
    invalid_max_ads: 'Máximo de anúncios inválido (de 1 a 1000).',
    invalid_days_range: 'O mínimo de dias é maior que o máximo.',
-   invalid_date_range: 'A data inicial é posterior à data final.',
-   invalid_price_range: 'O preço mínimo é maior que o máximo.'
+   invalid_date_range: 'A data inicial é posterior à data final.'
   };
 
   const grid = $('mn-grid');
@@ -4151,6 +4153,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   const fmtInt = (n) => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString('pt-BR') : '—';
   const fmtMoney = (n) => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
+  const plural = (n, one, many) => fmtInt(n) + ' ' + (n === 1 ? one : many);
   const fmtScore = (n) => (typeof n === 'number' && isFinite(n)) ? (Number.isInteger(n) ? String(n) : n.toFixed(1)) : '—';
   function fmtDate(sec) {
    const n = Number(sec);
@@ -4171,7 +4174,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   const nicheLabel = (id) => NICHES[id] || (id ? String(id).replace(/_/g, ' ') : '—');
   const formatLabel = (id) => FORMATS[id] || (id ? String(id).replace(/_/g, ' ') : '—');
-  const platLabel = (id) => id === 'unknown' ? 'Desconhecido' : (id ? String(id).charAt(0).toUpperCase() + String(id).slice(1) : '—');
+  const platLabel = (id) => id === 'unknown' ? 'Não identificada' : (id ? String(id).charAt(0).toUpperCase() + String(id).slice(1) : '—');
   function countryLabel(code) {
    try { return code + ' — ' + new Intl.DisplayNames(['pt-BR'], { type: 'region' }).of(code); } catch (e) { return code; }
   }
@@ -4233,9 +4236,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     }
     case 'mediaType': return ['IMAGE', 'VIDEO', 'CAROUSEL'].includes(v.toUpperCase()) ? v.toUpperCase() : '';
     case 'minDays': case 'maxDays': case 'minAds': return /^\d{1,6}$/.test(v) ? String(parseInt(v, 10)) : '';
-    case 'priceMin': case 'priceMax': return /^\d{1,7}(\.\d{1,2})?$/.test(v) ? v : '';
     case 'platform': return /^[a-z0-9_]{1,30}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
-    case 'niche': case 'format': return /^[a-z_]{1,40}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
+    case 'format': return /^[a-z_]{1,40}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
     case 'startFrom': case 'startTo': return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
     case 'cta': return (v.length <= 500 && !/[\u0000-\u001f]/.test(v)) ? v : '';
     case 'domain': return /^[a-z0-9.-]{1,253}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
@@ -4308,7 +4310,6 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const fo = filterOpts || {};
    setOptions($('mn-f-country'), (fo.countries || []).map((c) => [c, countryLabel(c)]), st.f.country);
    setOptions($('mn-f-platform'), (fo.checkoutPlatforms || []).map((c) => [c, platLabel(c)]), st.f.platform);
-   setOptions($('mn-f-niche'), (fo.niches || []).map((c) => [c, nicheLabel(c)]), st.f.niche);
    setOptions($('mn-f-format'), Object.keys(FORMATS).map((c) => [c, FORMATS[c]]), st.f.format);
    setOptions($('mn-f-cta'), (fo.ctas || []).map((c) => [c, c]), st.f.cta);
    const box = $('mn-f-placements');
@@ -4337,7 +4338,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     if (el.tagName === 'SELECT' && st.f[k] && !Array.prototype.some.call(el.options, (o) => o.value === st.f[k])) {
      const o = document.createElement('option');
      o.value = st.f[k];
-     o.textContent = k === 'niche' ? nicheLabel(st.f[k]) : k === 'platform' ? platLabel(st.f[k]) : st.f[k];
+     o.textContent = k === 'platform' ? platLabel(st.f[k]) : st.f[k];
      el.appendChild(o);
     }
     el.value = st.f[k];
@@ -4392,27 +4393,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    });
   }
 
-  // ---------- indicadores e KPIs ----------
-  function renderIndicators() {
-   const box = $('mn-indicators');
-   box.replaceChildren();
-   if (!stats) return;
-   const mk = (cls, text) => {
-    const e = h('span', 'mn-ind ' + cls);
-    e.appendChild(h('span', 'mn-ind-dot'));
-    e.appendChild(h('span', '', text));
-    box.appendChild(e);
-   };
-   const c = stats.collect || {};
-   if (c.configured) {
-    const ns = Number(c.activeSearches) || 0;
-    mk('on', 'Coleta automática: ' + (c.lastRunAt ? 'última há ' + ago(c.lastRunAt) : 'ainda sem coletas')
-     + ' · hoje ' + fmtInt(c.todayAds) + '/' + fmtInt(c.dailyLimit) + ' anúncios · ' + ns + (ns === 1 ? ' busca ativa' : ' buscas ativas'));
-   } else {
-    mk('warn', 'Coleta automática: não configurada (defina APIFY_TOKEN no servidor)');
-   }
-   mk(stats.lastIngestAt ? 'on' : '', stats.lastIngestAt ? 'Extensão: última captura há ' + ago(stats.lastIngestAt) : 'Extensão: sem capturas');
-  }
+  // ---------- KPIs ----------
   function setKpis(skeleton) {
    $('mn-kpis').querySelectorAll('.mn-kpi').forEach((k) => {
     const v = k.querySelector('[data-v]');
@@ -4424,9 +4405,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      return;
     }
     v.classList.remove('mn-skel');
-    if (kind === 'ads') { v.textContent = fmtInt(stats.activeAds); s.textContent = fmtInt(stats.activeOffers) + ' ofertas ativas'; }
-    if (kind === 'scaled') { v.textContent = fmtInt(stats.scaledOffers); s.textContent = 'de ' + fmtInt(stats.activeOffers) + ' ofertas ativas'; }
-    if (kind === 'new') { v.textContent = fmtInt(stats.newAds24h); s.textContent = 'vistos pela 1ª vez em 24 h'; }
+    if (kind === 'ads') { v.textContent = fmtInt(stats.activeAds); s.textContent = plural(stats.activeOffers, 'oferta ativa', 'ofertas ativas'); }
+    if (kind === 'scaled') { v.textContent = fmtInt(stats.scaledOffers); s.textContent = 'de ' + plural(stats.activeOffers, 'oferta ativa', 'ofertas ativas'); }
+    if (kind === 'new') { v.textContent = fmtInt(stats.newAds24h); s.textContent = 'vistos pela primeira vez em 24 h'; }
     if (kind === 'niches') {
      const n = filterOpts && Array.isArray(filterOpts.niches) ? filterOpts.niches.length : (stats.topNiches || []).length;
      v.textContent = fmtInt(n);
@@ -4436,8 +4417,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    });
   }
   let statsReady = Promise.resolve();
-  function loadStats() {
-   setKpis(true);
+  function loadStats(quiet) {
+   if (!quiet) setKpis(true);
    statsReady = (async () => {
     const r = await call('/api/miner/stats');
     if (r.ok) { stats = r.data; } else { stats = null; }
@@ -4445,7 +4426,6 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     if (!r.ok) {
      $('mn-kpis').querySelectorAll('[data-v]').forEach((v) => { v.classList.remove('mn-skel'); v.textContent = '—'; });
     }
-    renderIndicators();
    })();
    return statsReady;
   }
@@ -4506,6 +4486,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      v.src = vids[0].src;
     });
     box.appendChild(play);
+    if (onOpen) { box.style.cursor = 'pointer'; box.addEventListener('click', onOpen); }
     return box;
    }
    if (imgs.length) {
@@ -4571,7 +4552,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    card.appendChild(media);
    const body = h('div', 'mn-card-body');
    body.appendChild(h('h3', 'mn-title', o.domain));
-   const names = o.pageNames || [];
+   const names = (o.pageNames || []).filter((n) => !hasTpl(n));
    if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
    const badges = h('div', 'mn-badges');
    if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') badges.appendChild(badge(platLabel(o.checkout.platform), 'accent'));
@@ -4583,7 +4564,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    metrics.appendChild(metric('Anúncios ativos', fmtInt(o.activeAds)));
    metrics.appendChild(metric('Criativos distintos', fmtInt(o.distinctCreatives)));
    metrics.appendChild(metric('Dias no ar', fmtInt(o.maxDaysRunning)));
-   metrics.appendChild(metric('Crescimento 7 d', (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '● ') + g, g > 0 ? 'mn-up' : g < 0 ? 'mn-down' : ''));
+   metrics.appendChild(metric('Crescimento (7 dias)', (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '● ') + g, g > 0 ? 'mn-up' : g < 0 ? 'mn-down' : ''));
    body.appendChild(metrics);
    const pts = o.sparkline || [];
    if (pts.length >= 2) {
@@ -4604,13 +4585,33 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    return card;
   }
   function daysOf(ad) {
-   if (typeof ad.daysRunning === 'number') return ad.daysRunning;
-   return Math.max(0, Math.floor((Date.now() / 1000 - Number(ad.startDate || 0)) / 86400));
+   const t0 = Number(ad.startDate);
+   if (!(t0 > 0)) return null;
+   if (typeof ad.daysRunning === 'number' && isFinite(ad.daysRunning)) return ad.daysRunning;
+   return Math.max(0, Math.floor((Date.now() / 1000 - t0) / 86400));
+  }
+  function runText(ad) {
+   const n = daysOf(ad);
+   if (n === null) return ad.isActive ? 'Ativo' : 'Inativo';
+   return (ad.isActive ? 'Ativo há ' : 'Rodou por ') + n + (n === 1 ? ' dia' : ' dias');
   }
   function libraryAdUrl(ad) {
    return /^[0-9A-Za-z_-]{1,40}$/.test(String(ad.adArchiveId || '')) ? 'https://www.facebook.com/ads/library/?id=' + encodeURIComponent(ad.adArchiveId) : '';
   }
-  function adText(ad) { return [ad.title, ad.body].filter(Boolean).join('\n\n'); }
+  // Anuncios de catalogo dinamico (DPA): campos com marcadores {{product.name}} nunca sao exibidos nem copiados
+  const TPL_RE = /\{\{[^{}]*\}\}/;
+  const DPA_NOTICE = 'Anúncio de catálogo: texto gerado pelo Meta para cada produto';
+  const hasTpl = (v) => typeof v === 'string' && TPL_RE.test(v);
+  const noTpl = (v) => (typeof v === 'string' && !hasTpl(v)) ? v : '';
+  function adTexts(ad) {
+   return { dpa: hasTpl(ad.body) || hasTpl(ad.title), body: noTpl(ad.body), title: noTpl(ad.title) };
+  }
+  function adText(ad) { const t = adTexts(ad); return [t.title, t.body].filter(Boolean).join('\n\n'); }
+  async function copyAd(ad) {
+   const text = adText(ad);
+   if (!text) { toast('Este anúncio não tem texto fixo (catálogo).'); return; }
+   toast((await copyText(text)) ? 'Texto copiado' : 'Não foi possível copiar');
+  }
   async function copyText(text) {
    try {
     await navigator.clipboard.writeText(text);
@@ -4644,24 +4645,26 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const nm = h('strong', '', ad.pageName || 'Página sem nome');
    nm.title = ad.pageName || '';
    info.appendChild(nm);
-   info.appendChild(h('small', '', (ad.isActive ? 'Ativo há ' : 'Rodou por ') + daysOf(ad) + ' dias'));
+   info.appendChild(h('small', '', runText(ad)));
    ah.append(info, platIcons(ad));
    head.appendChild(ah);
    card.appendChild(head);
    card.appendChild(mediaBox(ad, false, () => openAd(ad)));
    const body = h('div', 'mn-card-body');
-   if (ad.body) {
-    const p = h('p', 'mn-text', ad.body);
+   const tx = adTexts(ad);
+   if (tx.dpa) body.appendChild(h('p', 'mn-dpa', DPA_NOTICE));
+   if (tx.body) {
+    const p = h('p', 'mn-text', tx.body);
     body.appendChild(p);
-    if (ad.body.length > 140 || ad.body.split('\n').length > 3) {
+    if (tx.body.length > 140 || tx.body.split('\n').length > 3) {
      const more = h('button', 'mn-more', 'ver mais');
      more.type = 'button';
      more.addEventListener('click', () => { const o = p.classList.toggle('open'); more.textContent = o ? 'ver menos' : 'ver mais'; });
      body.appendChild(more);
     }
    }
-   if (ad.title) body.appendChild(h('h4', 'mn-headline', ad.title));
-   if (ad.ctaText) body.appendChild(h('span', 'mn-cta', ad.ctaText));
+   if (tx.title) body.appendChild(h('h4', 'mn-headline', tx.title));
+   if (noTpl(ad.ctaText)) body.appendChild(h('span', 'mn-cta', ad.ctaText));
    if (ad.landingDomain) body.appendChild(h('div', 'mn-sub', ad.landingDomain));
    const badges = h('div', 'mn-badges');
    if (ad.collationCount > 1) badges.appendChild(badge(ad.collationCount + ' anúncios com este criativo', 'accent'));
@@ -4675,9 +4678,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    if (badges.childNodes.length) body.appendChild(badges);
    const act = h('div', 'mn-actions');
    const lib = libraryAdUrl(ad);
-   if (lib) act.appendChild(linkEl(lib, 'Ver na Biblioteca', 'mn-btn sm'));
+   if (lib) act.appendChild(linkEl(lib, 'Ver na Biblioteca de Anúncios', 'mn-btn sm'));
    if (ad.landingDomain) act.appendChild(btn('Ver oferta', 'sm', () => openOffer(ad.landingDomain, null)));
-   act.appendChild(btn('Copiar texto', 'sm', async () => { toast((await copyText(adText(ad))) ? 'Texto copiado' : 'Não foi possível copiar'); }));
+   act.appendChild(btn('Copiar texto', 'sm', () => copyAd(ad)));
    body.appendChild(act);
    card.appendChild(body);
    return card;
@@ -4785,10 +4788,10 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const badges = h('div', 'mn-badges');
    if (typeof o.score === 'number') badges.appendChild(badge('Score ' + fmtScore(o.score), 'accent'));
    const activeAds = typeof o.activeAds === 'number' ? o.activeAds : ads.filter((a) => a.isActive).length;
-   badges.appendChild(badge(fmtInt(activeAds) + ' anúncios ativos'));
-   badges.appendChild(badge(fmtInt(typeof o.distinctCreatives === 'number' ? o.distinctCreatives : (last ? last.distinctCreatives : null)) + ' criativos distintos'));
-   badges.appendChild(badge(fmtInt(typeof o.maxDaysRunning === 'number' ? o.maxDaysRunning : Math.max.apply(null, ads.map(daysOf).concat([0]))) + ' dias no ar'));
-   if (typeof o.growth7d === 'number') badges.appendChild(badge('Crescimento 7 d: ' + (o.growth7d > 0 ? '+' : '') + o.growth7d));
+   badges.appendChild(badge('Anúncios ativos: ' + fmtInt(activeAds)));
+   badges.appendChild(badge('Criativos distintos: ' + fmtInt(typeof o.distinctCreatives === 'number' ? o.distinctCreatives : (last ? last.distinctCreatives : null))));
+   badges.appendChild(badge('Dias no ar: ' + fmtInt(typeof o.maxDaysRunning === 'number' ? o.maxDaysRunning : (ads.length ? Math.max.apply(null, ads.map(daysOf).filter((n) => n !== null).concat([0])) : null))));
+   if (typeof o.growth7d === 'number') badges.appendChild(badge('Crescimento (7 dias): ' + (o.growth7d > 0 ? '+' : '') + o.growth7d));
    head.appendChild(badges);
 
    const chartBox = box('Últimos 30 dias');
@@ -4840,7 +4843,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     }
     if (ai.summary) aiBox.appendChild(h('p', '', ai.summary));
    } else {
-    aiBox.appendChild(h('p', '', 'Ainda não classificada pela IA. Use “Reclassificar” para pedir a análise.'));
+    aiBox.appendChild(h('p', '', 'Aguardando classificação pela IA. Use o botão Reclassificar para pedir a análise.'));
    }
    const ckBox = box('Checkout e preços');
    const en = d.enrichment;
@@ -4853,7 +4856,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      ['Título da página', en.pageTitle], ['Analisada', fmtDateTime(en.enrichedAt)]
     ]));
    } else {
-    ckBox.appendChild(h('p', '', 'Ainda não analisada. Use “Reanalisar página” para detectar o checkout e os preços.'));
+    ckBox.appendChild(h('p', '', 'Aguardando análise da página. Use o botão Reanalisar página para detectar o checkout e os preços.'));
     if (en && en.lastError) ckBox.appendChild(h('p', 'mn-sub', 'Último erro: ' + en.lastError));
    }
    cols.append(aiBox, ckBox);
@@ -4890,47 +4893,51 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function openAd(ad) {
    const m = openModal(ovAd, true);
    const head = h('div', 'mn-mhead');
-   head.appendChild(h('h3', '', ad.title || ad.pageName || 'Anúncio'));
+   const tx = adTexts(ad);
+   head.appendChild(h('h3', '', tx.title || noTpl(ad.pageName) || 'Anúncio'));
    const badges = h('div', 'mn-badges');
-   badges.appendChild(badge((ad.isActive ? 'Ativo há ' : 'Rodou por ') + daysOf(ad) + ' dias', 'accent'));
+   badges.appendChild(badge(runText(ad), 'accent'));
    if (ad.collationCount > 1) badges.appendChild(badge(ad.collationCount + ' anúncios com este criativo'));
    head.appendChild(badges);
    m.appendChild(head);
    m.appendChild(mediaBox(ad, true, null));
    const t = box('Texto do anúncio');
-   t.appendChild(h('p', 'mn-fulltext', ad.body || '—'));
+   if (tx.dpa) t.appendChild(h('p', 'mn-dpa', DPA_NOTICE));
+   t.appendChild(h('p', 'mn-fulltext', tx.body || '—'));
    m.appendChild(t);
    const meta = box('Detalhes');
    meta.appendChild(kv([
-    ['Página', ad.pageName], ['ID da página', ad.pageId], ['ID do anúncio', ad.adArchiveId],
+    ['Página', noTpl(ad.pageName)], ['ID da página', ad.pageId], ['ID do anúncio', ad.adArchiveId],
     ['Início', fmtDate(ad.startDate)], ['Fim', ad.endDate ? fmtDate(ad.endDate) : 'em veiculação'],
     ['Primeira captura', fmtDateTime(ad.firstSeenAt)], ['Última captura', fmtDateTime(ad.lastSeenAt)],
-    ['Plataformas', (ad.platforms || []).map((p) => PLACEMENTS[p] || p).join(', ')], ['Países', (ad.countries || []).join(', ')],
-    ['Formato', ad.displayFormat], ['CTA', ad.ctaText], ['Legenda', ad.caption], ['Termos de busca', (ad.queries || []).join(', ')],
+    ['Plataformas', (ad.platforms || []).map(platName).filter(Boolean).join(', ')], ['Países', (ad.countries || []).join(', ')],
+    ['Formato', displayFormatLabel(ad.displayFormat)], ['CTA', noTpl(ad.ctaText)], ['Legenda', noTpl(ad.caption)], ['Termos de busca', (ad.queries || []).filter((x) => !hasTpl(x)).join(', ')],
     ['Domínio', ad.landingDomain]
    ]));
    m.appendChild(meta);
    const row = h('div', 'mn-row');
    const lib = libraryAdUrl(ad);
-   if (lib) row.appendChild(linkEl(lib, 'Ver na Biblioteca', 'mn-btn sm'));
+   if (lib) row.appendChild(linkEl(lib, 'Ver na Biblioteca de Anúncios', 'mn-btn sm'));
    if (ad.linkUrl && safeUrl(ad.linkUrl)) row.appendChild(linkEl(ad.linkUrl, 'Abrir destino', 'mn-btn sm'));
    if (ad.landingDomain) row.appendChild(btn('Ver oferta', 'sm', () => openOffer(ad.landingDomain, null)));
-   row.appendChild(btn('Copiar texto', 'sm', async () => { toast((await copyText(adText(ad))) ? 'Texto copiado' : 'Não foi possível copiar'); }));
+   row.appendChild(btn('Copiar texto', 'sm', () => copyAd(ad)));
    m.appendChild(row);
   }
 
   // Painel de buscas automáticas (Apify)
-  const RUN_STATUS = { running: 'Em execução', SUCCEEDED: 'Concluída', FAILED: 'Falhou', ABORTED: 'Abortada', 'TIMED-OUT': 'Tempo esgotado' };
-  const runStatus = (s) => RUN_STATUS[s] || RUN_STATUS[String(s || '').toUpperCase()] || (s ? String(s) : '—');
+  const RUN_STATUS = { running: 'Em execução', succeeded: 'Concluída', failed: 'Falhou', aborted: 'Abortada', 'timed-out': 'Tempo esgotado' };
+  const runStatus = (s) => RUN_STATUS[String(s || '').toLowerCase()] || (s ? String(s).toLowerCase() : '—');
+  const POLL_MS = 5000;
   let searchesTimer = null;
   let searchesSeq = 0;
-  closers.set(ovSearches, () => { clearTimeout(searchesTimer); searchesSeq++; });
+  // ao fechar o modal, KPIs e lista principal sao recarregados (a coleta pode ter mudado os numeros)
+  closers.set(ovSearches, () => { clearTimeout(searchesTimer); searchesSeq++; applyChange(true); });
   function openSearches() {
    const m = openModal(ovSearches, true);
    const my = ++searchesSeq;
    const head = h('div', 'mn-mhead');
    head.appendChild(h('h3', '', 'Buscas automáticas'));
-   head.appendChild(h('p', 'mn-sub', 'Coleta diária de anúncios da Biblioteca do Meta via Apify, dentro do limite de gasto configurado no servidor.'));
+   head.appendChild(h('p', 'mn-sub', 'Coleta diária de anúncios da Biblioteca de Anúncios do Meta via Apify, dentro do limite de gasto configurado no servidor.'));
    m.appendChild(head);
    const info = h('div', 'mn-msg');
    m.appendChild(info);
@@ -4965,49 +4972,63 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    m.appendChild(histBox);
 
    const say = (el, kind, text) => { el.className = 'mn-msg' + (kind ? ' ' + kind : ''); el.textContent = text; };
-   async function refresh() {
+   // refresh recarrega lista, historico E contador (stats novo, nunca o snapshot antigo); enquanto houver execucao running repete a cada 5 s.
+   // boost: apos criar ou rodar, continua olhando por mais algumas rodadas porque a coleta comeca alguns segundos depois.
+   let refreshing = false;
+   let queued = false;
+   let grace = 0;
+   async function refresh(boost) {
     if (my !== searchesSeq) return;
-    const [rs, rr] = await Promise.all([call('/api/miner/searches'), call('/api/miner/collect/runs?limit=10')]);
+    if (boost) grace = 4;
+    if (refreshing) { queued = true; return; }
+    refreshing = true;
+    let anyRunning = false;
+    try {
+     const [rs, rr] = await Promise.all([call('/api/miner/searches'), call('/api/miner/collect/runs?limit=10'), loadStats(true)]);
+     if (my !== searchesSeq) return;
+     const c = stats && stats.collect;
+     if (c) {
+      const ns = Number(c.activeSearches) || 0;
+      say(info, c.configured ? 'ok' : 'bad', c.configured
+       ? 'Coleta configurada · hoje ' + fmtInt(c.todayAds) + '/' + fmtInt(c.dailyLimit) + ' anúncios · ' + ns + (ns === 1 ? ' busca ativa' : ' buscas ativas')
+       : ERR.collect_not_configured);
+     }
+     list.replaceChildren();
+     if (!rs.ok) {
+      say(lmsg, 'bad', errMsg(rs.status, rs.data && rs.data.error));
+     } else {
+      const items = rs.data.searches || [];
+      if (!items.length) list.appendChild(h('p', 'mn-sub', 'Nenhuma busca criada ainda.'));
+      items.forEach((s) => { if (s.lastRun && s.lastRun.status === 'running') anyRunning = true; list.appendChild(searchRow(s)); });
+     }
+     hist.replaceChildren();
+     if (rr.ok) {
+      const runs = rr.data.runs || [];
+      if (!runs.length) hist.appendChild(h('p', 'mn-sub', 'Nenhuma execução ainda.'));
+      runs.forEach((x) => {
+       if (x.status === 'running') anyRunning = true;
+       const row = h('div', 'mn-trow');
+       const l = h('div');
+       l.appendChild(h('strong', '', (x.search ? x.search.q + ' · ' + x.search.country : 'Busca removida') + ' — ' + runStatus(x.status)));
+       l.appendChild(h('div', 'mn-sub', 'recebidos ' + fmtInt(x.itemsReceived) + ' · novos ' + fmtInt(x.inserted) + ' · atualizados ' + fmtInt(x.updated) + ' · rejeitados ' + fmtInt(x.rejected)
+        + (typeof x.estCostUsd === 'number' ? ' · custo estimado US$ ' + x.estCostUsd.toFixed(2) : '')));
+       if (x.error) l.appendChild(h('div', 'mn-sub mn-down', 'Erro: ' + x.error));
+       row.append(l, h('div', 'mn-sub', 'há ' + ago(x.startedAt)));
+       hist.appendChild(row);
+      });
+     } else {
+      hist.appendChild(h('p', 'mn-sub', errMsg(rr.status, rr.data && rr.data.error)));
+     }
+    } finally {
+     refreshing = false;
+    }
     if (my !== searchesSeq) return;
-    const c = stats && stats.collect;
-    if (c) {
-     say(info, c.configured ? 'ok' : 'bad', c.configured
-      ? 'Coleta configurada · hoje ' + fmtInt(c.todayAds) + '/' + fmtInt(c.dailyLimit) + ' anúncios · ' + (c.activeSearches || 0) + ' buscas ativas'
-      : ERR.collect_not_configured);
-    }
-    list.replaceChildren();
-    if (!rs.ok) {
-     say(lmsg, 'bad', errMsg(rs.status, rs.data && rs.data.error));
-    } else {
-     const items = rs.data.searches || [];
-     if (!items.length) list.appendChild(h('p', 'mn-sub', 'Nenhuma busca criada ainda.'));
-     items.forEach((s) => list.appendChild(searchRow(s)));
-    }
-    hist.replaceChildren();
-    let running = false;
-    if (rr.ok) {
-     const runs = rr.data.runs || [];
-     if (!runs.length) hist.appendChild(h('p', 'mn-sub', 'Nenhuma execução ainda.'));
-     runs.forEach((x) => {
-      if (x.status === 'running') running = true;
-      const row = h('div', 'mn-trow');
-      const l = h('div');
-      l.appendChild(h('strong', '', (x.search ? x.search.q + ' · ' + x.search.country : 'Busca removida') + ' — ' + runStatus(x.status)));
-      l.appendChild(h('div', 'mn-sub', 'recebidos ' + fmtInt(x.itemsReceived) + ' · novos ' + fmtInt(x.inserted) + ' · atualizados ' + fmtInt(x.updated) + ' · rejeitados ' + fmtInt(x.rejected)
-       + (typeof x.estCostUsd === 'number' ? ' · custo est. US$ ' + x.estCostUsd.toFixed(2) : '')));
-      if (x.error) l.appendChild(h('div', 'mn-sub mn-down', 'Erro: ' + x.error));
-      row.append(l, h('div', 'mn-sub', 'há ' + ago(x.startedAt)));
-      hist.appendChild(row);
-     });
-    } else {
-     hist.appendChild(h('p', 'mn-sub', errMsg(rr.status, rr.data && rr.data.error)));
-    }
-    if ((rs.ok && (rs.data.searches || []).some((s) => s.lastRun && s.lastRun.status === 'running')) || running) {
-     clearTimeout(searchesTimer);
-     searchesTimer = setTimeout(refresh, 4000);
-    } else {
-     // coleta terminou: atualiza o indicador do cabeçalho
-     if (my === searchesSeq && searchesTimer) { searchesTimer = null; loadStats(); }
+    if (queued) { queued = false; refresh(); return; }
+    clearTimeout(searchesTimer);
+    searchesTimer = null;
+    if (anyRunning || grace > 0) {
+     if (!anyRunning) grace--;
+     searchesTimer = setTimeout(() => refresh(), POLL_MS);
     }
    }
    function searchRow(s) {
@@ -5015,24 +5036,30 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     row.dataset.search = s.id;
     const l = h('div');
     l.appendChild(h('strong', '', s.q));
-    l.appendChild(h('div', 'mn-sub', 'País ' + s.country + ' · Formato ' + (MEDIA_LABEL[s.mediaType] || s.mediaType) + ' · máx. ' + fmtInt(s.maxAds) + ' anúncios · ' + (s.active ? 'Ativa' : 'Pausada')));
+    l.appendChild(h('div', 'mn-sub', 'País ' + s.country + ' · Formato ' + (MEDIA_LABEL[s.mediaType] || displayFormatLabel(s.mediaType)) + ' · máx. ' + fmtInt(s.maxAds) + ' anúncios · ' + (s.active ? 'Ativa' : 'Pausada')));
     const lr = s.lastRun;
-    l.appendChild(h('div', 'mn-sub', lr
-     ? 'Último run: ' + runStatus(lr.status) + ' · ' + fmtInt(lr.status === 'running' ? lr.itemsReceived : (s.lastAds !== null && s.lastAds !== undefined ? s.lastAds : lr.itemsReceived)) + ' anúncios · há ' + ago(lr.startedAt)
-     : 'Nunca executada'));
+    const running = !!(lr && lr.status === 'running');
+    l.appendChild(h('div', 'mn-sub' + (running ? ' mn-running' : ''), running
+     ? 'Coletando…'
+     : lr
+      ? 'Última execução: ' + runStatus(lr.status) + ' · ' + fmtInt(s.lastAds !== null && s.lastAds !== undefined ? s.lastAds : lr.itemsReceived) + ' anúncios · há ' + ago(lr.startedAt)
+      : 'Nunca executada'));
     const act = h('div', 'mn-row');
-    act.appendChild(btn('Rodar agora', 'sm', async function () {
+    const runBtn = btn(running ? 'Coletando…' : 'Rodar agora', 'sm', async function () {
      this.disabled = true;
      const r = await call('/api/miner/searches/' + s.id + '/run', { method: 'POST' });
-     this.disabled = false;
-     if (r.status === 202) { say(lmsg, 'ok', 'Coleta iniciada.'); refresh(); loadStats(); }
-     else say(lmsg, 'bad', errMsg(r.status, r.data && r.data.error));
-    }));
+     if (my !== searchesSeq) return;
+     if (r.status === 202) { say(lmsg, 'ok', 'Coleta iniciada.'); refresh(true); }
+     else { this.disabled = false; say(lmsg, 'bad', errMsg(r.status, r.data && r.data.error)); if (r.status === 409) refresh(true); }
+    });
+    if (running) runBtn.disabled = true;
+    act.appendChild(runBtn);
     act.appendChild(btn(s.active ? 'Pausar' : 'Ativar', 'sm', async function () {
      this.disabled = true;
      const r = await call('/api/miner/searches/' + s.id, jsonOpts('PATCH', { active: !s.active }));
+     if (my !== searchesSeq) return;
      this.disabled = false;
-     if (r.ok) { say(lmsg, 'ok', s.active ? 'Busca pausada.' : 'Busca ativada.'); refresh(); loadStats(); }
+     if (r.ok) { say(lmsg, 'ok', s.active ? 'Busca pausada.' : 'Busca ativada.'); refresh(); }
      else say(lmsg, 'bad', errMsg(r.status, r.data && r.data.error));
     }));
     const del = btn('Apagar', 'sm danger', () => {
@@ -5040,7 +5067,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      const ok = btn('Confirmar apagar', 'sm danger', async () => {
       ok.disabled = true;
       const r = await call('/api/miner/searches/' + s.id, { method: 'DELETE' });
-      if (r.ok) { say(lmsg, 'ok', 'Busca apagada.'); refresh(); loadStats(); }
+      if (my !== searchesSeq) return;
+      if (r.ok) { say(lmsg, 'ok', 'Busca apagada.'); refresh(); }
       else { ok.disabled = false; say(lmsg, 'bad', errMsg(r.status, r.data && r.data.error)); }
      });
      const no = btn('Cancelar', 'sm', () => { ok.remove(); no.remove(); del.hidden = false; });
@@ -5059,7 +5087,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     create.disabled = true;
     const r = await call('/api/miner/searches', jsonOpts('POST', { q, country: ic.value, mediaType: im.value, maxAds: max }));
     create.disabled = false;
-    if (r.status === 201) { say(fmsg, 'ok', 'Busca criada. A primeira coleta roda no próximo ciclo ou use “Rodar agora”.'); iq.value = ''; refresh(); loadStats(); }
+    if (my !== searchesSeq) return;
+    if (r.status === 201) { say(fmsg, 'ok', 'Busca criada. A primeira coleta começa em instantes.'); iq.value = ''; refresh(true); }
     else say(fmsg, 'bad', errMsg(r.status, r.data && r.data.error));
    });
    say(info, '', 'Carregando…');
@@ -5265,7 +5294,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   inpQ.addEventListener('input', debouncedChange);
   inpQ.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); debouncedChange.now(); } });
   TEXT_CTRL.forEach((k) => $(CTRL[k]).addEventListener('input', debouncedChange));
-  ['country', 'mediaType', 'platform', 'niche', 'format', 'cta', 'startFrom', 'startTo'].forEach((k) => $(CTRL[k]).addEventListener('change', onFilterChange));
+  ['country', 'mediaType', 'platform', 'format', 'cta', 'startFrom', 'startTo'].forEach((k) => $(CTRL[k]).addEventListener('change', onFilterChange));
   selSort.addEventListener('change', () => { st.sort = selSort.value; applyChange(true); });
   chkInf.addEventListener('change', () => {
    st.infinite = chkInf.checked;
@@ -5293,7 +5322,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const kind = k.dataset.kpi;
    if (kind === 'scaled') { st.sort = 'score'; setView('offers', true); }
    else if (kind === 'ads' || kind === 'new') { st.sort = 'recent'; setView('ads', true); }
-   else if (kind === 'niches') { openDrawer(); $('mn-f-niche').focus(); }
+   else if (kind === 'niches') { if (st.view !== 'offers') setView('offers'); } // o filtro de nicho foi removido: abre a vista de Ofertas
   });
   if ('IntersectionObserver' in window) {
    io = new IntersectionObserver((entries) => {
