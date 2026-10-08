@@ -1205,11 +1205,12 @@ input:focus, select:focus, textarea:focus {
 .mn-actions .mn-btn { flex: 1 1 auto; }
 .mn-adhead { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mn-avatar { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 50%; background: var(--theme-accent-soft); color: var(--theme-accent); font-weight: 800; display: flex; align-items: center; justify-content: center; }
-.mn-adhead-info { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.mn-adhead-info { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; overflow: hidden; }
 .mn-adhead-info strong { font-size: 0.82rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mn-adhead-info small { font-size: 0.7rem; color: var(--theme-accent); font-weight: 700; }
-.mn-plats { display: inline-flex; gap: 3px; flex: 0 0 auto; }
-.mn-plat { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1px 4px; }
+.mn-adhead-right { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; justify-content: flex-end; }
+.mn-plats { display: inline-flex; flex-wrap: wrap; gap: 2px; flex: 0 1 auto; min-width: 0; justify-content: flex-end; }
+.mn-plat { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1px 4px; flex-shrink: 0; }
 .mn-text { font-size: 0.8rem; line-height: 1.45; color: var(--text-main); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; margin: 0; }
 .mn-text.open { -webkit-line-clamp: unset; line-clamp: unset; display: block; }
 .mn-dpa { margin: 0; padding: 6px 10px; border-radius: var(--radius-xs); border: 1px dashed var(--border-hover); background: var(--bg-input); color: var(--text-muted); font-size: 0.74rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
@@ -1257,6 +1258,33 @@ input:focus, select:focus, textarea:focus {
 .mn-trow > div { min-width: 0; }
 .mn-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
 .mn-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.68rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em; color: var(--text-muted); min-width: 0; }
+.mn-star-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; transition: all 0.2s; flex-shrink: 0; }
+.mn-star-btn:hover { border-color: var(--accent-amber); color: var(--accent-amber); transform: scale(1.08); }
+.mn-star-btn.active { color: var(--accent-amber); border-color: rgba(255, 183, 3, 0.5); background: rgba(255, 183, 3, 0.12); }
+.mn-grid.mn-compact { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.mn-grid.mn-compact .mn-card-body { padding: 8px; gap: 6px; }
+.mn-grid.mn-compact .mn-title { font-size: 0.82rem; }
+.mn-grid.mn-compact .mn-text { font-size: 0.74rem; -webkit-line-clamp: 2; line-clamp: 2; }
+.mn-grid.mn-compact .mn-metrics { gap: 4px 6px; }
+.mn-grid.mn-compact .mn-metric b { font-size: 0.84rem; }
+.mn-card.mn-missing { background: rgba(255, 255, 255, 0.03); border: 1px dashed var(--border-hover); padding: 16px; opacity: 0.85; }
+.mn-card.mn-missing h4 { margin: 0 0 6px 0; color: var(--text-muted); font-size: 0.88rem; }
+.mn-card.mn-missing p { margin: 0 0 12px 0; font-size: 0.78rem; color: var(--text-dim); }
+.mn-strip-wrap { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.mn-strip-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mn-strip-head h4 { margin: 0; font-size: 0.84rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.mn-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--border-hover) transparent; }
+.mn-strip::-webkit-scrollbar { height: 6px; }
+.mn-strip::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 6px; }
+.mn-strip .mn-card { flex: 0 0 210px; min-width: 210px; max-width: 210px; }
+.mn-clickable-link { cursor: pointer; color: var(--theme-accent); text-decoration: none; }
+.mn-clickable-link:hover { text-decoration: underline; }
+.mn-chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.mn-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: var(--radius-full); border: 1px solid var(--theme-accent); background: var(--theme-accent-soft); color: var(--text-main); font-size: 0.72rem; font-weight: 700; }
+.mn-chip-x, .mn-chip-del, .mn-chip-remove { background: none; border: 0; color: var(--theme-accent); cursor: pointer; padding: 0 0 0 2px; font-size: 0.85rem; font-weight: 800; line-height: 1; display: inline-flex; align-items: center; justify-content: center; outline: none; }
+.mn-chip-x:hover, .mn-chip-del:hover, .mn-chip-remove:hover { color: var(--accent-red); }
+.mn-item-note { font-size: 0.76rem; color: var(--text-muted); background: var(--bg-input); padding: 6px 8px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle); margin-top: 4px; overflow-wrap: anywhere; }
+.mn-saved-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 10px 14px; }
 @media (max-width: 1199px) {
  .mn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -1839,9 +1867,11 @@ input:focus, select:focus, textarea:focus {
        <div class="mn-tabs" role="tablist" aria-label="Vista">
         <button type="button" class="mn-tab" role="tab" id="mn-tab-offers" data-view="offers" aria-selected="true">Ofertas escaladas</button>
         <button type="button" class="mn-tab" role="tab" id="mn-tab-ads" data-view="ads" aria-selected="false">Anúncios</button>
+        <button type="button" class="mn-tab" role="tab" id="mn-tab-saved" data-view="saved" aria-selected="false">Salvos</button>
        </div>
        <input type="text" class="mn-search" id="mn-q" placeholder="Buscar por texto, página ou termo..." maxlength="200" autocomplete="off" aria-label="Buscar">
        <label class="mn-sort">Ordenar <select id="mn-sort" aria-label="Ordenar"></select></label>
+       <button type="button" class="mn-btn sm" id="mn-btn-density" title="Alternar densidade da grelha">Densidade: Confortável</button>
        <label class="mn-switch"><input type="checkbox" id="mn-infinite" checked> Scroll contínuo</label>
        <button type="button" class="mn-btn mn-only-narrow" id="mn-btn-filters">Filtros (0)</button>
       </div>
@@ -1855,8 +1885,16 @@ input:focus, select:focus, textarea:focus {
           <button type="button" class="mn-btn sm mn-only-narrow" id="mn-btn-filters-close" aria-label="Fechar filtros">✕</button>
          </div>
         </div>
+        <div class="mn-fgroup"><label for="mn-f-activewithin">Visto ativo nas últimas</label>
+         <select id="mn-f-activewithin"><option value="48h" selected>48 h (Padrão)</option><option value="24h">24 h</option><option value="7d">7 dias</option></select></div>
         <div class="mn-fgroup"><label for="mn-f-country">País</label><select id="mn-f-country"><option value="">Todos</option></select></div>
         <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Veiculação <span class="mn-hint">(só em Anúncios)</span></span><div class="mn-checks" id="mn-f-placements"></div></div>
+        <div class="mn-fgroup" data-scope="ads"><span class="mn-flabel">Mesmo criativo <span class="mn-hint">(escala)</span></span>
+         <div class="mn-frow"><input type="number" id="mn-f-mincollation" min="1" max="1000000" placeholder="Mín." aria-label="Mínimo com o mesmo criativo"><input type="number" id="mn-f-maxcollation" min="1" max="1000000" placeholder="Máx." aria-label="Máximo com o mesmo criativo"></div></div>
+        <div class="mn-fgroup" data-scope="ads"><label for="mn-f-language">Idioma <span class="mn-hint">(só em Anúncios)</span></label>
+         <select id="mn-f-language"><option value="">Todos</option></select></div>
+        <div class="mn-fgroup" data-scope="ads"><label for="mn-f-seenwithin">Vistos pela primeira vez <span class="mn-hint">(só em Anúncios)</span></label>
+         <select id="mn-f-seenwithin"><option value="">Todos</option><option value="24h">Últimas 24 h</option><option value="3d">Últimos 3 dias</option><option value="7d">Últimos 7 dias</option></select></div>
         <div class="mn-fgroup"><label for="mn-f-media">Formato do criativo</label>
          <select id="mn-f-media"><option value="">Todos</option><option value="IMAGE">Imagem</option><option value="VIDEO">Vídeo</option><option value="CAROUSEL" data-scope="ads">Carrossel (só em Anúncios)</option></select></div>
         <div class="mn-fgroup"><span class="mn-flabel">Dias ativo</span>
@@ -1879,6 +1917,18 @@ input:focus, select:focus, textarea:focus {
         <div class="mn-fgroup"><label for="mn-f-page">Anunciante (ID da página)</label><input type="text" id="mn-f-page" placeholder="Ex.: 1234567890" maxlength="100" autocomplete="off"></div>
        </aside>
        <div class="mn-main">
+        <div class="mn-saved-bar" id="mn-saved-bar" style="display:none;">
+         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0;">
+          <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted);" for="mn-saved-coll">Coleção:</label>
+          <select id="mn-saved-coll" style="min-width:180px; padding:6px 10px; border-radius:var(--radius-sm); background:var(--bg-input); color:var(--text-main); font:inherit; font-size:0.84rem; border:1px solid var(--border-subtle);"></select>
+          <button type="button" class="mn-btn sm" id="mn-btn-coll-rename">Renomear</button>
+          <button type="button" class="mn-btn sm danger" id="mn-btn-coll-del">Apagar</button>
+         </div>
+         <div style="display:flex; align-items:center; gap:8px;">
+          <button type="button" class="mn-btn sm primary" id="mn-btn-coll-new">+ Nova coleção</button>
+         </div>
+        </div>
+        <div class="mn-chips" id="mn-chips"></div>
         <div class="mn-count" id="mn-total" aria-live="polite"></div>
         <div id="mn-status"></div>
         <div class="mn-grid" id="mn-grid"></div>
@@ -1891,6 +1941,7 @@ input:focus, select:focus, textarea:focus {
 
      <div class="mn-overlay" id="mn-overlay" role="dialog" aria-modal="true" aria-label="Detalhes"></div>
      <div class="mn-overlay" id="mn-overlay-searches" role="dialog" aria-modal="true" aria-label="Buscas automáticas"></div>
+     <div class="mn-overlay" id="mn-overlay-coll" role="dialog" aria-modal="true" aria-label="Coleções"></div>
 
 
     <!-- ================= 2. ESTÚDIO DE TRANSCRIÇÃO & REMODELAGEM DE CRIATIVOS COM IA ================= -->
@@ -4068,22 +4119,28 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   const DISPLAY_FORMAT = { IMAGE: 'Imagem', VIDEO: 'Vídeo', CAROUSEL: 'Carrossel', DPA: 'Catálogo', DCO: 'Dinâmico' };
   const displayFormatLabel = (v) => (typeof v === 'string' && v) ? (DISPLAY_FORMAT[v.toUpperCase()] || 'Outro') : '—';
   const platName = (p) => PLACEMENTS[p] || (p ? String(p).charAt(0).toUpperCase() + String(p).slice(1).toLowerCase().replace(/_/g, ' ') : '');
+  const DENSITY_KEY = 'cockpit_miner_density';
+  const LANGUAGES = { pt: 'Português', es: 'Espanhol', en: 'Inglês', outro: 'Outro' };
   const SORTS = {
    offers: [['score', 'Score'], ['activeAds', 'Anúncios ativos'], ['days', 'Dias no ar'], ['growth', 'Crescimento (7 dias)']],
-   ads: [['days', 'Dias no ar'], ['recent', 'Mais recentes'], ['collation', 'Mais repetidos'], ['score', 'Score da oferta']]
+   ads: [['days', 'Dias no ar'], ['recent', 'Mais recentes'], ['collation', 'Mais repetidos'], ['score', 'Score da oferta']],
+   saved: [['recent', 'Mais recentes']]
   };
-  const DEFAULT_SORT = { offers: 'score', ads: 'recent' };
-  const FILTER_KEYS = ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'minAds', 'platform', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId'];
+  const DEFAULT_SORT = { offers: 'score', ads: 'recent', saved: 'recent' };
+  const FILTER_KEYS = ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'minAds', 'platform', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId', 'activeWithin', 'minCollation', 'maxCollation', 'language', 'seenWithin'];
   const SCOPE = {
-   offers: ['country', 'mediaType', 'minDays', 'minAds', 'platform', 'format', 'pageId'],
-   ads: ['country', 'placements', 'mediaType', 'minDays', 'maxDays', 'platform', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId']
+   offers: ['activeWithin', 'country', 'mediaType', 'minDays', 'minAds', 'platform', 'format', 'pageId'],
+   ads: ['activeWithin', 'country', 'placements', 'minCollation', 'maxCollation', 'language', 'seenWithin', 'mediaType', 'minDays', 'maxDays', 'platform', 'format', 'startFrom', 'startTo', 'cta', 'domain', 'pageId'],
+   saved: []
   };
   const CTRL = {
    country: 'mn-f-country', mediaType: 'mn-f-media', minDays: 'mn-f-mindays', maxDays: 'mn-f-maxdays', minAds: 'mn-f-minads', platform: 'mn-f-platform',
    format: 'mn-f-format', startFrom: 'mn-f-from', startTo: 'mn-f-to',
-   cta: 'mn-f-cta', domain: 'mn-f-domain', pageId: 'mn-f-page'
+   cta: 'mn-f-cta', domain: 'mn-f-domain', pageId: 'mn-f-page',
+   activeWithin: 'mn-f-activewithin', minCollation: 'mn-f-mincollation', maxCollation: 'mn-f-maxcollation',
+   language: 'mn-f-language', seenWithin: 'mn-f-seenwithin'
   };
-  const TEXT_CTRL = ['minDays', 'maxDays', 'minAds', 'domain', 'pageId'];
+  const TEXT_CTRL = ['minDays', 'maxDays', 'minAds', 'domain', 'pageId', 'minCollation', 'maxCollation'];
   const ERR = {
    unauthorized: 'Token de acesso inválido ou ausente.',
    db_offline: 'O servidor está sem conexão com o banco de dados.',
@@ -4100,7 +4157,15 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    invalid_media_type: 'Formato do criativo inválido.',
    invalid_max_ads: 'Máximo de anúncios inválido (de 1 a 1000).',
    invalid_days_range: 'O mínimo de dias é maior que o máximo.',
-   invalid_date_range: 'A data inicial é posterior à data final.'
+   invalid_date_range: 'A data inicial é posterior à data final.',
+   media_expired: 'O link da Meta expirou: recolha este anúncio de novo (Rodar agora na busca) para baixar.',
+   media_upstream_error: 'Erro ao buscar mídia no servidor da Meta.',
+   media_too_large: 'Mídia muito grande para download direto (> 300 MB).',
+   default_collection_protected: 'A coleção Favoritos não pode ser renomeada nem apagada.',
+   collection_exists: 'Já existe uma coleção com este nome.',
+   collection_limit: 'Limite de coleções atingido.',
+   target_not_found: 'Item não encontrado na base.',
+   item_exists: 'Este item já está nesta coleção.'
   };
 
   const grid = $('mn-grid');
@@ -4112,15 +4177,24 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   const chkInf = $('mn-infinite');
   const filtersBox = $('mn-filters');
   const backdrop = $('mn-backdrop');
+  const btnDensity = $('mn-btn-density');
+  const savedBar = $('mn-saved-bar');
+  const selSavedColl = $('mn-saved-coll');
+  const btnCollRename = $('mn-btn-coll-rename');
+  const btnCollDel = $('mn-btn-coll-del');
+  const btnCollNew = $('mn-btn-coll-new');
+  const chipsBox = $('mn-chips');
   const ovOffer = $('mn-overlay');
   const ovSearches = $('mn-overlay-searches');
+  const ovColl = $('mn-overlay-coll') || document.createElement('div');
   const ovAd = document.createElement('div');
+  ovAd.id = 'mn-overlay-ad';
   ovAd.className = 'mn-overlay';
   ovAd.setAttribute('role', 'dialog');
   ovAd.setAttribute('aria-modal', 'true');
   ovAd.setAttribute('aria-label', 'Detalhes do anúncio');
   // Sobreposições no body: um ancestral com transform quebraria o position: fixed.
-  [ovOffer, ovSearches, ovAd].forEach((o) => document.body.appendChild(o));
+  [ovOffer, ovSearches, ovAd, ovColl].forEach((o) => { if (o && o.parentNode !== document.body) document.body.appendChild(o); });
 
   // ---------- utilitários ----------
   function h(tag, cls, text) {
@@ -4217,23 +4291,35 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
 
   // ---------- estado ----------
-  function emptyFilters() { const f = {}; FILTER_KEYS.forEach((k) => { f[k] = ''; }); return f; }
-  function defaults() { return { view: 'offers', sort: 'score', q: '', infinite: true, f: emptyFilters() }; }
+  function emptyFilters() {
+   const f = {};
+   FILTER_KEYS.forEach((k) => { f[k] = ''; });
+   f.activeWithin = '48h';
+   return f;
+  }
+  function defaults() { return { view: 'offers', sort: 'score', q: '', infinite: true, collId: '', f: emptyFilters() }; }
   let st = defaults();
   let stats = null;
   let filterOpts = null;
   let filtersAt = 0;
+  let collectionsList = [];
+  const savedMap = new Map();
+  const itemIdsMap = new Map();
 
   function sanitizeFilter(k, v) {
    if (typeof v !== 'string') return '';
    v = v.trim();
-   if (!v) return '';
+   if (!v) return k === 'activeWithin' ? '48h' : '';
    switch (k) {
+    case 'activeWithin': return ['24h', '48h', '7d'].includes(v) ? v : '48h';
     case 'country': return /^[A-Za-z]{2,3}$/.test(v) ? v.toUpperCase() : '';
     case 'placements': {
      const parts = Array.from(new Set(v.split(',').map((x) => x.trim().toUpperCase()).filter((x) => PLACEMENTS[x])));
      return parts.join(',');
     }
+    case 'minCollation': case 'maxCollation': return /^\d{1,7}$/.test(v) ? String(parseInt(v, 10)) : '';
+    case 'language': return ['pt', 'es', 'en', 'outro'].includes(v.toLowerCase()) ? v.toLowerCase() : '';
+    case 'seenWithin': return ['24h', '3d', '7d'].includes(v) ? v : '';
     case 'mediaType': return ['IMAGE', 'VIDEO', 'CAROUSEL'].includes(v.toUpperCase()) ? v.toUpperCase() : '';
     case 'minDays': case 'maxDays': case 'minAds': return /^\d{1,6}$/.test(v) ? String(parseInt(v, 10)) : '';
     case 'platform': return /^[a-z0-9_]{1,30}$/.test(v.toLowerCase()) ? v.toLowerCase() : '';
@@ -4248,19 +4334,28 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function stateToQuery() {
    const p = new URLSearchParams();
    if (st.view !== 'offers') p.set('view', st.view);
+   if (st.view === 'saved' && st.collId) p.set('coll', String(st.collId));
    if (st.sort !== DEFAULT_SORT[st.view]) p.set('sort', st.sort);
    if (st.q) p.set('q', st.q);
-   FILTER_KEYS.forEach((k) => { if (st.f[k]) p.set(k, st.f[k]); });
+   FILTER_KEYS.forEach((k) => {
+    if (k === 'activeWithin') {
+     if (st.f.activeWithin && st.f.activeWithin !== '48h') p.set(k, st.f.activeWithin);
+    } else if (st.f[k]) {
+     p.set(k, st.f[k]);
+    }
+   });
    if (!st.infinite) p.set('inf', '0');
    return p.toString();
   }
   function queryToState(qs) {
    const p = new URLSearchParams(qs || '');
    const s = defaults();
-   if (p.get('view') === 'ads') s.view = 'ads';
+   const v = p.get('view');
+   if (v === 'ads' || v === 'saved') s.view = v;
    s.sort = DEFAULT_SORT[s.view];
    const so = p.get('sort');
-   if (so && SORTS[s.view].some((x) => x[0] === so)) s.sort = so;
+   if (so && SORTS[s.view] && SORTS[s.view].some((x) => x[0] === so)) s.sort = so;
+   if (p.get('coll')) s.collId = p.get('coll');
    s.q = (p.get('q') || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
    FILTER_KEYS.forEach((k) => { s.f[k] = sanitizeFilter(k, p.get(k) || ''); });
    s.infinite = p.get('inf') !== '0';
@@ -4278,9 +4373,30 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    return hsh.indexOf('mineracao?') === 0 ? hsh.slice('mineracao?'.length) : null;
   }
   function activeCount() {
-   return SCOPE[st.view].filter((k) => st.f[k] && !(k === 'mediaType' && st.view === 'offers' && st.f[k] === 'CAROUSEL')).length;
+   if (st.view === 'saved') return 0;
+   return (SCOPE[st.view] || []).filter((k) => {
+    if (k === 'activeWithin') return st.f.activeWithin && st.f.activeWithin !== '48h';
+    if (k === 'mediaType' && st.view === 'offers' && st.f[k] === 'CAROUSEL') return false;
+    return Boolean(st.f[k]);
+   }).length;
   }
   function hasAnyFilter() { return activeCount() > 0 || !!st.q; }
+
+  // ---------- densidade ----------
+  function initDensity() {
+   let d = 'comfortable';
+   try { d = localStorage.getItem(DENSITY_KEY) || 'comfortable'; } catch (e) {}
+   applyDensity(d);
+  }
+  function applyDensity(d) {
+   if (grid) grid.classList.toggle('mn-compact', d === 'compact');
+   if (btnDensity) btnDensity.textContent = d === 'compact' ? 'Densidade: Compacta' : 'Densidade: Confortável';
+   try { localStorage.setItem(DENSITY_KEY, d); } catch (e) {}
+  }
+  function toggleDensity() {
+   const current = grid && grid.classList.contains('mn-compact') ? 'compact' : 'comfortable';
+   applyDensity(current === 'compact' ? 'comfortable' : 'compact');
+  }
 
   // ---------- controles ----------
   function setOptions(sel, entries, current, firstLabel) {
@@ -4312,21 +4428,25 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    setOptions($('mn-f-platform'), (fo.checkoutPlatforms || []).map((c) => [c, platLabel(c)]), st.f.platform);
    setOptions($('mn-f-format'), Object.keys(FORMATS).map((c) => [c, FORMATS[c]]), st.f.format);
    setOptions($('mn-f-cta'), (fo.ctas || []).map((c) => [c, c]), st.f.cta);
+   const langList = (fo.languages && fo.languages.length) ? fo.languages : Object.keys(LANGUAGES);
+   setOptions($('mn-f-language'), langList.map((l) => [l, LANGUAGES[l] || l]), st.f.language);
    const box = $('mn-f-placements');
-   box.replaceChildren();
-   const selected = new Set(st.f.placements ? st.f.placements.split(',') : []);
-   const list = (fo.placements && fo.placements.length) ? fo.placements.filter((p) => PLACEMENTS[p]) : Object.keys(PLACEMENTS);
-   list.forEach((p) => {
-    const lab = document.createElement('label');
-    const c = document.createElement('input');
-    c.type = 'checkbox';
-    c.value = p;
-    c.checked = selected.has(p);
-    c.addEventListener('change', onFilterChange);
-    lab.appendChild(c);
-    lab.appendChild(document.createTextNode(PLACEMENTS[p]));
-    box.appendChild(lab);
-   });
+   if (box) {
+    box.replaceChildren();
+    const selected = new Set(st.f.placements ? st.f.placements.split(',') : []);
+    const list = (fo.placements && fo.placements.length) ? fo.placements.filter((p) => PLACEMENTS[p]) : Object.keys(PLACEMENTS);
+    list.forEach((p) => {
+     const lab = document.createElement('label');
+     const c = document.createElement('input');
+     c.type = 'checkbox';
+     c.value = p;
+     c.checked = selected.has(p);
+     c.addEventListener('change', onFilterChange);
+     lab.appendChild(c);
+     lab.appendChild(document.createTextNode(PLACEMENTS[p]));
+     box.appendChild(lab);
+    });
+   }
   }
   function syncControls() {
    inpQ.value = st.q;
@@ -4338,13 +4458,14 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     if (el.tagName === 'SELECT' && st.f[k] && !Array.prototype.some.call(el.options, (o) => o.value === st.f[k])) {
      const o = document.createElement('option');
      o.value = st.f[k];
-     o.textContent = k === 'platform' ? platLabel(st.f[k]) : st.f[k];
+     o.textContent = k === 'platform' ? platLabel(st.f[k]) : (k === 'language' ? (LANGUAGES[st.f[k]] || st.f[k]) : st.f[k]);
      el.appendChild(o);
     }
     el.value = st.f[k];
    });
    const sel = new Set(st.f.placements ? st.f.placements.split(',') : []);
-   $('mn-f-placements').querySelectorAll('input').forEach((c) => { c.checked = sel.has(c.value); });
+   const box = $('mn-f-placements');
+   if (box) box.querySelectorAll('input').forEach((c) => { c.checked = sel.has(c.value); });
    refreshChrome();
   }
   function readControls() {
@@ -4356,18 +4477,21 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     if (el) st.f[k] = sanitizeFilter(k, el.value);
    });
    const marks = [];
-   $('mn-f-placements').querySelectorAll('input').forEach((c) => { if (c.checked) marks.push(c.value); });
+   const box = $('mn-f-placements');
+   if (box) box.querySelectorAll('input').forEach((c) => { if (c.checked) marks.push(c.value); });
    st.f.placements = sanitizeFilter('placements', marks.join(','));
   }
   function buildSortOptions() {
    selSort.replaceChildren();
-   SORTS[st.view].forEach(([v, label]) => {
+   const list = SORTS[st.view] || SORTS.offers;
+   list.forEach(([v, label]) => {
     const o = document.createElement('option');
     o.value = v;
     o.textContent = label;
     selSort.appendChild(o);
    });
    selSort.value = st.sort;
+   if (selSort.parentElement) selSort.parentElement.style.display = st.view === 'saved' ? 'none' : '';
   }
   function libraryUrl() {
    const p = new URLSearchParams({
@@ -4376,21 +4500,120 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    });
    return 'https://www.facebook.com/ads/library/?' + p.toString();
   }
+  function renderChips() {
+   if (!chipsBox) return;
+   chipsBox.replaceChildren();
+   if (st.view === 'saved') {
+    chipsBox.style.display = 'none';
+    return;
+   }
+   const chips = [];
+   if (st.q) {
+    chips.push({
+     label: 'Busca: "' + st.q + '"',
+     remove: () => { st.q = ''; inpQ.value = ''; applyChange(false); }
+    });
+   }
+   if (st.f.activeWithin && st.f.activeWithin !== '48h') {
+    chips.push({
+     label: 'Ativo em: ' + st.f.activeWithin,
+     remove: () => { st.f.activeWithin = '48h'; const el = $(CTRL.activeWithin); if (el) el.value = '48h'; applyChange(false); }
+    });
+   }
+   (SCOPE[st.view] || []).forEach((k) => {
+    if (k === 'activeWithin') return;
+    const v = st.f[k];
+    if (!v) return;
+    let lab = k + ': ' + v;
+    if (k === 'country') lab = 'País: ' + v;
+    else if (k === 'placements') lab = 'Veiculação: ' + v;
+    else if (k === 'mediaType') lab = 'Formato: ' + (MEDIA_LABEL[v] || v);
+    else if (k === 'minDays') lab = 'Dias mín.: ' + v;
+    else if (k === 'maxDays') lab = 'Dias máx.: ' + v;
+    else if (k === 'minAds') lab = 'Anúncios mín.: ' + v;
+    else if (k === 'minCollation') lab = 'Mesmo criativo mín.: ' + v;
+    else if (k === 'maxCollation') lab = 'Mesmo criativo máx.: ' + v;
+    else if (k === 'language') lab = 'Idioma: ' + (LANGUAGES[v] || v);
+    else if (k === 'seenWithin') lab = 'Visto 1ª vez: ' + v;
+    else if (k === 'platform') lab = 'Checkout: ' + platLabel(v);
+    else if (k === 'format') lab = 'Formato: ' + formatLabel(v);
+    else if (k === 'startFrom') lab = 'Início de: ' + v;
+    else if (k === 'startTo') lab = 'Início até: ' + v;
+    else if (k === 'cta') lab = 'CTA: ' + v;
+    else if (k === 'domain') lab = 'Domínio: ' + v;
+    else if (k === 'pageId') lab = 'Página: ' + v;
+    chips.push({
+     label: lab,
+     remove: () => {
+      st.f[k] = '';
+      const el = $(CTRL[k]);
+      if (el) el.value = '';
+      if (k === 'placements') {
+       const box = $('mn-f-placements');
+       if (box) box.querySelectorAll('input').forEach((c) => { c.checked = false; });
+      }
+      applyChange(false);
+     }
+    });
+   });
+
+   if (!chips.length) {
+    chipsBox.style.display = 'none';
+    return;
+   }
+   chipsBox.style.display = 'flex';
+   chips.forEach((c) => {
+    const chip = h('div', 'mn-chip');
+    chip.appendChild(h('span', '', c.label));
+    const btnX = h('button', 'mn-chip-del mn-chip-remove mn-chip-x', '✕');
+    btnX.type = 'button';
+    btnX.setAttribute('aria-label', 'Remover filtro ' + c.label);
+    btnX.addEventListener('click', (e) => { e.stopPropagation(); c.remove(); });
+    chip.appendChild(btnX);
+    chipsBox.appendChild(chip);
+   });
+  }
   function refreshChrome() {
    const n = activeCount();
-   $('mn-btn-filters').textContent = 'Filtros (' + n + ')';
-   $('mn-fcount').textContent = '(' + n + ')';
-   $('mn-btn-library').href = libraryUrl();
-   $('mn-tab-offers').setAttribute('aria-selected', String(st.view === 'offers'));
-   $('mn-tab-ads').setAttribute('aria-selected', String(st.view === 'ads'));
+   const isSaved = st.view === 'saved';
+   if (isSaved) closeDrawer();
+   const btnFilters = $('mn-btn-filters');
+   if (btnFilters) {
+    btnFilters.textContent = 'Filtros (' + n + ')';
+    btnFilters.style.display = isSaved ? 'none' : '';
+    btnFilters.disabled = isSaved;
+   }
+   if (filtersBox) {
+    filtersBox.style.display = isSaved ? 'none' : '';
+    filtersBox.querySelectorAll('input, select, button').forEach((el) => {
+     if (el.id !== 'mn-btn-filters-close') el.disabled = isSaved;
+    });
+   }
+   const fCount = $('mn-fcount');
+   if (fCount) fCount.textContent = '(' + n + ')';
+   const btnLib = $('mn-btn-library');
+   if (btnLib) btnLib.href = libraryUrl();
+   const tabOffers = $('mn-tab-offers');
+   if (tabOffers) tabOffers.setAttribute('aria-selected', String(st.view === 'offers'));
+   const tabAds = $('mn-tab-ads');
+   if (tabAds) tabAds.setAttribute('aria-selected', String(st.view === 'ads'));
+   const tabSaved = $('mn-tab-saved');
+   if (tabSaved) tabSaved.setAttribute('aria-selected', String(isSaved));
+
+   if (savedBar) savedBar.style.display = isSaved ? 'flex' : 'none';
+
    filtersBox.querySelectorAll('[data-scope]').forEach((el) => {
-    const off = el.getAttribute('data-scope') !== st.view;
+    const off = el.getAttribute('data-scope') !== st.view || isSaved;
     if (el.tagName === 'OPTION') { el.disabled = off; return; }
     el.classList.toggle('mn-dim', off);
    });
-   $('mn-f-presets').querySelectorAll('button').forEach((b) => {
-    b.setAttribute('aria-pressed', String(st.f.minDays === b.dataset.days));
-   });
+   const presets = $('mn-f-presets');
+   if (presets) {
+    presets.querySelectorAll('button').forEach((b) => {
+     b.setAttribute('aria-pressed', String(st.f.minDays === b.dataset.days));
+    });
+   }
+   renderChips();
   }
 
   // ---------- KPIs ----------
@@ -4420,7 +4643,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function loadStats(quiet) {
    if (!quiet) setKpis(true);
    statsReady = (async () => {
-    const r = await call('/api/miner/stats');
+    const active = st.f.activeWithin || '48h';
+    const r = await call('/api/miner/stats?activeWithin=' + encodeURIComponent(active));
     if (r.ok) { stats = r.data; } else { stats = null; }
     setKpis(false);
     if (!r.ok) {
@@ -4463,7 +4687,6 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const imgs = (ad.images || []).map(safeUrl).filter(Boolean);
    const vids = (ad.videos || []).filter((v) => v && typeof v === 'object')
     .map((v) => ({ src: safeUrl(v.hd) || safeUrl(v.sd), poster: safeUrl(v.preview) })).filter((v) => v.src);
-   // O fallback troca so o conteudo do criativo; o chip de score (filho do mesmo quadro) continua no lugar.
    const clearMedia = () => box.querySelectorAll(':scope > img, :scope > video, :scope > .mn-play, :scope > .mn-pager, :scope > .mn-fallback').forEach((n) => n.remove());
    const showFallback = (msg) => { clearMedia(); box.insertBefore(fallbackEl(msg, initial), box.firstChild); };
    if (vids.length) {
@@ -4486,6 +4709,35 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      v.src = vids[0].src;
     });
     box.appendChild(play);
+
+    // Hover preview sem som (AC-06)
+    let hoverVid = null;
+    let hoverTimer = null;
+    box.addEventListener('mouseenter', () => {
+     if (box.querySelector('video[controls]')) return;
+     hoverTimer = setTimeout(() => {
+      if (box.querySelector('video[controls]')) return;
+      hoverVid = document.createElement('video');
+      hoverVid.muted = true;
+      hoverVid.loop = true;
+      hoverVid.playsInline = true;
+      hoverVid.src = vids[0].src;
+      hoverVid.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;pointer-events:none;';
+      hoverVid.addEventListener('error', () => { if (hoverVid) hoverVid.remove(); hoverVid = null; });
+      const p = hoverVid.play();
+      if (p && p.catch) p.catch(() => { if (hoverVid) hoverVid.remove(); hoverVid = null; });
+      box.appendChild(hoverVid);
+     }, 120);
+    });
+    box.addEventListener('mouseleave', () => {
+     clearTimeout(hoverTimer);
+     if (hoverVid) {
+      try { hoverVid.pause(); } catch (e) {}
+      hoverVid.remove();
+      hoverVid = null;
+     }
+    });
+
     if (onOpen) { box.style.cursor = 'pointer'; box.addEventListener('click', onOpen); }
     return box;
    }
@@ -4543,47 +4795,268 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    });
    ctx.stroke();
   }
-  function offerCard(o) {
-   const card = h('article', 'mn-card');
-   card.dataset.domain = o.domain;
-   const sample = (o.sampleAds || [])[0];
-   const media = mediaBox({ images: sample && sample.image ? [sample.image] : [], videos: [], pageName: o.domain }, false, () => openOffer(o.domain, o));
-   media.appendChild(h('span', 'mn-score', 'Score ' + fmtScore(o.score)));
-   card.appendChild(media);
-   const body = h('div', 'mn-card-body');
-   body.appendChild(h('h3', 'mn-title', o.domain));
-   const names = (o.pageNames || []).filter((n) => !hasTpl(n));
-   if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
-   const badges = h('div', 'mn-badges');
-   if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') badges.appendChild(badge(platLabel(o.checkout.platform), 'accent'));
-   if (o.checkout && typeof o.checkout.priceMin === 'number') badges.appendChild(badge('a partir de ' + fmtMoney(o.checkout.priceMin), 'amber'));
-   if (o.ai && o.ai.niche) badges.appendChild(badge(nicheLabel(o.ai.niche)));
-   if (badges.childNodes.length) body.appendChild(badges);
-   const g = Number(o.growth7d) || 0;
-   const metrics = h('div', 'mn-metrics');
-   metrics.appendChild(metric('Anúncios ativos', fmtInt(o.activeAds)));
-   metrics.appendChild(metric('Criativos distintos', fmtInt(o.distinctCreatives)));
-   metrics.appendChild(metric('Dias no ar', fmtInt(o.maxDaysRunning)));
-   metrics.appendChild(metric('Crescimento (7 dias)', (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '● ') + g, g > 0 ? 'mn-up' : g < 0 ? 'mn-down' : ''));
-   body.appendChild(metrics);
-   const pts = o.sparkline || [];
-   if (pts.length >= 2) {
-    const cv = h('canvas', 'mn-spark');
-    cv.width = 240; cv.height = 30;
-    cv.setAttribute('role', 'img');
-    cv.setAttribute('aria-label', 'Anúncios ativos nos últimos 14 dias');
-    body.appendChild(cv);
-    drawSpark(cv, pts);
-   } else {
-    body.appendChild(h('div', 'mn-sub', 'Sem histórico de 14 dias ainda'));
-   }
-   const act = h('div', 'mn-actions');
-   act.appendChild(btn('Ver oferta', 'primary sm', () => openOffer(o.domain, o)));
-   act.appendChild(btn('Anúncios desta oferta', 'sm', () => { st.f.domain = o.domain; setView('ads'); }));
-   body.appendChild(act);
-   card.appendChild(body);
-   return card;
+
+  // ---------- coleções e salvos (AC-01, AC-02) ----------
+  function starBtn(kind, ref) {
+   const b = h('button', 'mn-star-btn');
+   b.type = 'button';
+   b.dataset.kind = kind;
+   b.dataset.ref = String(ref);
+   const key = kind + ':' + ref;
+   const inColls = savedMap.get(key);
+   const isSaved = inColls && inColls.size > 0;
+   if (isSaved) b.classList.add('active');
+   b.setAttribute('aria-pressed', String(!!isSaved));
+   b.setAttribute('aria-label', isSaved ? 'Salvo em ' + inColls.size + ' coleção(ões)' : 'Salvar em coleção');
+   b.title = isSaved ? 'Salvo em ' + inColls.size + ' coleção(ões)' : 'Salvar em coleção';
+   b.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
+   b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCollectionModal(kind, ref);
+   });
+   return b;
   }
+
+  function updateStarButtons(refs) {
+   const targets = refs ? refs.map((r) => {
+    const parts = r.split(':');
+    return 'button.mn-star-btn[data-kind="' + parts[0] + '"][data-ref="' + parts[1] + '"]';
+   }).join(',') : 'button.mn-star-btn';
+   document.querySelectorAll(targets).forEach((b) => {
+    const key = b.dataset.kind + ':' + b.dataset.ref;
+    const inColls = savedMap.get(key);
+    const isSaved = inColls && inColls.size > 0;
+    b.classList.toggle('active', !!isSaved);
+    b.setAttribute('aria-pressed', String(!!isSaved));
+    b.setAttribute('aria-label', isSaved ? 'Salvo em ' + inColls.size + ' coleção(ões)' : 'Salvar em coleção');
+    b.title = isSaved ? 'Salvo em ' + inColls.size + ' coleção(ões)' : 'Salvar em coleção';
+   });
+  }
+
+  async function fetchSavedForItems(refs) {
+   const uniq = Array.from(new Set(refs.filter(Boolean)));
+   if (!uniq.length) return;
+   for (let i = 0; i < uniq.length; i += 100) {
+    const chunk = uniq.slice(i, i + 100);
+    const r = await call('/api/miner/saved?refs=' + encodeURIComponent(chunk.join(',')));
+    if (r.ok && r.data && r.data.saved) {
+     Object.keys(r.data.saved).forEach((k) => {
+      savedMap.set(k, new Set(r.data.saved[k]));
+     });
+     updateStarButtons(chunk);
+    }
+   }
+  }
+
+  async function fetchCollections() {
+   const r = await call('/api/miner/collections');
+   if (r.ok && r.data && Array.isArray(r.data.collections)) {
+    collectionsList = r.data.collections;
+    return collectionsList;
+   }
+   return [];
+  }
+
+  async function openCollectionModal(kind, ref) {
+   const m = openModal(ovColl, true);
+   const head = h('div', 'mn-mhead');
+   head.appendChild(h('h3', '', 'Salvar em Coleção'));
+   head.appendChild(h('p', 'mn-sub', (kind === 'ad' ? 'Anúncio: ' : 'Oferta: ') + ref));
+   m.appendChild(head);
+
+   const bodyBox = h('div');
+   bodyBox.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
+   m.appendChild(bodyBox);
+
+   const loading = h('div', 'mn-skel', 'Carregando coleções…');
+   loading.style.height = '60px';
+   bodyBox.appendChild(loading);
+
+   await fetchCollections();
+   if (!ovColl.classList.contains('open')) return;
+   bodyBox.replaceChildren();
+
+   const listCard = box('Suas coleções');
+   const listDiv = h('div');
+   listDiv.id = 'mn-coll-list';
+   listDiv.style.cssText = 'display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;';
+
+   const itemKey = kind + ':' + ref;
+   const activeColls = savedMap.get(itemKey) || new Set();
+
+   collectionsList.forEach((c) => {
+    const row = h('label');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:6px;background:var(--bg-input);cursor:pointer;';
+    const left = h('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = activeColls.has(Number(c.id));
+    const nameSpan = h('span', '', c.name);
+    left.append(chk, nameSpan);
+    const countBadge = h('small', 'mn-sub', fmtInt(c.count) + ' itens');
+    row.append(left, countBadge);
+
+    chk.addEventListener('change', async () => {
+     chk.disabled = true;
+     if (chk.checked) {
+      const res = await call('/api/miner/collections/' + c.id + '/items', jsonOpts('POST', { kind, ref }));
+      chk.disabled = false;
+      if (res.ok || res.status === 409) {
+       activeColls.add(Number(c.id));
+       savedMap.set(itemKey, activeColls);
+       if (res.data && res.data.item) {
+        itemIdsMap.set(c.id + ':' + kind + ':' + ref, res.data.item.id);
+       }
+       c.count = (c.count || 0) + 1;
+       countBadge.textContent = fmtInt(c.count) + ' itens';
+       updateStarButtons([itemKey]);
+       toast('Item salvo em ' + c.name);
+      } else {
+       chk.checked = false;
+       toast(errMsg(res.status, res.data && res.data.error));
+      }
+     } else {
+      let itemId = itemIdsMap.get(c.id + ':' + kind + ':' + ref);
+      if (!itemId) {
+       const ir = await call('/api/miner/collections/' + c.id + '/items?kind=' + kind);
+       if (ir.ok && ir.data && ir.data.items) {
+        const found = ir.data.items.find((x) => x.ref === ref);
+        if (found) itemId = found.id;
+       }
+      }
+      if (itemId) {
+       const res = await call('/api/miner/collections/' + c.id + '/items/' + itemId, { method: 'DELETE' });
+       chk.disabled = false;
+       if (res.ok) {
+        activeColls.delete(Number(c.id));
+        savedMap.set(itemKey, activeColls);
+        itemIdsMap.delete(c.id + ':' + kind + ':' + ref);
+        c.count = Math.max(0, (c.count || 0) - 1);
+        countBadge.textContent = fmtInt(c.count) + ' itens';
+        updateStarButtons([itemKey]);
+        toast('Item removido de ' + c.name);
+        if (st.view === 'saved' && String(st.collId) === String(c.id)) load(true);
+       } else {
+        chk.checked = true;
+        toast(errMsg(res.status, res.data && res.data.error));
+       }
+      } else {
+       chk.disabled = false;
+       chk.checked = false;
+       activeColls.delete(Number(c.id));
+       updateStarButtons([itemKey]);
+      }
+     }
+    });
+
+    listDiv.appendChild(row);
+   });
+
+   listCard.appendChild(listDiv);
+   bodyBox.appendChild(listCard);
+
+   const newCard = box('Nova coleção');
+   const newForm = h('form', 'mn-form');
+   newForm.style.display = 'flex';
+   newForm.style.gap = '8px';
+   const newInp = document.createElement('input');
+   newInp.id = 'mn-new-coll-name';
+   newInp.type = 'text';
+   newInp.maxLength = 60;
+   newInp.placeholder = 'Nome da nova coleção…';
+   newInp.setAttribute('aria-label', 'Nome da nova coleção');
+   newInp.style.flex = '1';
+   const newBtn = btn('Criar e salvar', 'primary sm');
+   newBtn.id = 'mn-btn-new-coll';
+   newBtn.type = 'submit';
+   newForm.append(newInp, newBtn);
+
+   newForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = newInp.value.trim();
+    if (!name || name.length > 60) { toast('Nome de coleção inválido (1 a 60 caracteres).'); return; }
+    newBtn.disabled = true;
+    const cr = await call('/api/miner/collections', jsonOpts('POST', { name }));
+    newBtn.disabled = false;
+    if (cr.status === 201 && cr.data && cr.data.collection) {
+     const newColl = cr.data.collection;
+     newColl.count = 1;
+     collectionsList.push(newColl);
+     const ir = await call('/api/miner/collections/' + newColl.id + '/items', jsonOpts('POST', { kind, ref }));
+     activeColls.add(Number(newColl.id));
+     savedMap.set(itemKey, activeColls);
+     if (ir.data && ir.data.item) {
+      itemIdsMap.set(newColl.id + ':' + kind + ':' + ref, ir.data.item.id);
+     }
+     updateStarButtons([itemKey]);
+     toast('Coleção "' + newColl.name + '" criada e item salvo!');
+     newInp.value = '';
+
+     const newRow = h('label');
+     newRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:6px;background:var(--bg-input);cursor:pointer;';
+     const left = h('div');
+     left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+     const chk = document.createElement('input');
+     chk.type = 'checkbox';
+     chk.checked = true;
+     const nameSpan = h('span', '', newColl.name);
+     left.append(chk, nameSpan);
+     const countBadge = h('small', 'mn-sub', '1 item');
+     newRow.append(left, countBadge);
+     listDiv.appendChild(newRow);
+    } else {
+     toast(errMsg(cr.status, cr.data && cr.data.error));
+    }
+   });
+
+   newCard.appendChild(newForm);
+   bodyBox.appendChild(newCard);
+  }
+
+  // ---------- ações no criativo (AC-04) ----------
+  async function downloadMedia(ad, kind, index, btnEl) {
+   if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Baixando…'; }
+   try {
+    const p = new URLSearchParams({ ad: String(ad.adArchiveId), kind: kind || 'image', index: String(index || 0) });
+    const r = await apiFetch('/api/miner/media/download?' + p.toString());
+    if (!r.ok) {
+     let errCode = '';
+     try { const j = await r.json(); errCode = j.error; } catch (e) {}
+     if (r.status === 410 || errCode === 'media_expired') {
+      toast('O link da Meta expirou: recolha este anúncio de novo (Rodar agora na busca) para baixar.');
+     } else if (r.status === 502 || errCode === 'media_upstream_error') {
+      toast('Erro ao buscar mídia no servidor da Meta.');
+     } else if (r.status === 413 || errCode === 'media_too_large') {
+      toast('Mídia muito grande para download direto (> 300 MB).');
+     } else if (r.status === 404) {
+      toast('Mídia não encontrada.');
+     } else {
+      toast('Não foi possível baixar a mídia.');
+     }
+     return;
+    }
+    const blob = await r.blob();
+    const cd = r.headers.get('content-disposition') || '';
+    let filename = 'anuncio-' + ad.adArchiveId + '-' + (kind || 'media') + '.' + (kind === 'video' ? 'mp4' : 'jpg');
+    const m = /filename="?([^";]+)"?/.exec(cd);
+    if (m && m[1]) filename = m[1].trim();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    toast('Download concluído!');
+   } catch (err) {
+    toast('Erro ao realizar o download.');
+   } finally {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Baixar mídia'; }
+   }
+  }
+
   function daysOf(ad) {
    const t0 = Number(ad.startDate);
    if (!(t0 > 0)) return null;
@@ -4634,7 +5107,147 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    (ad.platforms || []).forEach((p) => { if (PLAT_SHORT[p]) { const s = h('span', 'mn-plat', PLAT_SHORT[p]); s.title = PLACEMENTS[p]; w.appendChild(s); } });
    return w;
   }
-  function adCard(ad) {
+
+  function sendToStudio(ad) {
+   const texts = adTexts(ad);
+   const full = [texts.title, texts.body].filter(Boolean).join('\n\n');
+   if (!full) {
+    toast('Este anúncio não tem texto fixo (catálogo).');
+    return;
+   }
+   const isVideo = (Array.isArray(ad.videos) && ad.videos.length > 0) || ad.displayFormat === 'VIDEO';
+   if (isVideo) {
+    if (typeof switchStep === 'function') switchStep('video');
+    const vi = $('vid-prompt-input');
+    if (vi) {
+     vi.value = full;
+     vi.dispatchEvent(new Event('input', { bubbles: true }));
+     vi.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    toast('Roteiro enviado para o Estúdio de Vídeo!');
+   } else {
+    if (typeof switchStep === 'function') switchStep('criativos');
+    const hi = $('img-headline-input');
+    const pi = $('img-prompt-input');
+    if (hi) {
+     hi.value = texts.title || '';
+     hi.dispatchEvent(new Event('input', { bubbles: true }));
+     hi.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (pi) {
+     pi.value = texts.body || '';
+     pi.dispatchEvent(new Event('input', { bubbles: true }));
+     pi.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    toast('Criativo enviado para o Estúdio de Imagens!');
+   }
+  }
+
+  function renderSavedItemSection(savedItem, card) {
+   const noteBox = h('div', 'mn-item-note');
+   const noteHeader = h('div', 'mn-row');
+   noteHeader.style.cssText = 'justify-content:space-between;align-items:center;margin-bottom:4px;';
+   noteHeader.appendChild(h('small', 'mn-sub', 'Nota:'));
+   const btnDel = btn('Remover da coleção', 'sm mn-btn-del-item', async () => {
+    if (!confirm('Remover este item da coleção?')) return;
+    const r = await call('/api/miner/collections/' + st.collId + '/items/' + savedItem.id, { method: 'DELETE' });
+    if (r.ok) {
+     toast('Item removido da coleção!');
+     card.remove();
+     shown = Math.max(0, shown - 1);
+     updateTotal();
+    } else {
+     toast(errMsg(r.status, r.data && r.data.error));
+    }
+   });
+   noteHeader.appendChild(btnDel);
+   noteBox.appendChild(noteHeader);
+
+   const noteRow = h('div', 'mn-row');
+   noteRow.style.gap = '6px';
+   const inpNote = h('input', 'mn-input');
+   inpNote.type = 'text';
+   inpNote.placeholder = 'Adicionar nota (até 280 caracteres)…';
+   inpNote.maxLength = 280;
+   inpNote.value = savedItem.note || '';
+   const btnSaveNote = btn('Salvar', 'sm mn-btn-save-note', async () => {
+    const trimmed = inpNote.value.trim();
+    const r = await call('/api/miner/collections/' + st.collId + '/items/' + savedItem.id, jsonOpts('PATCH', { note: trimmed }));
+    if (r.ok) {
+     toast('Nota atualizada!');
+    } else {
+     toast(errMsg(r.status, r.data && r.data.error));
+    }
+   });
+   noteRow.append(inpNote, btnSaveNote);
+   noteBox.appendChild(noteRow);
+   return noteBox;
+  }
+
+  function missingCard(it) {
+   const card = h('article', 'mn-card mn-missing');
+   card.dataset.itemId = String(it.id);
+   const body = h('div', 'mn-card-body');
+   body.appendChild(h('h3', 'mn-title', (it.kind === 'ad' ? 'Anúncio' : 'Oferta') + ' indisponível'));
+   const p = h('p', 'mn-sub', 'Este item (' + it.kind + ': ' + it.ref + ') não existe mais no banco de dados.');
+   body.appendChild(p);
+   body.appendChild(renderSavedItemSection(it, card));
+   card.appendChild(body);
+   return card;
+  }
+
+  function offerCard(o, savedItem) {
+   const card = h('article', 'mn-card');
+   card.dataset.domain = o.domain;
+   const sample = (o.sampleAds || [])[0];
+   const media = mediaBox({ images: sample && sample.image ? [sample.image] : [], videos: [], pageName: o.domain }, false, () => openOffer(o.domain, o));
+   media.appendChild(h('span', 'mn-score', 'Score ' + fmtScore(o.score)));
+   card.appendChild(media);
+   const body = h('div', 'mn-card-body');
+   const titleRow = h('div', 'mn-row');
+   titleRow.style.cssText = 'justify-content:space-between;align-items:flex-start;';
+   titleRow.appendChild(h('h3', 'mn-title', o.domain));
+   titleRow.appendChild(starBtn('offer', o.domain));
+   body.appendChild(titleRow);
+   const names = (o.pageNames || []).filter((n) => !hasTpl(n));
+   if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
+   const badges = h('div', 'mn-badges');
+   if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') badges.appendChild(badge(platLabel(o.checkout.platform), 'accent'));
+   if (o.checkout && typeof o.checkout.priceMin === 'number') badges.appendChild(badge('a partir de ' + fmtMoney(o.checkout.priceMin), 'amber'));
+   if (o.ai && o.ai.niche) badges.appendChild(badge(nicheLabel(o.ai.niche)));
+   if (badges.childNodes.length) body.appendChild(badges);
+   const g = Number(o.growth7d) || 0;
+   const metrics = h('div', 'mn-metrics');
+   metrics.appendChild(metric('Anúncios ativos', fmtInt(o.activeAds)));
+   metrics.appendChild(metric('Criativos distintos', fmtInt(o.distinctCreatives)));
+   metrics.appendChild(metric('Dias no ar', fmtInt(o.maxDaysRunning)));
+   metrics.appendChild(metric('Crescimento (7 dias)', (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '● ') + g, g > 0 ? 'mn-up' : g < 0 ? 'mn-down' : ''));
+   body.appendChild(metrics);
+   const pts = o.sparkline || [];
+   if (pts.length >= 2) {
+    const cv = h('canvas', 'mn-spark');
+    cv.width = 240; cv.height = 30;
+    cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', 'Anúncios ativos nos últimos 14 dias');
+    body.appendChild(cv);
+    drawSpark(cv, pts);
+   } else {
+    body.appendChild(h('div', 'mn-sub', 'Sem histórico de 14 dias ainda'));
+   }
+
+   if (savedItem) {
+    body.appendChild(renderSavedItemSection(savedItem, card));
+   }
+
+   const act = h('div', 'mn-actions');
+   act.appendChild(btn('Ver oferta', 'primary sm', () => openOffer(o.domain, o)));
+   act.appendChild(btn('Anúncios desta oferta', 'sm', () => { st.f.domain = o.domain; setView('ads'); }));
+   body.appendChild(act);
+   card.appendChild(body);
+   return card;
+  }
+
+  function adCard(ad, savedItem) {
    const card = h('article', 'mn-card');
    card.dataset.ad = ad.adArchiveId;
    const head = h('div', 'mn-card-body');
@@ -4642,11 +5255,21 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const ah = h('div', 'mn-adhead');
    ah.appendChild(h('div', 'mn-avatar', (ad.pageName || '?').trim().charAt(0).toUpperCase() || '?'));
    const info = h('div', 'mn-adhead-info');
-   const nm = h('strong', '', ad.pageName || 'Página sem nome');
+   const nm = h('strong', 'mn-link-page', ad.pageName || 'Página sem nome');
    nm.title = ad.pageName || '';
+   nm.style.cursor = 'pointer';
+   nm.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (ad.pageId) { st.f.pageId = ad.pageId; setView('ads'); }
+    else if (ad.pageName) { st.f.q = ad.pageName; setView('ads'); }
+   });
    info.appendChild(nm);
    info.appendChild(h('small', '', runText(ad)));
-   ah.append(info, platIcons(ad));
+   const headRight = h('div', 'mn-row mn-adhead-right');
+   headRight.style.gap = '6px';
+   headRight.appendChild(platIcons(ad));
+   headRight.appendChild(starBtn('ad', String(ad.adArchiveId)));
+   ah.append(info, headRight);
    head.appendChild(ah);
    card.appendChild(head);
    card.appendChild(mediaBox(ad, false, () => openAd(ad)));
@@ -4665,7 +5288,17 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    }
    if (tx.title) body.appendChild(h('h4', 'mn-headline', tx.title));
    if (noTpl(ad.ctaText)) body.appendChild(h('span', 'mn-cta', ad.ctaText));
-   if (ad.landingDomain) body.appendChild(h('div', 'mn-sub', ad.landingDomain));
+   if (ad.landingDomain) {
+    const domLink = h('div', 'mn-sub mn-link-domain', ad.landingDomain);
+    domLink.style.cursor = 'pointer';
+    domLink.title = 'Filtrar por ' + ad.landingDomain;
+    domLink.addEventListener('click', (e) => {
+     e.stopPropagation();
+     st.f.domain = ad.landingDomain;
+     setView('ads');
+    });
+    body.appendChild(domLink);
+   }
    const badges = h('div', 'mn-badges');
    if (ad.collationCount > 1) badges.appendChild(badge(ad.collationCount + ' anúncios com este criativo', 'accent'));
    const of = ad.offer;
@@ -4676,15 +5309,36 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     if (of.niche) badges.appendChild(badge(nicheLabel(of.niche)));
    }
    if (badges.childNodes.length) body.appendChild(badges);
+
+   if (savedItem) {
+    body.appendChild(renderSavedItemSection(savedItem, card));
+   }
+
    const act = h('div', 'mn-actions');
    const lib = libraryAdUrl(ad);
-   if (lib) act.appendChild(linkEl(lib, 'Ver na Biblioteca de Anúncios', 'mn-btn sm'));
+   if (lib) act.appendChild(linkEl(lib, 'Ver na Biblioteca', 'mn-btn sm'));
    if (ad.landingDomain) act.appendChild(btn('Ver oferta', 'sm', () => openOffer(ad.landingDomain, null)));
+   const targetUrl = safeUrl(ad.linkUrl) || (ad.landingDomain ? 'https://' + ad.landingDomain : '');
+   if (targetUrl) {
+    act.appendChild(linkEl(targetUrl, 'Página de vendas', 'mn-btn sm'));
+    act.appendChild(btn('Copiar link', 'sm', async () => {
+     toast((await copyText(targetUrl)) ? 'Link copiado!' : 'Não foi possível copiar link');
+    }));
+   }
    act.appendChild(btn('Copiar texto', 'sm', () => copyAd(ad)));
+   const hasMedia = (ad.images && ad.images.length > 0) || (ad.videos && ad.videos.length > 0);
+   if (hasMedia) {
+    const isVid = Array.isArray(ad.videos) && ad.videos.length > 0;
+    act.appendChild(btn('Baixar mídia', 'sm', function () {
+     downloadMedia(ad, isVid ? 'video' : 'image', 0, this);
+    }));
+   }
+   act.appendChild(btn('Enviar para o Estúdio', 'sm', () => sendToStudio(ad)));
    body.appendChild(act);
    card.appendChild(body);
    return card;
   }
+
 
   // ---------- modais ----------
   const openStack = [];
@@ -4762,6 +5416,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const my = ++offerSeq;
    const head = h('div', 'mn-mhead');
    head.appendChild(h('h3', '', domain));
+   head.appendChild(starBtn('offer', domain));
    m.appendChild(head);
    const content = h('div');
    content.style.cssText = 'display:flex;flex-direction:column;gap:16px;min-width:0';
@@ -4891,13 +5546,14 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
 
   // Modal do anúncio
   function openAd(ad) {
-   const m = openModal(ovAd, true);
+   const m = openModal(ovAd, false);
    const head = h('div', 'mn-mhead');
    const tx = adTexts(ad);
    head.appendChild(h('h3', '', tx.title || noTpl(ad.pageName) || 'Anúncio'));
    const badges = h('div', 'mn-badges');
    badges.appendChild(badge(runText(ad), 'accent'));
    if (ad.collationCount > 1) badges.appendChild(badge(ad.collationCount + ' anúncios com este criativo'));
+   badges.appendChild(starBtn('ad', String(ad.adArchiveId)));
    head.appendChild(badges);
    m.appendChild(head);
    m.appendChild(mediaBox(ad, true, null));
@@ -4917,11 +5573,118 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    m.appendChild(meta);
    const row = h('div', 'mn-row');
    const lib = libraryAdUrl(ad);
-   if (lib) row.appendChild(linkEl(lib, 'Ver na Biblioteca de Anúncios', 'mn-btn sm'));
-   if (ad.linkUrl && safeUrl(ad.linkUrl)) row.appendChild(linkEl(ad.linkUrl, 'Abrir destino', 'mn-btn sm'));
-   if (ad.landingDomain) row.appendChild(btn('Ver oferta', 'sm', () => openOffer(ad.landingDomain, null)));
+   if (lib) row.appendChild(linkEl(lib, 'Ver na Biblioteca', 'mn-btn sm'));
+   const targetUrl = safeUrl(ad.linkUrl) || (ad.landingDomain ? 'https://' + ad.landingDomain : '');
+   if (targetUrl) {
+    row.appendChild(linkEl(targetUrl, 'Abrir página de vendas', 'mn-btn sm'));
+    row.appendChild(btn('Copiar link da página', 'sm', async () => {
+     toast((await copyText(targetUrl)) ? 'Link copiado' : 'Não foi possível copiar');
+    }));
+   }
+   if (ad.landingDomain) row.appendChild(btn('Ver oferta', 'sm', () => { closeModal(ovAd); openOffer(ad.landingDomain, null); }));
    row.appendChild(btn('Copiar texto', 'sm', () => copyAd(ad)));
+   const hasMedia = (ad.images && ad.images.length > 0) || (ad.videos && ad.videos.length > 0);
+   if (hasMedia) {
+    const isVid = Array.isArray(ad.videos) && ad.videos.length > 0;
+    row.appendChild(btn('Baixar mídia', 'sm', function () {
+     downloadMedia(ad, isVid ? 'video' : 'image', 0, this);
+    }));
+   }
+   row.appendChild(btn('Enviar para o Estúdio', 'sm', () => { closeModal(ovAd); sendToStudio(ad); }));
    m.appendChild(row);
+
+   // Faixas relacionais (AC-05)
+   // 1. Outros anúncios desta página
+   if (ad.pageId) {
+    const pageWrap = h('div', 'mn-strip-wrap');
+    const pageHead = h('div', 'mn-strip-head');
+    pageHead.appendChild(h('h4', '', 'Outros anúncios desta página' + (noTpl(ad.pageName) ? ' (' + noTpl(ad.pageName) + ')' : '')));
+    const btnAllP = btn('Ver todos', 'sm', () => {
+     closeModal(ovAd);
+     st.f.pageId = ad.pageId;
+     setView('ads');
+    });
+    pageHead.appendChild(btnAllP);
+    pageWrap.appendChild(pageHead);
+
+    const stripP = h('div', 'mn-strip');
+    const skelP = h('div', 'mn-skel', 'Carregando…');
+    skelP.style.cssText = 'height:100px;width:100%;';
+    stripP.appendChild(skelP);
+    pageWrap.appendChild(stripP);
+    m.appendChild(pageWrap);
+
+    call('/api/miner/ads?pageId=' + encodeURIComponent(ad.pageId) + '&limit=12').then((res) => {
+     if (!ovAd.classList.contains('open')) return;
+     stripP.replaceChildren();
+     if (res.ok && res.data && res.data.ads) {
+      const others = res.data.ads.filter((x) => String(x.adArchiveId) !== String(ad.adArchiveId));
+      if (!others.length) {
+       stripP.appendChild(h('p', 'mn-sub', 'Nenhum outro anúncio desta página.'));
+       return;
+      }
+      others.slice(0, 12).forEach((oa) => {
+       const mini = h('div', 'mn-card');
+       mini.style.cssText = 'flex:0 0 200px;min-width:200px;cursor:pointer;';
+       const mb = mediaBox(oa, false, () => { closeModal(ovAd); openAd(oa); });
+       mini.appendChild(mb);
+       const b = h('div', 'mn-card-body');
+       const otx = adTexts(oa);
+       b.appendChild(h('div', 'mn-title', otx.title || noTpl(oa.pageName) || 'Anúncio'));
+       mini.appendChild(b);
+       stripP.appendChild(mini);
+      });
+     } else {
+      stripP.appendChild(h('p', 'mn-sub', 'Não foi possível carregar anúncios.'));
+     }
+    });
+   }
+
+   // 2. Outros anúncios desta oferta
+   if (ad.landingDomain) {
+    const offWrap = h('div', 'mn-strip-wrap');
+    const offHead = h('div', 'mn-strip-head');
+    offHead.appendChild(h('h4', '', 'Outros anúncios desta oferta (' + ad.landingDomain + ')'));
+    const btnAllO = btn('Ver todos', 'sm', () => {
+     closeModal(ovAd);
+     st.f.domain = ad.landingDomain;
+     setView('ads');
+    });
+    offHead.appendChild(btnAllO);
+    offWrap.appendChild(offHead);
+
+    const stripO = h('div', 'mn-strip');
+    const skelO = h('div', 'mn-skel', 'Carregando…');
+    skelO.style.cssText = 'height:100px;width:100%;';
+    stripO.appendChild(skelO);
+    offWrap.appendChild(stripO);
+    m.appendChild(offWrap);
+
+    call('/api/miner/ads?domain=' + encodeURIComponent(ad.landingDomain) + '&limit=12').then((res) => {
+     if (!ovAd.classList.contains('open')) return;
+     stripO.replaceChildren();
+     if (res.ok && res.data && res.data.ads) {
+      const others = res.data.ads.filter((x) => String(x.adArchiveId) !== String(ad.adArchiveId));
+      if (!others.length) {
+       stripO.appendChild(h('p', 'mn-sub', 'Nenhum outro anúncio desta oferta.'));
+       return;
+      }
+      others.slice(0, 12).forEach((oa) => {
+       const mini = h('div', 'mn-card');
+       mini.style.cssText = 'flex:0 0 200px;min-width:200px;cursor:pointer;';
+       const mb = mediaBox(oa, false, () => { closeModal(ovAd); openAd(oa); });
+       mini.appendChild(mb);
+       const b = h('div', 'mn-card-body');
+       const otx = adTexts(oa);
+       b.appendChild(h('div', 'mn-title', otx.title || noTpl(oa.pageName) || 'Anúncio'));
+       mini.appendChild(b);
+       stripO.appendChild(mini);
+      });
+     } else {
+      stripO.appendChild(h('p', 'mn-sub', 'Não foi possível carregar anúncios.'));
+     }
+    });
+   }
   }
 
   // Painel de buscas automáticas (Apify)
@@ -5190,6 +5953,37 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    }
    setStatus(node);
   }
+  function updateTotal() {
+   if (st.view === 'offers') {
+    const n = total !== null ? total : shown;
+    $('mn-total').textContent = fmtInt(n) + (n === 1 ? ' oferta encontrada' : ' ofertas encontradas');
+   } else if (st.view === 'ads') {
+    $('mn-total').textContent = fmtInt(shown) + (shown === 1 ? ' anúncio encontrado' : ' anúncios encontrados') + (done ? '' : ' (role para carregar mais)');
+   } else if (st.view === 'saved') {
+    $('mn-total').textContent = fmtInt(shown) + (shown === 1 ? ' item salvo' : ' itens salvos') + (done ? '' : ' (role para carregar mais)');
+   }
+  }
+
+  function populateSavedCollectionsBar() {
+   if (!selSavedColl) return;
+   selSavedColl.replaceChildren();
+   collectionsList.forEach((c) => {
+    const o = document.createElement('option');
+    o.value = String(c.id);
+    o.textContent = c.name + ' (' + fmtInt(c.count) + ')';
+    selSavedColl.appendChild(o);
+   });
+   if (st.collId) selSavedColl.value = String(st.collId);
+   else if (collectionsList.length) {
+    st.collId = String(collectionsList[0].id);
+    selSavedColl.value = st.collId;
+   }
+   const currentColl = collectionsList.find((c) => String(c.id) === String(st.collId));
+   const isFav = currentColl && currentColl.name.toLowerCase() === 'favoritos';
+   if (btnCollRename) { btnCollRename.disabled = isFav; btnCollRename.title = isFav ? 'A coleção Favoritos não pode ser renomeada' : ''; }
+   if (btnCollDel) { btnCollDel.disabled = isFav; btnCollDel.title = isFav ? 'A coleção Favoritos não pode ser apagada' : ''; }
+  }
+
   async function load(reset) {
    if (reset) {
     if (ctrl) ctrl.abort();
@@ -5203,6 +5997,68 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    loading = true;
    const my = seq;
    ctrl = new AbortController();
+
+   if (st.view === 'saved') {
+    if (!st.collId || !collectionsList.length) {
+     await fetchCollections();
+     if (collectionsList.length && !st.collId) st.collId = String(collectionsList[0].id);
+    }
+    populateSavedCollectionsBar();
+    if (!st.collId) {
+     loading = false;
+     if (reset) grid.replaceChildren();
+     setStatus(stateBox('', 'Nenhuma coleção encontrada', 'Crie sua primeira coleção para salvar anúncios e ofertas.'));
+     return;
+    }
+    const p = new URLSearchParams();
+    p.set('limit', String(PAGE));
+    if (cursor) p.set('cursor', cursor);
+    let r;
+    try {
+     r = await call('/api/miner/collections/' + st.collId + '/items?' + p.toString(), { signal: ctrl.signal });
+    } catch (e) { return; }
+    if (my !== seq) return;
+    loading = false;
+    if (!r.ok) {
+     if (reset) grid.replaceChildren();
+     showApiError(r, !reset);
+     return;
+    }
+    const items = r.data.items || [];
+    if (reset) grid.replaceChildren();
+    setStatus(null);
+    let added = 0;
+    items.forEach((it) => {
+     const key = String(it.id);
+     if (seen.has(key)) return;
+     seen.add(key);
+     if (it.missing) {
+      grid.appendChild(missingCard(it));
+     } else if (it.kind === 'ad' && it.ad) {
+      grid.appendChild(adCard(it.ad, it));
+     } else if (it.kind === 'offer' && it.offer) {
+      grid.appendChild(offerCard(it.offer, it));
+     } else {
+      grid.appendChild(missingCard(it));
+     }
+     added++;
+    });
+    shown += added;
+    cursor = r.data.nextCursor || null;
+    done = !cursor || items.length === 0;
+
+    if (reset && items.length === 0) {
+     setStatus(stateBox('', 'Coleção vazia', 'Você ainda não salvou nenhum anúncio ou oferta nesta coleção. Use o ícone de estrela nos cards para salvar.', [btn('Explorar anúncios', 'primary', () => setView('ads'))]));
+     $('mn-total').textContent = '';
+     return;
+    }
+
+    updateTotal();
+    btnMore.hidden = done || (st.infinite && !!io);
+    if (io) { io.unobserve(sentinel); io.observe(sentinel); }
+    return;
+   }
+
    const p = listQuery();
    if (st.view === 'ads') { if (cursor) p.set('cursor', cursor); } else p.set('offset', String(offset));
    let r;
@@ -5220,11 +6076,13 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    if (reset) grid.replaceChildren();
    setStatus(null);
    let added = 0;
+   const batchRefs = [];
    items.forEach((it) => {
     const key = st.view === 'ads' ? String(it.adArchiveId) : String(it.domain);
     if (seen.has(key)) return;
     seen.add(key);
     grid.appendChild(st.view === 'ads' ? adCard(it) : offerCard(it));
+    batchRefs.push(st.view === 'ads' ? ('ad:' + it.adArchiveId) : ('offer:' + it.domain));
     added++;
    });
    shown += added;
@@ -5236,6 +6094,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     offset += items.length;
     done = items.length === 0 || offset >= total;
    }
+   if (batchRefs.length) {
+    fetchSavedForItems(batchRefs);
+   }
    if (reset && items.length === 0) {
     await statsReady;
     if (my !== seq) return;
@@ -5245,15 +6106,13 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     $('mn-total').textContent = '';
     return;
    }
-   $('mn-total').textContent = st.view === 'offers'
-    ? fmtInt(total) + (total === 1 ? ' oferta' : ' ofertas')
-    : fmtInt(shown) + (shown === 1 ? ' anúncio carregado' : ' anúncios carregados') + (done ? '' : ' (role para carregar mais)');
+   updateTotal();
    btnMore.hidden = done || (st.infinite && !!io);
    if (io) { io.unobserve(sentinel); io.observe(sentinel); }
   }
 
   // ---------- reações a mudanças ----------
-  function signature() { return st.view + '|' + listQuery().toString(); }
+  function signature() { return st.view + '|' + (st.view === 'saved' ? String(st.collId) : listQuery().toString()); }
   function applyChange(force) {
    refreshChrome();
    persist();
@@ -5293,9 +6152,18 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   const debouncedChange = debounced(onFilterChange, 400);
   inpQ.addEventListener('input', debouncedChange);
   inpQ.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); debouncedChange.now(); } });
-  TEXT_CTRL.forEach((k) => $(CTRL[k]).addEventListener('input', debouncedChange));
-  ['country', 'mediaType', 'platform', 'format', 'cta', 'startFrom', 'startTo'].forEach((k) => $(CTRL[k]).addEventListener('change', onFilterChange));
+  TEXT_CTRL.forEach((k) => {
+   const el = $(CTRL[k]);
+   if (el) el.addEventListener('input', debouncedChange);
+  });
+  ['country', 'mediaType', 'platform', 'format', 'cta', 'startFrom', 'startTo', 'activeWithin', 'language', 'seenWithin'].forEach((k) => {
+   const el = $(CTRL[k]);
+   if (el) el.addEventListener('change', onFilterChange);
+  });
   selSort.addEventListener('change', () => { st.sort = selSort.value; applyChange(true); });
+  if (btnDensity) {
+   btnDensity.addEventListener('click', toggleDensity);
+  }
   chkInf.addEventListener('change', () => {
    st.infinite = chkInf.checked;
    persist();
@@ -5311,6 +6179,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   $('mn-btn-clear').addEventListener('click', clearAll);
   $('mn-tab-offers').addEventListener('click', () => { if (st.view !== 'offers') setView('offers'); });
   $('mn-tab-ads').addEventListener('click', () => { if (st.view !== 'ads') setView('ads'); });
+  const tabSaved = $('mn-tab-saved');
+  if (tabSaved) tabSaved.addEventListener('click', () => { if (st.view !== 'saved') setView('saved'); });
   $('mn-btn-filters').addEventListener('click', openDrawer);
   $('mn-btn-filters-close').addEventListener('click', closeDrawer);
   backdrop.addEventListener('click', closeDrawer);
@@ -5322,8 +6192,79 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const kind = k.dataset.kpi;
    if (kind === 'scaled') { st.sort = 'score'; setView('offers', true); }
    else if (kind === 'ads' || kind === 'new') { st.sort = 'recent'; setView('ads', true); }
-   else if (kind === 'niches') { if (st.view !== 'offers') setView('offers'); } // o filtro de nicho foi removido: abre a vista de Ofertas
+   else if (kind === 'niches') { if (st.view !== 'offers') setView('offers'); }
   });
+
+  if (selSavedColl) {
+   selSavedColl.addEventListener('change', () => {
+    st.collId = selSavedColl.value;
+    populateSavedCollectionsBar();
+    persist();
+    load(true);
+   });
+  }
+  if (btnCollRename) {
+   btnCollRename.addEventListener('click', async () => {
+    const currentColl = collectionsList.find((c) => String(c.id) === String(st.collId));
+    if (!currentColl || currentColl.name.toLowerCase() === 'favoritos') {
+     toast('A coleção Favoritos não pode ser renomeada.');
+     return;
+    }
+    const newName = prompt('Novo nome para a coleção:', currentColl.name);
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed.length > 60) { toast('Nome de coleção inválido (1 a 60 caracteres).'); return; }
+    const r = await call('/api/miner/collections/' + st.collId, jsonOpts('PATCH', { name: trimmed }));
+    if (r.ok && r.data && r.data.collection) {
+     currentColl.name = r.data.collection.name;
+     populateSavedCollectionsBar();
+     toast('Coleção renomeada com sucesso!');
+    } else {
+     toast(errMsg(r.status, r.data && r.data.error));
+    }
+   });
+  }
+  if (btnCollDel) {
+   btnCollDel.addEventListener('click', async () => {
+    const currentColl = collectionsList.find((c) => String(c.id) === String(st.collId));
+    if (!currentColl || currentColl.name.toLowerCase() === 'favoritos') {
+     toast('A coleção Favoritos não pode ser apagada.');
+     return;
+    }
+    if (!confirm('Deseja realmente apagar a coleção "' + currentColl.name + '"?')) return;
+    const r = await call('/api/miner/collections/' + st.collId, { method: 'DELETE' });
+    if (r.ok) {
+     toast('Coleção apagada com sucesso!');
+     await fetchCollections();
+     st.collId = collectionsList.length ? String(collectionsList[0].id) : '';
+     populateSavedCollectionsBar();
+     persist();
+     load(true);
+    } else {
+     toast(errMsg(r.status, r.data && r.data.error));
+    }
+   });
+  }
+  if (btnCollNew) {
+   btnCollNew.addEventListener('click', async () => {
+    const name = prompt('Nome da nova coleção:');
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed || trimmed.length > 60) { toast('Nome de coleção inválido (1 a 60 caracteres).'); return; }
+    const r = await call('/api/miner/collections', jsonOpts('POST', { name: trimmed }));
+    if (r.status === 201 && r.data && r.data.collection) {
+     toast('Coleção criada com sucesso!');
+     await fetchCollections();
+     st.collId = String(r.data.collection.id);
+     populateSavedCollectionsBar();
+     persist();
+     load(true);
+    } else {
+     toast(errMsg(r.status, r.data && r.data.error));
+    }
+   });
+  }
+
   if ('IntersectionObserver' in window) {
    io = new IntersectionObserver((entries) => {
     if (entries.some((en) => en.isIntersecting) && st.infinite && !loading && !done && shown > 0) load(false);
@@ -5344,6 +6285,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function open() {
    if (!started) {
     started = true;
+    initDensity();
     const hq = hashQuery();
     let qs = hq;
     if (qs === null) { try { qs = localStorage.getItem(STORE_KEY); } catch (e) { qs = null; } }
