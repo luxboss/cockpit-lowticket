@@ -1796,6 +1796,95 @@ code, pre, .mono, [data-ad], .mn-id-mono {
   margin-top: auto;
  }
 }
+
+/* FE-011: Só infoprodutos e domínios ocultos */
+.mn-kind-wrap {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ font-size: 0.76rem;
+ font-weight: 700;
+ color: var(--text-muted);
+ cursor: pointer;
+ user-select: none;
+}
+.mn-kind-wrap input {
+ width: 16px;
+ height: 16px;
+ accent-color: var(--theme-accent);
+ cursor: pointer;
+}
+.mn-btn-hidden {
+ white-space: nowrap;
+ font-size: 0.76rem;
+ font-weight: 700;
+}
+.mn-btn-hide-offer {
+ background: transparent;
+ border: none;
+ padding: 2px 4px;
+ border-radius: var(--radius-xs);
+ color: var(--text-dim);
+ cursor: pointer;
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ line-height: 1;
+ transition: all 0.15s ease;
+ flex-shrink: 0;
+}
+.mn-btn-hide-offer:hover {
+ color: var(--accent-red, #ff4d6d);
+ background: rgba(255, 77, 109, 0.12);
+}
+.mn-btn-hide-offer svg {
+ width: 14px;
+ height: 14px;
+ display: block;
+}
+.mn-toast-undo {
+ background: var(--theme-accent);
+ color: #000;
+ border: none;
+ border-radius: var(--radius-xs);
+ font-weight: 700;
+ font-size: 0.76rem;
+ padding: 3px 8px;
+ cursor: pointer;
+ margin-left: 8px;
+}
+.mn-toast-undo:hover {
+ filter: brightness(1.1);
+}
+.mn-hidden-list {
+ display: flex;
+ flex-direction: column;
+ gap: 8px;
+ max-height: 60vh;
+ overflow-y: auto;
+}
+.mn-hidden-item {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 12px;
+ padding: 8px 12px;
+ border-radius: var(--radius-sm);
+ background: var(--bg-surface);
+ border: 1px solid var(--border-subtle);
+}
+.mn-hidden-domain {
+ font-weight: 700;
+ color: var(--text-main);
+ font-size: 0.84rem;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+}
+.mn-hidden-date {
+ font-size: 0.74rem;
+ color: var(--text-muted);
+}
 </style>
  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -2401,6 +2490,8 @@ code, pre, .mono, [data-ad], .mn-id-mono {
         <button type="button" class="mn-tab" role="tab" id="mn-tab-saved" data-view="saved" aria-selected="false">Salvos</button>
        </div>
        <label class="mn-sort">Ordenar <select id="mn-sort" aria-label="Ordenar"></select></label>
+       <label class="mn-switch mn-kind-wrap" id="mn-kind-wrap" title="Exibir apenas ofertas de infoprodutos"><input type="checkbox" id="mn-kind-info" checked> Só infoprodutos</label>
+       <button type="button" class="mn-btn sm mn-btn-hidden" id="mn-btn-hidden" title="Domínios ocultos">Ocultos (0)</button>
        <button type="button" class="mn-btn sm" id="mn-btn-density" title="Alternar densidade da grelha">Densidade: Confortável</button>
        <label class="mn-switch"><input type="checkbox" id="mn-infinite" checked> Scroll contínuo</label>
        <button type="button" class="mn-btn mn-only-narrow" id="mn-btn-filters">Filtros (0)</button>
@@ -2470,6 +2561,7 @@ code, pre, .mono, [data-ad], .mn-id-mono {
      <div class="mn-overlay" id="mn-overlay" role="dialog" aria-modal="true" aria-label="Detalhes"></div>
      <div class="mn-overlay" id="mn-overlay-searches" role="dialog" aria-modal="true" aria-label="Buscas automáticas"></div>
      <div class="mn-overlay" id="mn-overlay-coll" role="dialog" aria-modal="true" aria-label="Coleções"></div>
+     <div class="mn-overlay" id="mn-overlay-hidden" role="dialog" aria-modal="true" aria-label="Domínios ocultos"></div>
 
 
     <!-- ================= 2. ESTÚDIO DE TRANSCRIÇÃO & REMODELAGEM DE CRIATIVOS COM IA ================= -->
@@ -4644,6 +4736,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
 
   const STORE_KEY = 'cockpit_miner_ui';
   const MODE_KEY = 'cockpit_miner_mode';
+  const KIND_KEY = 'cockpit_miner_kind';
   const TOKEN_KEY = 'cockpit_api_token';
   const PAGE = 30;
   const NICHES = {
@@ -4814,9 +4907,18 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   let liveSearchCancelled = false;
   let currentLiveSearch = null;
   let lastSuccessfulSearch = null;
+  const chkKind = $('mn-kind-info');
+  const kindWrap = $('mn-kind-wrap');
+  const btnHidden = $('mn-btn-hidden');
   const ovOffer = $('mn-overlay');
   const ovSearches = $('mn-overlay-searches');
   const ovColl = $('mn-overlay-coll') || document.createElement('div');
+  const ovHidden = $('mn-overlay-hidden') || document.createElement('div');
+  ovHidden.id = 'mn-overlay-hidden';
+  ovHidden.className = 'mn-overlay';
+  ovHidden.setAttribute('role', 'dialog');
+  ovHidden.setAttribute('aria-modal', 'true');
+  ovHidden.setAttribute('aria-label', 'Domínios ocultos');
   const ovAd = document.createElement('div');
   ovAd.id = 'mn-overlay-ad';
   ovAd.className = 'mn-overlay';
@@ -4824,7 +4926,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   ovAd.setAttribute('aria-modal', 'true');
   ovAd.setAttribute('aria-label', 'Detalhes do anúncio');
   // Sobreposições no body: um ancestral com transform quebraria o position: fixed.
-  [ovOffer, ovSearches, ovAd, ovColl].forEach((o) => { if (o && o.parentNode !== document.body) document.body.appendChild(o); });
+  [ovOffer, ovSearches, ovAd, ovColl, ovHidden].forEach((o) => { if (o && o.parentNode !== document.body) document.body.appendChild(o); });
 
   // ---------- utilitários ----------
   function h(tag, cls, text) {
@@ -4912,6 +5014,31 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    clearTimeout(toastTimer);
    toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2400);
   }
+  function toastUndo(msg, onUndo) {
+   let t = document.getElementById('mn-toast');
+   if (!t) { t = h('div', 'mn-toast'); t.id = 'mn-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+   t.replaceChildren();
+   const span = h('span', '', msg);
+   const undoBtn = h('button', 'mn-toast-undo', 'Desfazer');
+   undoBtn.type = 'button';
+   let cleared = false;
+   clearTimeout(toastTimer);
+   undoBtn.addEventListener('click', () => {
+    if (cleared) return;
+    cleared = true;
+    clearTimeout(toastTimer);
+    t.style.display = 'none';
+    if (onUndo) onUndo();
+   });
+   t.append(span, undoBtn);
+   t.style.display = 'flex';
+   t.style.alignItems = 'center';
+   t.style.gap = '12px';
+   toastTimer = setTimeout(() => {
+    cleared = true;
+    t.style.display = 'none';
+   }, 6000);
+  }
   function askToken() {
    const tk = prompt('Informe o token de acesso (APP_TOKEN) do servidor:');
    if (tk === null) return false;
@@ -4932,8 +5059,14 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     const sm = localStorage.getItem(MODE_KEY);
     if (sm === 'live' || sm === 'ranking') defMode = sm;
    } catch (e) {}
+   let defKind = 'info';
+   try {
+    const sk = localStorage.getItem(KIND_KEY);
+    if (sk === 'all' || sk === 'info') defKind = sk;
+   } catch (e) {}
    return {
     mode: defMode,
+    kind: defKind,
     view: 'offers',
     sort: 'score',
     q: '',
@@ -4974,6 +5107,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   function stateToQuery() {
    const p = new URLSearchParams();
    if (st.mode) p.set('mode', st.mode);
+   if (st.kind && st.kind !== 'info') p.set('kind', st.kind);
    if (st.view !== 'offers') p.set('view', st.view);
    if (st.view === 'saved' && st.collId) p.set('coll', String(st.collId));
    if (st.sort !== DEFAULT_SORT[st.view]) p.set('sort', st.sort);
@@ -4992,6 +5126,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const s = defaults();
    const m = p.get('mode');
    if (m === 'live' || m === 'ranking') s.mode = m;
+   const k = p.get('kind');
+   if (k === 'all' || k === 'info') s.kind = k;
    const v = p.get('view');
    if (v === 'ads' || v === 'saved') s.view = v;
    else if (v === 'offers') s.view = 'offers';
@@ -5019,9 +5155,13 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const qs = stateToQuery();
    try { localStorage.setItem(STORE_KEY, qs); } catch (e) {}
    try { localStorage.setItem(MODE_KEY, st.mode || 'ranking'); } catch (e) {}
+   try { localStorage.setItem(KIND_KEY, st.kind || 'info'); } catch (e) {}
    try {
     if ($('pane-step-mineracao').classList.contains('active')) history.replaceState(null, '', '#mineracao' + (qs ? '?' + qs : ''));
    } catch (e) {}
+  }
+  function effectiveKind() {
+   return (st.mode === 'live') ? 'all' : (st.kind || 'info');
   }
   function hashQuery() {
    const hsh = window.location.hash.replace('#', '');
@@ -5029,6 +5169,8 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   function updateModeUI() {
    const isRanking = st.mode === 'ranking';
+   if (kindWrap) kindWrap.style.display = isRanking ? 'inline-flex' : 'none';
+   if (btnHidden) btnHidden.style.display = isRanking ? 'inline-block' : 'none';
    if (btnModeRanking) {
     btnModeRanking.classList.toggle('active', isRanking);
     btnModeRanking.setAttribute('aria-selected', String(isRanking));
@@ -5077,6 +5219,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     if (inpQ) inpQ.value = '';
     st.view = 'offers';
     st.sort = 'score';
+    loadHiddenDomains();
    } else {
     st.view = 'ads';
     st.sort = 'recent';
@@ -5260,6 +5403,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    if (selCategory) selCategory.value = st.adCategory || 'all';
    updateCountryTrigger();
    chkInf.checked = st.infinite;
+   if (chkKind) chkKind.checked = (st.kind !== 'all');
    FILTER_KEYS.forEach((k) => {
     if (k === 'placements') return;
     const el = $(CTRL[k]);
@@ -5283,6 +5427,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    if (selCategory) st.adCategory = selCategory.value || 'all';
    if (selCountry) st.country = (selCountry.value || '').trim().toUpperCase();
    st.infinite = chkInf.checked;
+   if (chkKind) st.kind = chkKind.checked ? 'info' : 'all';
    FILTER_KEYS.forEach((k) => {
     if (k === 'placements') return;
     const el = $(CTRL[k]);
@@ -5474,6 +5619,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const myCtrl = statsCtrl;
    statsReady = (async () => {
     const p = new URLSearchParams();
+    p.set('kind', effectiveKind());
     if (liveSearchActive) p.set('liveSearch', 'current');
     if (st.country) p.set('country', st.country);
     if (st.adCategory && st.adCategory !== 'all') p.set('adCategory', st.adCategory);
@@ -5500,9 +5646,13 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   let filterOptsMode = null;
   async function loadFilterOptions(force) {
    const isLive = st.mode === 'live' && liveSearchActive;
-   const modeKey = isLive ? 'live' : 'ranking';
+   const effK = effectiveKind();
+   const modeKey = (isLive ? 'live' : 'ranking') + '|' + effK;
    if (!force && filterOpts && filterOptsMode === modeKey && Date.now() - filtersAt < 60000) return;
-   const path = '/api/miner/filters' + (isLive ? '?liveSearch=current' : '');
+   const p = new URLSearchParams();
+   p.set('kind', effK);
+   if (isLive) p.set('liveSearch', 'current');
+   const path = '/api/miner/filters?' + p.toString();
    const r = await call(path);
    if (r.ok) {
     filterOpts = r.data;
@@ -6045,6 +6195,190 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    return card;
   }
 
+  // ---------- Domínios Ocultos (FE-011) ----------
+  const EYE_OFF_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+  function hideBtn(domain, cardEl, withText) {
+   const b = h('button', withText ? 'mn-btn sm mn-btn-hide-act' : 'mn-btn-hide-offer');
+   b.type = 'button';
+   b.title = 'Ocultar esta oferta';
+   b.setAttribute('aria-label', 'Ocultar esta oferta');
+   if (withText) {
+    b.innerHTML = EYE_OFF_SVG + ' <span>Ocultar</span>';
+   } else {
+    b.innerHTML = EYE_OFF_SVG;
+   }
+   b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideOffer(domain, cardEl);
+   });
+   return b;
+  }
+
+  function renumberOfferRanks() {
+   if (!grid) return;
+   const rows = grid.querySelectorAll('.mn-card.mn-offer-row:not(.mn-skelcard)');
+   rows.forEach((r, idx) => {
+    const rank = idx + 1;
+    r.dataset.rank = String(rank);
+    const badge = r.querySelector('.mn-rank-badge');
+    if (badge) {
+     badge.textContent = '#' + rank;
+     badge.classList.toggle('top-3', rank <= 3);
+    }
+   });
+  }
+
+  async function hideOffer(domain, cardEl) {
+   if (!domain) return;
+   let row = cardEl;
+   if (!row && grid) {
+    row = grid.querySelector('.mn-card[data-domain="' + domain + '"]');
+   }
+   let parent = null;
+   let next = null;
+   if (row && row.parentNode) {
+    parent = row.parentNode;
+    next = row.nextSibling;
+    row.remove();
+    shown = Math.max(0, shown - 1);
+    updateTotal();
+    renumberOfferRanks();
+   }
+
+   try {
+    const r = await call('/api/miner/hidden-domains', jsonOpts('POST', { domain }));
+    if (!r.ok && r.status !== 409) {
+     if (row && parent && !document.body.contains(row)) {
+      parent.insertBefore(row, next);
+      shown++;
+      updateTotal();
+      renumberOfferRanks();
+     }
+     toast('Erro ao ocultar oferta: ' + errMsg(r.status, r.data && r.data.error));
+     return;
+    }
+    loadStats(true);
+    loadHiddenDomains();
+    toastUndo('Oferta ' + domain + ' ocultada.', async () => {
+     const del = await call('/api/miner/hidden-domains/' + encodeURIComponent(domain), { method: 'DELETE' });
+     if (del.ok) {
+      if (row && parent && !document.body.contains(row)) {
+       parent.insertBefore(row, next);
+       shown++;
+       updateTotal();
+       renumberOfferRanks();
+      }
+      loadStats(true);
+      loadHiddenDomains();
+      toast('Oferta ' + domain + ' reexibida.');
+     } else {
+      toast('Erro ao desfazer: ' + errMsg(del.status, del.data && del.data.error));
+     }
+    });
+   } catch (e) {
+    if (row && parent && !document.body.contains(row)) {
+     parent.insertBefore(row, next);
+     shown++;
+     updateTotal();
+     renumberOfferRanks();
+    }
+    toast('Erro de conexão ao ocultar oferta.');
+   }
+  }
+
+  let hiddenDomainsList = [];
+  async function loadHiddenDomains() {
+   if (st.mode !== 'ranking') return;
+   try {
+    const r = await call('/api/miner/hidden-domains');
+    if (r.ok && r.data && Array.isArray(r.data.domains)) {
+     hiddenDomainsList = r.data.domains;
+     updateHiddenBtnUI();
+    }
+   } catch (e) {}
+  }
+  function updateHiddenBtnUI() {
+   if (!btnHidden) return;
+   btnHidden.textContent = 'Ocultos (' + hiddenDomainsList.length + ')';
+  }
+
+  function renderHiddenListInModal(container) {
+   container.replaceChildren();
+   if (!hiddenDomainsList.length) {
+    container.appendChild(stateBox('', 'Nenhum domínio oculto', 'Quando você ocultar ofertas, elas aparecerão aqui para poder reexibi-las a qualquer momento.'));
+    return;
+   }
+   hiddenDomainsList.forEach((it) => {
+    const item = h('div', 'mn-hidden-item');
+    const info = h('div');
+    info.style.cssText = 'min-width:0;flex:1;overflow:hidden;';
+    const dTitle = h('div', 'mn-hidden-domain', it.domain);
+    dTitle.title = it.domain;
+    const dDate = h('div', 'mn-hidden-date', it.createdAt ? 'Ocultado em ' + fmtDateTime(it.createdAt) : '');
+    info.append(dTitle, dDate);
+
+    const btnUnhide = h('button', 'mn-btn sm primary', 'Reexibir');
+    btnUnhide.type = 'button';
+    btnUnhide.addEventListener('click', async () => {
+     btnUnhide.disabled = true;
+     const r = await call('/api/miner/hidden-domains/' + encodeURIComponent(it.domain), { method: 'DELETE' });
+     if (r.ok) {
+      hiddenDomainsList = hiddenDomainsList.filter((x) => x.domain !== it.domain);
+      updateHiddenBtnUI();
+      renderHiddenListInModal(container);
+      loadStats(true);
+      load(true);
+      toast('Domínio ' + it.domain + ' reexibido.');
+     } else {
+      btnUnhide.disabled = false;
+      toast('Erro ao reexibir: ' + errMsg(r.status, r.data && r.data.error));
+     }
+    });
+
+    item.append(info, btnUnhide);
+    container.appendChild(item);
+   });
+  }
+
+  async function openHiddenDomainsModal() {
+   focusBefore = btnHidden;
+   const m = openModal(ovHidden, false);
+   Array.from(m.children).forEach((ch) => {
+    if (!ch.classList.contains('mn-x')) ch.remove();
+   });
+   let x = m.querySelector('.mn-x');
+   if (!x) {
+    x = h('button', 'mn-x', '✕');
+    x.type = 'button';
+    x.setAttribute('aria-label', 'Fechar');
+    x.addEventListener('click', () => closeModal(ovHidden));
+    m.appendChild(x);
+   }
+   const wrap = h('div');
+   wrap.style.cssText = 'display:flex;flex-direction:column;gap:16px;min-width:0;';
+   const head = h('div', 'mn-mhead');
+   head.appendChild(h('h3', 'mn-modal-title', 'Domínios ocultos'));
+   wrap.appendChild(head);
+
+   const listCont = h('div', 'mn-hidden-list');
+   const loadingBox = h('div', 'mn-skel', 'Carregando domínios ocultos…');
+   loadingBox.style.height = '60px';
+   listCont.appendChild(loadingBox);
+   wrap.appendChild(listCont);
+   m.appendChild(wrap);
+
+   const r = await call('/api/miner/hidden-domains');
+   if (!ovHidden.classList.contains('open')) return;
+   if (!r.ok) {
+    listCont.replaceChildren(stateBox('err', 'Erro ao carregar domínios ocultos', errMsg(r.status, r.data && r.data.error)));
+    return;
+   }
+   hiddenDomainsList = (r.data && r.data.domains) || [];
+   updateHiddenBtnUI();
+   renderHiddenListInModal(listCont);
+  }
+
   function offerCard(o, savedItem, rankIndex) {
    if (savedItem) {
     const card = h('article', 'mn-card');
@@ -6059,6 +6393,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     titleRow.style.cssText = 'justify-content:space-between;align-items:flex-start;';
     titleRow.appendChild(h('h3', 'mn-title', o.domain));
     titleRow.appendChild(starBtn('offer', o.domain));
+    titleRow.appendChild(hideBtn(o.domain, card));
     body.appendChild(titleRow);
 
     const names = (o.pageNames || []).filter((n) => !hasTpl(n));
@@ -6121,6 +6456,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    domTitle.title = o.domain;
    titleRow.appendChild(domTitle);
    titleRow.appendChild(starBtn('offer', o.domain));
+   titleRow.appendChild(hideBtn(o.domain, card));
    domainCell.appendChild(titleRow);
 
    const metaRow = h('div', 'mn-domain-meta');
@@ -6178,7 +6514,11 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const mTitleRow = h('div', 'mn-row');
    mTitleRow.style.cssText = 'justify-content:space-between;align-items:flex-start;';
    mTitleRow.appendChild(h('h3', 'mn-title', o.domain));
-   mTitleRow.appendChild(starBtn('offer', o.domain));
+   const mTopBtns = h('div', 'mn-row');
+   mTopBtns.style.gap = '4px';
+   mTopBtns.appendChild(starBtn('offer', o.domain));
+   mTopBtns.appendChild(hideBtn(o.domain, card));
+   mTitleRow.appendChild(mTopBtns);
    body.appendChild(mTitleRow);
    if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
    const mBadges = h('div', 'mn-badges');
@@ -6209,6 +6549,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
 
    const mAct = h('div', 'mn-card-actions');
    mAct.appendChild(btn('Anúncios desta oferta', 'sm', () => { st.f.domain = o.domain; setView('ads'); }));
+   mAct.appendChild(hideBtn(o.domain, card, true));
    body.appendChild(mAct);
 
    card.appendChild(body);
@@ -6345,9 +6686,16 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const c = closers.get(ov);
    if (c) c();
    lockScroll();
-   if (!openStack.length && focusBefore && focusBefore.focus) { try { focusBefore.focus(); } catch (e) {} }
+   if (ov === ovHidden && btnHidden && btnHidden.focus) {
+    try { btnHidden.focus(); } catch (e) {}
+   } else if (!openStack.length && focusBefore && focusBefore.focus) {
+    try { focusBefore.focus(); } catch (e) {}
+   }
   }
-  [ovOffer, ovSearches, ovAd].forEach((ov) => ov.addEventListener('mousedown', (e) => { if (e.target === ov) closeModal(ov); }));
+  [ovOffer, ovSearches, ovAd, ovColl, ovHidden].forEach((ov) => {
+   ov.addEventListener('mousedown', (e) => { if (e.target === ov) closeModal(ov); });
+   ov.addEventListener('click', (e) => { if (e.target === ov) closeModal(ov); });
+  });
   document.addEventListener('keydown', (e) => {
    if (e.key === 'Escape') {
     if (openStack.length) { e.preventDefault(); closeModal(openStack[openStack.length - 1]); return; }
@@ -6402,6 +6750,20 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    content.replaceChildren();
    const headLoaded = h('div', 'mn-mhead');
    headLoaded.appendChild(h('h3', 'mn-modal-title', domain));
+   const headRight = h('div', 'mn-row');
+   headRight.style.gap = '8px';
+   headRight.appendChild(starBtn('offer', domain));
+   const modalHide = h('button', 'mn-btn sm');
+   modalHide.type = 'button';
+   modalHide.title = 'Ocultar esta oferta';
+   modalHide.setAttribute('aria-label', 'Ocultar esta oferta');
+   modalHide.innerHTML = EYE_OFF_SVG + ' <span style="font-size:0.78rem;">Ocultar</span>';
+   modalHide.addEventListener('click', () => {
+    closeModal(ovOffer);
+    hideOffer(domain, null);
+   });
+   headRight.appendChild(modalHide);
+   headLoaded.appendChild(headRight);
    content.appendChild(headLoaded);
    if (!r.ok) {
     const e = h('div', 'mn-state err');
@@ -6923,6 +7285,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
 
   function listQuery() {
    const p = new URLSearchParams();
+   p.set('kind', effectiveKind());
    if (liveSearchActive) p.set('liveSearch', 'current');
    if (st.country) p.set('country', st.country);
    if (st.adCategory && st.adCategory !== 'all') p.set('adCategory', st.adCategory);
@@ -7182,6 +7545,17 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      const thEl = $('mn-table-head'); if (thEl) thEl.style.display = 'none';
      if (st.mode === 'live' && liveSearchActive && currentLiveSearch && currentLiveSearch.q) {
       setStatus(stateBox('', 'Nenhum anúncio encontrado para ' + currentLiveSearch.q, 'Tente pesquisar com outro termo, país ou categoria.', [btn('Nova pesquisa', 'primary', () => { if (inpQ) inpQ.focus(); })]));
+     } else if (st.mode === 'ranking' && st.view === 'offers' && effectiveKind() === 'info') {
+      const cov = (stats && stats.checkoutCoverage) || { enriched: 0, total: 0 };
+      const covText = fmtInt(cov.enriched) + ' de ' + fmtInt(cov.total) + ' ofertas com checkout analisado';
+      const btnShowAll = btn('Mostrar todas as ofertas', 'primary', () => {
+       st.kind = 'all';
+       try { localStorage.setItem(KIND_KEY, 'all'); } catch (e) {}
+       if (chkKind) chkKind.checked = false;
+       loadFilterOptions(true);
+       applyChange(true);
+      });
+      setStatus(stateBox('', 'Nenhum infoproduto encontrado ainda', covText, [btnShowAll]));
      } else {
       setStatus(hasAnyFilter()
        ? stateBox('', 'Nenhum resultado para estes filtros', 'Tente afrouxar os filtros ou limpar a busca.', [btn('Limpar filtros', 'primary', clearAll)])
@@ -7344,6 +7718,17 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    btnMore.hidden = done || (st.infinite && !!io) || !shown;
    if (io) { io.unobserve(sentinel); io.observe(sentinel); }
   });
+  if (chkKind) {
+   chkKind.addEventListener('change', () => {
+    st.kind = chkKind.checked ? 'info' : 'all';
+    try { localStorage.setItem(KIND_KEY, st.kind); } catch (e) {}
+    loadFilterOptions(true);
+    applyChange(true);
+   });
+  }
+  if (btnHidden) {
+   btnHidden.addEventListener('click', openHiddenDomainsModal);
+  }
   $('mn-f-presets').addEventListener('click', (e) => {
    const b = e.target.closest('button[data-days]');
    if (!b) return;
@@ -7472,6 +7857,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     loadStats();
     loadFilterOptions(true);
     load(true);
+    loadHiddenDomains();
 
     // No modo Pesquisa ao vivo, se houver pesquisa concluída, mostrar os resultados dela
     if (st.mode === 'live') {
@@ -7502,6 +7888,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    persist();
    loadStats();
    loadFilterOptions(false);
+   loadHiddenDomains();
    if (st.mode === 'live') {
     call('/api/miner/live-search/current').then((r) => {
      if (r.ok && r.data && r.data.status === 'succeeded' && r.data.q) {
