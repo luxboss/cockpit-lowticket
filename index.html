@@ -5,10 +5,10 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>GUIA LOW TICKET</title>
  
- <!-- Tipografia Inter Profissional & JetBrains Mono -->
+ <!-- Tipografia: Plus Jakarta Sans (Títulos), Inter (Corpo) & JetBrains Mono (Código/IDs) -->
  <link rel="preconnect" href="https://fonts.googleapis.com">
  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
  
  <style>
 /* ==========================================================================
@@ -78,8 +78,33 @@
  --bg-radial-2: rgba(236, 72, 153, 0.04);
 }
 
-/* Global Tokens */
+/* Global Tokens: Tipografia, Espaçamento & Formas */
 :root {
+ /* Tipografia & Fontes */
+ --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+ --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+ --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+ /* Escala tipográfica única (rem) */
+ --fs-xs: 0.6875rem; /* 11px */
+ --fs-sm: 0.75rem;   /* 12px */
+ --fs-base: 0.875rem;/* 14px */
+ --fs-md: 1rem;      /* 16px */
+ --fs-lg: 1.125rem;  /* 18px */
+ --fs-xl: 1.25rem;   /* 20px */
+ --fs-2xl: 1.5rem;   /* 24px */
+ --fs-3xl: 1.75rem;  /* 28px */
+
+ /* Escala de espaçamento em grade 4/8 px */
+ --sp-1: 4px;
+ --sp-2: 8px;
+ --sp-3: 12px;
+ --sp-4: 16px;
+ --sp-5: 20px;
+ --sp-6: 24px;
+ --sp-8: 32px;
+ --sp-10: 40px;
+
  --accent-red: #ff4d6d;
  --accent-amber: #ffb703;
  --accent-blue: #3b82f6;
@@ -98,7 +123,8 @@
 }
 
 body {
- font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+ font-family: var(--font-body);
+ font-size: var(--fs-base);
  color: var(--text-main);
  background-color: var(--bg-dark);
  min-height: 100vh;
@@ -110,6 +136,16 @@ body {
  -webkit-font-smoothing: antialiased;
  letter-spacing: -0.011em;
  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+h1, h2, h3, h4, h5, h6, .app-brand, .app-logo-text h1, .nav-step-title {
+ font-family: var(--font-display);
+ letter-spacing: -0.02em;
+}
+
+.tnum {
+ font-variant-numeric: tabular-nums;
+ font-feature-settings: "tnum" 1;
 }
 
 /* ==========================================================================
@@ -1126,19 +1162,20 @@ input:focus, select:focus, textarea:focus {
 .mn-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-main); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: none; min-height: 36px; }
 .mn-btn:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
 .mn-btn:focus-visible, .mn-tab:focus-visible, .mn-kpi:focus-visible, .mn-x:focus-visible, .mn-chip-btn:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
-.mn-btn.primary { background: var(--theme-accent); color: var(--theme-accent-contrast); border-color: var(--theme-accent); }
-.mn-btn.primary:hover { filter: brightness(1.08); }
+.mn-btn.primary, #mn-btn-do-search { background: var(--theme-accent) !important; color: var(--theme-accent-contrast) !important; border-color: var(--theme-accent) !important; font-weight: 800 !important; box-shadow: 0 0 14px var(--theme-accent-glow), 0 2px 6px rgba(0, 0, 0, 0.35) !important; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important; }
+.mn-btn.primary:hover, #mn-btn-do-search:hover { filter: brightness(1.12) !important; transform: translateY(-1px) !important; box-shadow: 0 0 22px var(--theme-accent-glow), 0 4px 12px rgba(0, 0, 0, 0.45) !important; }
+.mn-btn.primary:active, #mn-btn-do-search:active { transform: translateY(0) !important; }
 .mn-btn.danger { color: var(--accent-red); border-color: rgba(255, 77, 109, 0.4); }
-.mn-btn.sm { padding: 5px 10px; min-height: 30px; font-size: 0.74rem; }
+.mn-btn.sm { padding: 5px 10px; min-height: 30px; font-size: var(--fs-xs); }
 .mn-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 /* hidden precisa vencer o display das classes do minerador (.mn-btn inline-flex mostrava Carregar mais sem paginas) */
 .mn-btn[hidden], .mn-root [hidden], .mn-overlay [hidden] { display: none !important; }
-.mn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.mn-kpi { text-align: left; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px 16px; color: var(--text-main); font: inherit; cursor: pointer; min-width: 0; }
-.mn-kpi:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
-.mn-kpi-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
-.mn-kpi-value { display: block; margin-top: 6px; font-size: 1.7rem; font-weight: 800; line-height: 1.1; color: var(--text-main); overflow-wrap: anywhere; }
-.mn-kpi-sub { display: block; margin-top: 4px; font-size: 0.72rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: var(--sp-3); }
+.mn-kpi { text-align: left; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: var(--sp-3) var(--sp-4); color: var(--text-main); font: inherit; cursor: pointer; min-width: 0; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; justify-content: center; }
+.mn-kpi:hover { border-color: var(--border-hover); background: var(--bg-card-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+.mn-kpi-label { display: block; font-family: var(--font-display); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.mn-kpi-value { display: block; margin-top: var(--sp-1); font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; line-height: 1.1; color: var(--text-main); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.mn-kpi-sub { display: block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mn-skel { position: relative; overflow: hidden; background: var(--bg-input); border-radius: var(--radius-xs); color: transparent !important; }
 .mn-skel::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); animation: mn-shimmer 1.2s infinite; }
 @keyframes mn-shimmer { to { transform: translateX(100%); } }
@@ -1219,7 +1256,7 @@ input:focus, select:focus, textarea:focus {
 .mn-title { font-size: 0.95rem; font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; margin: 0; }
 .mn-sub { font-size: 0.74rem; color: var(--text-muted); overflow-wrap: anywhere; }
 .mn-badges { display: flex; flex-wrap: wrap; gap: 5px; }
-.mn-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-full); border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-muted); font-size: 0.68rem; font-weight: 700; max-width: 100%; overflow-wrap: anywhere; }
+.mn-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-full); border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-muted); font-size: 0.68rem; font-weight: 700; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mn-badge.accent { color: var(--theme-accent); border-color: var(--theme-accent); background: var(--theme-accent-soft); }
 .mn-badge.amber { color: var(--accent-amber); border-color: rgba(255, 183, 3, 0.4); }
 .mn-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
@@ -1316,7 +1353,7 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 1199px) {
  .mn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 899px) {
+@media (max-width: 1080px) {
  .mn-only-narrow { display: inline-flex; }
  .mn-body { grid-template-columns: minmax(0, 1fr); }
  .mn-filters { position: fixed; top: 0; left: 0; bottom: 0; width: min(330px, 90vw); max-height: none; z-index: 2400; border-radius: 0 var(--radius) var(--radius) 0; transform: translateX(-105%); visibility: hidden; transition: transform 0.2s ease, visibility 0.2s; background: var(--bg-surface); }
@@ -1346,6 +1383,418 @@ input:focus, select:focus, textarea:focus {
 @media (prefers-reduced-motion: reduce) {
  .mn-skel::after { animation: none; }
  .mn-filters { transition: none; }
+}
+
+/* ==========================================================================
+   FE-010: REDESENHO DO DASHBOARD DO RANKING (TABELA DENSA NO DESKTOP / CARDS NO MOBILE)
+   ========================================================================== */
+
+/* Código e IDs em JetBrains Mono (AC-01) */
+code, pre, .mono, [data-ad], .mn-id-mono {
+ font-family: var(--font-mono);
+}
+
+/* Cabeçalho da Tabela de Ranking */
+.mn-table-head {
+ display: none;
+}
+@media (min-width: 769px) {
+ .mn-table-head {
+  display: grid;
+  grid-template-columns: 36px minmax(80px, 1fr) 68px 52px 48px 44px 68px 84px;
+  column-gap: 6px;
+  padding: 6px 10px;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: var(--sp-2);
+  width: 100%;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+ }
+}
+.mn-th {
+ min-width: 0;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+ font-size: 0.68rem;
+}
+.mn-th-rank {
+ text-align: center;
+}
+.mn-th-domain {
+ text-align: left;
+}
+.mn-th-score {
+ text-align: left;
+}
+.mn-th-growth {
+ text-align: center;
+}
+.mn-th-ads {
+ text-align: center;
+}
+.mn-th-days {
+ text-align: center;
+}
+.mn-th-checkout {
+ text-align: center;
+}
+.mn-th-actions {
+ text-align: center;
+}
+
+/* Modo Tabela Densa no Desktop (AC-02) */
+@media (min-width: 769px) {
+ .mn-grid.mn-view-offers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+ }
+ .mn-grid.mn-view-offers > .mn-card.mn-offer-row {
+  display: grid;
+  grid-template-columns: 36px minmax(80px, 1fr) 68px 52px 48px 44px 68px 84px;
+  column-gap: 6px;
+  padding: 6px 10px;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  min-height: 48px;
+  max-height: 72px;
+  height: auto;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+ }
+ .mn-grid.mn-view-offers > .mn-card.mn-offer-row:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+ }
+ .mn-grid.mn-view-offers > .mn-card.mn-offer-row .mn-media {
+  display: none;
+ }
+ .mn-grid.mn-view-offers > .mn-card.mn-offer-row .mn-card-body {
+  display: none;
+ }
+ .mn-grid.mn-view-offers > .mn-card.mn-offer-row .mn-row-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+ }
+ .mn-rank-badge {
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+ }
+ .mn-rank-badge.top-3 {
+  color: var(--theme-accent);
+ }
+ .mn-card.mn-offer-row .mn-domain-meta .mn-badge-price {
+  display: none !important;
+ }
+ .mn-card.mn-offer-row .mn-domain-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+ }
+ .mn-card.mn-offer-row .mn-domain-meta .mn-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+ }
+ .mn-card.mn-offer-row .mn-domain-meta .mn-badge {
+  flex-shrink: 0;
+ }
+ .mn-card.mn-offer-row .mn-domain-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+ }
+ .mn-card.mn-offer-row .mn-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+ }
+ .mn-card.mn-offer-row .mn-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+ }
+ .mn-card.mn-offer-row .mn-domain-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+ }
+ .mn-card.mn-offer-row .mn-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  flex: 0 1 auto;
+ }
+ .mn-card.mn-offer-row .mn-score-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+ }
+ .mn-score-num-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  line-height: 1;
+ }
+ .mn-score-num {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+ }
+ .mn-score-max {
+  font-size: 0.60rem;
+  color: var(--text-dim);
+  font-weight: 600;
+ }
+ .mn-score-bar-bg {
+  width: 100%;
+  height: 3px;
+  background: var(--border-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+ }
+ .mn-score-bar-fill {
+  height: 100%;
+  background: var(--theme-accent);
+  border-radius: var(--radius-full);
+ }
+ .mn-card.mn-offer-row .mn-growth-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+ }
+ .mn-growth-pill {
+  font-size: 0.70rem;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: var(--radius-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1;
+ }
+ .mn-growth-pill.mn-up {
+  color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+  border: 1px solid var(--border-subtle);
+ }
+ .mn-growth-pill.mn-down {
+  color: var(--accent-red);
+  background: rgba(255, 77, 109, 0.12);
+  border: 1px solid rgba(255, 77, 109, 0.25);
+ }
+ .mn-growth-pill.mn-neutral {
+  color: var(--text-muted);
+  background: var(--bg-input);
+ }
+ .mn-card.mn-offer-row .mn-metric-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+ }
+ .mn-metric-num {
+  font-size: 0.80rem;
+  font-weight: 700;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+ }
+ .mn-metric-lbl {
+  font-size: 0.60rem;
+  color: var(--text-muted);
+  text-transform: lowercase;
+  line-height: 1;
+  white-space: nowrap;
+ }
+ .mn-card.mn-offer-row .mn-checkout-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+ }
+ .mn-card.mn-offer-row .mn-checkout-cell .mn-badge {
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  height: 18px;
+  line-height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: inline-block;
+  text-align: center;
+ }
+ .mn-checkout-none {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+ }
+ .mn-card.mn-offer-row .mn-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+ }
+ .mn-card.mn-offer-row .mn-actions .mn-btn {
+  padding: 4px 6px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  width: 100%;
+  text-align: center;
+  min-height: 28px;
+ }
+ /* Densidade compacta */
+ .mn-grid.mn-compact > .mn-card.mn-offer-row {
+  min-height: 42px;
+  max-height: 52px;
+  padding: 3px 8px;
+ }
+}
+
+/* Badges ultra-compactos para linhas densas */
+.badge.xs {
+ font-size: 0.62rem;
+ padding: 1px 5px;
+ height: 16px;
+ line-height: 14px;
+ border-radius: 3px;
+ flex-shrink: 0;
+}
+
+/* Breakpoints Responsivos para acomodar 8 colunas no Minerador (FE-010) */
+/* NUNCA altera a .sidebar global do app, que permanece fixa conforme a base */
+@media (max-width: 1440px) {
+ .main-content {
+  padding: var(--sp-6) var(--sp-8);
+ }
+}
+@media (max-width: 1300px) and (min-width: 1081px) {
+ .main-content {
+  padding: var(--sp-5) var(--sp-6);
+ }
+ .mn-body {
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: var(--sp-3);
+ }
+}
+@media (max-width: 1080px) {
+ .main-content {
+  padding: var(--sp-4) var(--sp-4);
+ }
+}
+@media (max-width: 580px) {
+ .main-content {
+  padding: var(--sp-3) var(--sp-2);
+ }
+}
+
+/* Modo Mobile (<= 768px): Cards Responsivos sem scroll horizontal (AC-02) */
+@media (max-width: 768px) {
+ .mn-table-head {
+  display: none !important;
+ }
+ .mn-grid.mn-view-offers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-3);
+ }
+ .mn-card.mn-offer-row {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-3);
+  gap: var(--sp-3);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+ }
+ .mn-card.mn-offer-row .mn-row-rank,
+ .mn-card.mn-offer-row .mn-score-cell,
+ .mn-card.mn-offer-row .mn-growth-cell,
+ .mn-card.mn-offer-row .mn-metric-cell,
+ .mn-card.mn-offer-row .mn-checkout-cell {
+  display: none;
+ }
+ .mn-card.mn-offer-row .mn-domain-cell {
+  display: none;
+ }
+ .mn-card.mn-offer-row .mn-media {
+  display: flex;
+ }
+ .mn-card.mn-offer-row .mn-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+ }
+ .mn-card.mn-offer-row .mn-actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: auto;
+ }
 }
 </style>
  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1381,7 +1830,7 @@ input:focus, select:focus, textarea:focus {
      </svg>
      Dark
     </button>
-    <button class="theme-btn active" data-set-theme="green" title="Modo Neon Green">
+    <button class="theme-btn" data-set-theme="green" title="Modo Neon Green">
      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"></circle>
       <path d="M12 2a10 10 0 0 1 10 10"></path>
@@ -2000,6 +2449,16 @@ input:focus, select:focus, textarea:focus {
         <div class="mn-chips" id="mn-chips"></div>
         <div class="mn-count" id="mn-total" aria-live="polite"></div>
         <div id="mn-status"></div>
+        <div class="mn-table-head" id="mn-table-head" style="display:none;" aria-hidden="true">
+         <div class="mn-th mn-th-rank">#</div>
+         <div class="mn-th mn-th-domain">Oferta</div>
+         <div class="mn-th mn-th-score">Score</div>
+         <div class="mn-th mn-th-growth">7 d</div>
+         <div class="mn-th mn-th-ads">Ativos</div>
+         <div class="mn-th mn-th-days">Dias</div>
+         <div class="mn-th mn-th-checkout">Checkout</div>
+         <div class="mn-th mn-th-actions">Ação</div>
+        </div>
         <div class="mn-grid" id="mn-grid"></div>
         <div class="mn-sentinel" id="mn-sentinel"></div>
         <button type="button" class="mn-btn mn-loadmore" id="mn-loadmore" hidden>Carregar mais</button>
@@ -2848,19 +3307,34 @@ document.addEventListener('DOMContentLoaded', () => {
  // ================= 2. GERENCIAMENTO DE TEMAS =================
  const themeButtons = document.querySelectorAll('[data-set-theme]');
 
+ function syncThemeButtons(curTheme) {
+  themeButtons.forEach(btn => {
+   btn.classList.toggle('active', btn.dataset.setTheme === curTheme);
+  });
+ }
+
  function applyTheme(themeName) {
   htmlRoot.setAttribute('data-theme', themeName);
-  themeButtons.forEach(btn => {
-   btn.classList.toggle('active', btn.dataset.setTheme === themeName);
-  });
-  try {
-   localStorage.setItem(THEME_STORAGE_KEY, themeName);
-  } catch (e) {}
-
+  syncThemeButtons(themeName);
+  try { localStorage.setItem(THEME_STORAGE_KEY, themeName); } catch (e) {}
+  try { localStorage.setItem('low_ticket_theme', themeName); } catch (e) {}
   updateChartThemeColor();
  }
 
- const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'green';
+ const themeObserver = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+   if (m.attributeName === 'data-theme') {
+    const curTheme = htmlRoot.getAttribute('data-theme') || 'green';
+    syncThemeButtons(curTheme);
+    try { localStorage.setItem(THEME_STORAGE_KEY, curTheme); } catch (e) {}
+    try { localStorage.setItem('low_ticket_theme', curTheme); } catch (e) {}
+    updateChartThemeColor();
+   }
+  }
+ });
+ themeObserver.observe(htmlRoot, { attributes: true, attributeFilter: ['data-theme'] });
+
+ const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem('low_ticket_theme') || htmlRoot.getAttribute('data-theme') || 'green';
  applyTheme(savedTheme);
 
  themeButtons.forEach(btn => {
@@ -4948,6 +5422,10 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const tabSaved = $('mn-tab-saved');
    if (tabSaved) tabSaved.setAttribute('aria-selected', String(isSaved));
 
+   grid.classList.toggle('mn-view-offers', st.view === 'offers');
+   const th = $('mn-table-head');
+   if (th) th.style.display = (st.view === 'offers') ? '' : 'none';
+
    if (savedBar) savedBar.style.display = isSaved ? 'flex' : 'none';
 
    filtersBox.querySelectorAll('[data-scope]').forEach((el) => {
@@ -4996,7 +5474,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const myCtrl = statsCtrl;
    statsReady = (async () => {
     const p = new URLSearchParams();
-    if (st.mode === 'live' && liveSearchActive) p.set('liveSearch', 'current');
+    if (liveSearchActive) p.set('liveSearch', 'current');
     if (st.country) p.set('country', st.country);
     if (st.adCategory && st.adCategory !== 'all') p.set('adCategory', st.adCategory);
     if (st.q) p.set('q', st.q);
@@ -5567,34 +6045,156 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    return card;
   }
 
-  function offerCard(o, savedItem) {
-   const card = h('article', 'mn-card');
+  function offerCard(o, savedItem, rankIndex) {
+   if (savedItem) {
+    const card = h('article', 'mn-card');
+    card.dataset.domain = o.domain;
+    const sample = (o.sampleAds || [])[0];
+    const media = mediaBox({ images: sample && sample.image ? [sample.image] : [], videos: [], pageName: o.domain }, false, () => openOffer(o.domain, o));
+    media.appendChild(h('span', 'mn-score', 'Score ' + fmtScore(o.score)));
+    card.appendChild(media);
+
+    const body = h('div', 'mn-card-body');
+    const titleRow = h('div', 'mn-row');
+    titleRow.style.cssText = 'justify-content:space-between;align-items:flex-start;';
+    titleRow.appendChild(h('h3', 'mn-title', o.domain));
+    titleRow.appendChild(starBtn('offer', o.domain));
+    body.appendChild(titleRow);
+
+    const names = (o.pageNames || []).filter((n) => !hasTpl(n));
+    if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
+
+    const badges = h('div', 'mn-badges');
+    if (o.scaled) badges.appendChild(badge('Escalada', 'accent'));
+    if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') badges.appendChild(badge(platLabel(o.checkout.platform), 'accent'));
+    if (o.checkout && typeof o.checkout.priceMin === 'number') badges.appendChild(badge('a partir de ' + fmtMoney(o.checkout.priceMin), 'amber'));
+    if (o.ai && o.ai.niche) badges.appendChild(badge(nicheLabel(o.ai.niche)));
+    if (badges.childNodes.length) body.appendChild(badges);
+
+    const g = Number(o.growth7d) || 0;
+    const metrics = h('div', 'mn-metrics');
+    metrics.appendChild(metric('Anúncios ativos', fmtInt(o.activeAds)));
+    metrics.appendChild(metric('Criativos distintos', fmtInt(o.distinctCreatives)));
+    metrics.appendChild(metric('Dias no ar', fmtInt(o.maxDaysRunning)));
+    metrics.appendChild(metric('Crescimento (7 dias)', (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '● ') + g, g > 0 ? 'mn-up' : g < 0 ? 'mn-down' : ''));
+    body.appendChild(metrics);
+
+    const pts = o.sparkline || [];
+    if (pts.length >= 2) {
+     const cv = h('canvas', 'mn-spark');
+     cv.width = 240; cv.height = 30;
+     cv.setAttribute('role', 'img');
+     cv.setAttribute('aria-label', 'Anúncios ativos nos últimos 14 dias');
+     body.appendChild(cv);
+     drawSpark(cv, pts);
+    } else {
+     body.appendChild(h('div', 'mn-sub', 'Sem histórico de 14 dias ainda'));
+    }
+
+    body.appendChild(renderSavedItemSection(savedItem, card));
+    card.appendChild(body);
+
+    const act = h('div', 'mn-actions');
+    act.appendChild(btn('Ver oferta', 'primary sm', () => openOffer(o.domain, o)));
+    act.appendChild(btn('Anúncios desta oferta', 'sm', () => { st.f.domain = o.domain; setView('ads'); }));
+    card.appendChild(act);
+    return card;
+   }
+
+   const card = h('article', 'mn-card mn-offer-row');
    card.dataset.domain = o.domain;
+   if (rankIndex) card.dataset.rank = String(rankIndex);
+
    const sample = (o.sampleAds || [])[0];
    const media = mediaBox({ images: sample && sample.image ? [sample.image] : [], videos: [], pageName: o.domain }, false, () => openOffer(o.domain, o));
    media.appendChild(h('span', 'mn-score', 'Score ' + fmtScore(o.score)));
    card.appendChild(media);
-   const body = h('div', 'mn-card-body');
-   const titleRow = h('div', 'mn-row');
-   titleRow.style.cssText = 'justify-content:space-between;align-items:flex-start;';
-   titleRow.appendChild(h('h3', 'mn-title', o.domain));
+
+   const rankCol = h('div', 'mn-row-rank');
+   const rankBadge = h('span', 'mn-rank-badge' + (rankIndex && rankIndex <= 3 ? ' top-3' : ''), '#' + (rankIndex || '-'));
+   rankCol.appendChild(rankBadge);
+   card.appendChild(rankCol);
+
+   const domainCell = h('div', 'mn-domain-cell');
+   const titleRow = h('div', 'mn-title-row');
+   const domTitle = h('h3', 'mn-title', o.domain);
+   domTitle.title = o.domain;
+   titleRow.appendChild(domTitle);
    titleRow.appendChild(starBtn('offer', o.domain));
-   body.appendChild(titleRow);
+   domainCell.appendChild(titleRow);
+
+   const metaRow = h('div', 'mn-domain-meta');
    const names = (o.pageNames || []).filter((n) => !hasTpl(n));
-   if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
-   const badges = h('div', 'mn-badges');
-   if (o.scaled) badges.appendChild(badge('Escalada', 'accent'));
-   if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') badges.appendChild(badge(platLabel(o.checkout.platform), 'accent'));
-   if (o.checkout && typeof o.checkout.priceMin === 'number') badges.appendChild(badge('a partir de ' + fmtMoney(o.checkout.priceMin), 'amber'));
-   if (o.ai && o.ai.niche) badges.appendChild(badge(nicheLabel(o.ai.niche)));
-   if (badges.childNodes.length) body.appendChild(badges);
+   if (names.length) {
+    const adv = h('span', 'mn-sub', names[0] + (names.length > 1 ? ' +' + (names.length - 1) : ''));
+    adv.title = names.join(', ');
+    metaRow.appendChild(adv);
+   }
+   if (o.scaled) metaRow.appendChild(badge('Escalada', 'accent xs'));
+   if (o.ai && o.ai.niche) metaRow.appendChild(badge(nicheLabel(o.ai.niche), 'xs'));
+   if (o.checkout && typeof o.checkout.priceMin === 'number') { domTitle.title = o.domain + ' • a partir de ' + fmtMoney(o.checkout.priceMin); }
+   if (metaRow.childNodes.length) domainCell.appendChild(metaRow);
+   card.appendChild(domainCell);
+
+   const scoreCell = h('div', 'mn-score-cell');
+   const scoreWrap = h('div', 'mn-score-num-wrap');
+   scoreWrap.appendChild(h('span', 'mn-score-num tnum', fmtScore(o.score)));
+   scoreWrap.appendChild(h('span', 'mn-score-max', '/100'));
+   scoreCell.appendChild(scoreWrap);
+   const barBg = h('div', 'mn-score-bar-bg');
+   const barFill = h('div', 'mn-score-bar-fill');
+   const scoreVal = Math.max(0, Math.min(100, Number(o.score) || 0));
+   barFill.style.width = scoreVal + '%';
+   barBg.appendChild(barFill);
+   scoreCell.appendChild(barBg);
+   card.appendChild(scoreCell);
+
+   const growthCell = h('div', 'mn-growth-cell');
    const g = Number(o.growth7d) || 0;
+   const gCls = g > 0 ? 'mn-up' : g < 0 ? 'mn-down' : 'mn-neutral';
+   const gTxt = g > 0 ? '▲ +' + g : g < 0 ? '▼ ' + g : '● 0';
+   growthCell.appendChild(h('span', 'mn-growth-pill tnum ' + gCls, gTxt));
+   card.appendChild(growthCell);
+
+   const adsCell = h('div', 'mn-metric-cell mn-active-cell');
+   adsCell.appendChild(h('span', 'mn-metric-num tnum', fmtInt(o.activeAds)));
+   adsCell.appendChild(h('span', 'mn-metric-lbl', 'ativos'));
+   card.appendChild(adsCell);
+
+   const daysCell = h('div', 'mn-metric-cell mn-days-cell');
+   daysCell.appendChild(h('span', 'mn-metric-num tnum', fmtInt(o.maxDaysRunning) + 'd'));
+   daysCell.appendChild(h('span', 'mn-metric-lbl', 'no ar'));
+   card.appendChild(daysCell);
+
+   const checkoutCell = h('div', 'mn-checkout-cell');
+   if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') {
+    const b = badge(platLabel(o.checkout.platform), 'accent sm'); b.title = platLabel(o.checkout.platform); checkoutCell.appendChild(b);
+   } else {
+    checkoutCell.appendChild(h('span', 'mn-checkout-none', '—'));
+   }
+   card.appendChild(checkoutCell);
+
+   const body = h('div', 'mn-card-body');
+   const mTitleRow = h('div', 'mn-row');
+   mTitleRow.style.cssText = 'justify-content:space-between;align-items:flex-start;';
+   mTitleRow.appendChild(h('h3', 'mn-title', o.domain));
+   mTitleRow.appendChild(starBtn('offer', o.domain));
+   body.appendChild(mTitleRow);
+   if (names.length) body.appendChild(h('div', 'mn-sub', names.slice(0, 2).join(', ') + (names.length > 2 ? ' +' + (names.length - 2) : '')));
+   const mBadges = h('div', 'mn-badges');
+   if (o.scaled) mBadges.appendChild(badge('Escalada', 'accent'));
+   if (o.checkout && o.checkout.platform && o.checkout.platform !== 'unknown') mBadges.appendChild(badge(platLabel(o.checkout.platform), 'accent'));
+   if (o.checkout && typeof o.checkout.priceMin === 'number') mBadges.appendChild(badge('a partir de ' + fmtMoney(o.checkout.priceMin), 'amber'));
+   if (o.ai && o.ai.niche) mBadges.appendChild(badge(nicheLabel(o.ai.niche)));
+   if (mBadges.childNodes.length) body.appendChild(mBadges);
+
    const metrics = h('div', 'mn-metrics');
    metrics.appendChild(metric('Anúncios ativos', fmtInt(o.activeAds)));
    metrics.appendChild(metric('Criativos distintos', fmtInt(o.distinctCreatives)));
    metrics.appendChild(metric('Dias no ar', fmtInt(o.maxDaysRunning)));
    metrics.appendChild(metric('Crescimento (7 dias)', (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '● ') + g, g > 0 ? 'mn-up' : g < 0 ? 'mn-down' : ''));
    body.appendChild(metrics);
+
    const pts = o.sparkline || [];
    if (pts.length >= 2) {
     const cv = h('canvas', 'mn-spark');
@@ -5607,15 +6207,15 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     body.appendChild(h('div', 'mn-sub', 'Sem histórico de 14 dias ainda'));
    }
 
-   if (savedItem) {
-    body.appendChild(renderSavedItemSection(savedItem, card));
-   }
+   const mAct = h('div', 'mn-card-actions');
+   mAct.appendChild(btn('Anúncios desta oferta', 'sm', () => { st.f.domain = o.domain; setView('ads'); }));
+   body.appendChild(mAct);
 
-   const act = h('div', 'mn-actions');
-   act.appendChild(btn('Ver oferta', 'primary sm', () => openOffer(o.domain, o)));
-   act.appendChild(btn('Anúncios desta oferta', 'sm', () => { st.f.domain = o.domain; setView('ads'); }));
-   body.appendChild(act);
    card.appendChild(body);
+
+   const act = h('div', 'mn-actions mn-action-cell');
+   act.appendChild(btn('Ver oferta', 'primary sm mn-btn-view-offer', () => openOffer(o.domain, o)));
+   card.appendChild(act);
    return card;
   }
 
@@ -5781,7 +6381,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    return dl;
   }
 
-  // Modal da oferta (enxuto conforme AC-03: apenas botão fechar e seção Anúncios da oferta)
+  // Modal da oferta (cabeçalho com domínio, botão fechar e seção Anúncios da oferta)
   closers.set(ovOffer, () => { offerSeq++; });
   let offerSeq = 0;
   async function openOffer(domain, preset) {
@@ -5789,6 +6389,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const my = ++offerSeq;
    const content = h('div');
    content.style.cssText = 'display:flex;flex-direction:column;gap:16px;min-width:0';
+   const head = h('div', 'mn-mhead');
+   head.appendChild(h('h3', 'mn-modal-title', domain));
+   content.appendChild(head);
    const loading = h('div', 'mn-box');
    loading.appendChild(h('div', 'mn-skel', 'Carregando oferta…'));
    loading.firstChild.style.height = '120px';
@@ -5797,6 +6400,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
    const r = await call('/api/miner/offers/' + encodeURIComponent(domain));
    if (my !== offerSeq || !ovOffer.classList.contains('open')) return;
    content.replaceChildren();
+   const headLoaded = h('div', 'mn-mhead');
+   headLoaded.appendChild(h('h3', 'mn-modal-title', domain));
+   content.appendChild(headLoaded);
    if (!r.ok) {
     const e = h('div', 'mn-state err');
     e.appendChild(h('h3', '', 'Não foi possível abrir a oferta'));
@@ -6248,7 +6854,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
        btn('Nova pesquisa', 'primary', () => { if (inpQ) inpQ.focus(); })
       ]));
       $('mn-total').textContent = '';
-      await loadStats();
+      stats = { activeAds: 0, activeOffers: 0, scaledOffers: 0, newAds24h: 0, topNiches: [], collect: stats ? stats.collect : null };
+      setKpis(false);
+      await loadStats(true);
       loadFilterOptions(true);
       return;
      }
@@ -6347,12 +6955,34 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
   }
   function showSkeleton() {
    grid.replaceChildren();
+   const isOffers = st.view === 'offers';
+   const th = $('mn-table-head');
+   if (th) th.style.display = isOffers ? '' : 'none';
+   grid.classList.toggle('mn-view-offers', isOffers);
    for (let i = 0; i < 8; i++) {
-    const c = h('div', 'mn-card mn-skelcard');
-    const a = h('div', 'mn-media mn-skel');
-    const b = h('div', 'mn-card-body');
-    ['60%', '90%', '40%'].forEach((w) => { const l = h('div', 'mn-skel', 'x'); l.style.width = w; l.style.height = '14px'; b.appendChild(l); });
-    c.append(a, b);
+    const c = h('div', 'mn-card mn-skelcard' + (isOffers ? ' mn-offer-row' : ''));
+    if (isOffers) {
+     const r = h('div', 'mn-row-rank'); const rk = h('div', 'mn-skel', '00'); rk.style.height = '16px'; r.appendChild(rk);
+     const d = h('div', 'mn-domain-cell');
+     const l1 = h('div', 'mn-skel', 'xxxxx'); l1.style.width = '140px'; l1.style.height = '16px';
+     const l2 = h('div', 'mn-skel', 'xx'); l2.style.width = '90px'; l2.style.height = '12px';
+     d.append(l1, l2);
+     const sc = h('div', 'mn-score-cell'); const sck = h('div', 'mn-skel', '00'); sck.style.height = '16px'; sc.appendChild(sck);
+     const gr = h('div', 'mn-growth-cell'); const grk = h('div', 'mn-skel', '+0'); grk.style.height = '16px'; gr.appendChild(grk);
+     const m1 = h('div', 'mn-metric-cell'); const m1k = h('div', 'mn-skel', '0'); m1k.style.height = '16px'; m1.appendChild(m1k);
+     const m2 = h('div', 'mn-metric-cell'); const m2k = h('div', 'mn-skel', '0'); m2k.style.height = '16px'; m2.appendChild(m2k);
+     const ck = h('div', 'mn-checkout-cell'); const ckk = h('div', 'mn-skel', 'xxx'); ckk.style.height = '16px'; ck.appendChild(ckk);
+     const ac = h('div', 'mn-actions'); const ack = h('div', 'mn-skel', 'btn'); ack.style.height = '28px'; ack.style.width = '80px'; ac.appendChild(ack);
+     const a = h('div', 'mn-media mn-skel');
+     const b = h('div', 'mn-card-body');
+     ['60%', '90%', '40%'].forEach((w) => { const l = h('div', 'mn-skel', 'x'); l.style.width = w; l.style.height = '14px'; b.appendChild(l); });
+     c.append(a, r, d, sc, gr, m1, m2, ck, b, ac);
+    } else {
+     const a = h('div', 'mn-media mn-skel');
+     const b = h('div', 'mn-card-body');
+     ['60%', '90%', '40%'].forEach((w) => { const l = h('div', 'mn-skel', 'x'); l.style.width = w; l.style.height = '14px'; b.appendChild(l); });
+     c.append(a, b);
+    }
     c.setAttribute('aria-hidden', 'true');
     grid.appendChild(c);
    }
@@ -6521,6 +7151,9 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     }
     const items = st.view === 'ads' ? (r.data.ads || []) : (r.data.offers || []);
     if (reset) grid.replaceChildren();
+    grid.classList.toggle('mn-view-offers', st.view === 'offers');
+    const th = $('mn-table-head');
+    if (th) th.style.display = (st.view === 'offers' && items.length > 0) ? '' : 'none';
     setStatus(null);
     let added = 0;
     const batchRefs = [];
@@ -6528,7 +7161,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
      const key = st.view === 'ads' ? String(it.adArchiveId) : String(it.domain);
      if (seen.has(key)) return;
      seen.add(key);
-     grid.appendChild(st.view === 'ads' ? adCard(it) : offerCard(it));
+     grid.appendChild(st.view === 'ads' ? adCard(it) : offerCard(it, null, shown + added + 1));
      batchRefs.push(st.view === 'ads' ? ('ad:' + it.adArchiveId) : ('offer:' + it.domain));
      added++;
     });
@@ -6546,6 +7179,7 @@ Analise o nicho e retorne ESTRITAMENTE um JSON no seguinte padrão:
     }
     if (reset && items.length === 0) {
      if (my !== seq) return;
+     const thEl = $('mn-table-head'); if (thEl) thEl.style.display = 'none';
      if (st.mode === 'live' && liveSearchActive && currentLiveSearch && currentLiveSearch.q) {
       setStatus(stateBox('', 'Nenhum anúncio encontrado para ' + currentLiveSearch.q, 'Tente pesquisar com outro termo, país ou categoria.', [btn('Nova pesquisa', 'primary', () => { if (inpQ) inpQ.focus(); })]));
      } else {
