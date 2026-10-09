@@ -453,6 +453,13 @@ async function initDatabase() {
         day DATE PRIMARY KEY,
         ads INTEGER NOT NULL DEFAULT 0
       );
+      -- BE-014: dominios que o usuario oculta do Ranking e da pesquisa ao vivo
+      CREATE TABLE IF NOT EXISTS miner_hidden_domains (
+        user_id    VARCHAR(100) NOT NULL,
+        domain     VARCHAR(253) NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, domain)
+      );
       -- Backfill idempotente: linhas legadas herdam a versao de data.updatedAt (so inteiro valido, so onde ainda e 0, sem tombstones)
       UPDATE projects
          SET client_updated_at = CASE WHEN data->>'updatedAt' ~ '^[0-9]{1,15}$' THEN (data->>'updatedAt')::bigint ELSE 0 END
@@ -750,13 +757,16 @@ function extractLandingDomain(linkUrl) {
   return t ? t.domain : null;
 }
 
-// Destinos que nao sao pagina de venda (BE-011): rede social, conversa e marketplace. Lista fixa no codigo; subdominios contam.
+// Destinos que nao sao pagina de venda (BE-011, ampliado no BE-014): rede social, conversa, loja de apps e marketplace. Lista fixa no codigo; subdominios contam.
 const MINER_NON_OFFER_HOSTS = {
   social: ['instagram.com', 'facebook.com', 'fb.me', 'tiktok.com', 'youtube.com', 'youtu.be', 'linktr.ee'],
   messaging: ['m.me', 'wa.me', 'api.whatsapp.com', 'whatsapp.com', 't.me', 'telegram.me'],
-  marketplace: ['shopee.com.br', 's.shopee.com.br', 'mercadolivre.com.br', 'amazon.com.br', 'magazineluiza.com.br']
+  appstore: ['play.google.com', 'apps.apple.com', 'itunes.apple.com', 'apps.microsoft.com', 'appgallery.huawei.com'],
+  marketplace: ['shopee.com.br', 's.shopee.com.br', 'mercadolivre.com.br', 'amazon.com.br', 'magazineluiza.com.br',
+    'shein.com', 'aliexpress.com', 'temu.com', 'magalu.com', 'americanas.com.br', 'casasbahia.com.br', 'kabum.com.br', 'netshoes.com.br',
+    'carrefour.com.br', 'submarino.com.br', 'shopee.com', 'mercadolivre.com', 'amazon.com']
 };
-/** offer | social | messaging | marketplace para o dominio de destino do anuncio. */
+/** offer | social | messaging | appstore | marketplace para o dominio de destino do anuncio. */
 function minerDestinationType(domain) {
   const d = typeof domain === 'string' ? domain.toLowerCase().replace(/\.$/, '') : '';
   if (!d) return 'offer';
@@ -821,6 +831,31 @@ function minerPrimaryConds(p, o, params) {
     params.push(o.liveSearchId);
     conds.push(p + 'ad_archive_id IN (SELECT lsa.ad_archive_id FROM miner_live_search_ads lsa WHERE lsa.live_search_id = $' + params.length + '::bigint)'); // sub-select sem correlacao: o Postgres a usa como semi-join ou hash unico
   } else conds.push(p + 'in_ranking');
+  return conds;
+}
+
+// BE-014: plataformas de checkout de infoproduto (kind=info). yampi e shopify sao e-commerce e ficam fora.
+const MINER_INFO_PLATFORMS = ['kiwify', 'hotmart', 'eduzz', 'monetizze', 'perfectpay', 'greenn', 'ticto', 'braip', 'cakto', 'lastlink', 'pepper'];
+const MINER_KIND_VALUES = ['all', 'info'];
+const MINER_HIDDEN_MAX = 2000;
+/** Parametro kind: ausente/vazio -> all; invalido -> null. */
+function parseKind(raw) {
+  if (raw === null || raw === undefined || String(raw).trim() === '') return 'all';
+  const v = String(raw).trim().toLowerCase();
+  return MINER_KIND_VALUES.includes(v) ? v : null;
+}
+/** Dominios ocultos do usuario (lista curta; vai por parametro nas consultas). */
+async function minerHiddenList(userId) {
+  const r = await pool.query('SELECT domain FROM miner_hidden_domains WHERE user_id = $1 LIMIT ' + MINER_HIDDEN_MAX, [userId]);
+  const list = r.rows.map((x) => x.domain);
+  list.userId = userId; // a condicao usa anti-join por usuario (chave primaria), mais barata que comparar com a lista linha a linha
+  return list;
+}
+/** Condicoes por dominio: ocultos do usuario fora e, com kind=info, so dominios com checkout de infoproduto. col = coluna de dominio; push(v) devolve o placeholder. */
+function minerDomainConds(col, hidden, kind, push) {
+  const conds = [];
+  if (hidden && hidden.length) conds.push('NOT EXISTS (SELECT 1 FROM miner_hidden_domains hd WHERE hd.user_id = ' + push(hidden.userId) + ' AND hd.domain = ' + col + ')'); // anti-join; dominio nulo nao e ocultado
+  if (kind === 'info') conds.push(col + ' IN (SELECT kd.landing_domain FROM miner_domains kd WHERE kd.checkout_platform = ANY(' + push(MINER_INFO_PLATFORMS) + '::text[]))');
   return conds;
 }
 
@@ -1121,6 +1156,9 @@ async function handleMinerOffers(req, res, searchParams) {
   const liveO = await minerLiveParam(searchParams.get('liveSearch'), getRequestUserId(req));
   if (liveO.error) return sendJson(res, 400, { ok: false, error: 'invalid_live_search' });
   const liveSearchId = liveO.id;
+  const kind = parseKind(searchParams.get('kind')); // BE-014: all (padrao) | info
+  if (kind === null) return sendJson(res, 400, { ok: false, error: 'invalid_kind' });
+  const hiddenList = await minerHiddenList(getRequestUserId(req));
   if (minAds === null) return sendJson(res, 400, { ok: false, error: 'invalid_min_ads' });
   if (minDays === null) return sendJson(res, 400, { ok: false, error: 'invalid_min_days' });
   if (limit === null) return sendJson(res, 400, { ok: false, error: 'invalid_limit' });
@@ -1147,11 +1185,14 @@ async function handleMinerOffers(req, res, searchParams) {
   const where = [(narrowActive || destAll) ? minerScoreActiveWhereFor(activeWithin, destAll) : MINER_SCORE_ACTIVE_BASE];
   // BE-012: q conforme searchIn (keyword sem page_name; advertiser = page_name e page_id) e categoria do anuncio
   for (const cnd of minerPrimaryConds('', { q, searchIn, adCategory, liveSearchId }, params)) where.push(cnd);
+  const pushParam = (v) => { params.push(v); return '$' + params.length; };
+  if (adLevel) for (const cnd of minerDomainConds('landing_domain', null, kind, pushParam)) where.push(cnd); // BE-014: kind=info (semi-juncao) antes de agregar; os ocultos entram depois (hidConds)
   if (countryRaw) { params.push(countryRaw.toUpperCase()); where.push(`$${params.length} = ANY(countries)`); }
   if (pageIdRaw) { params.push(pageIdRaw); where.push(`page_id = $${params.length}`); }
   if (mediaType !== 'ALL') { params.push(mediaType); where.push(`display_format = $${params.length}`); }
   const baseWhere = where.join(' AND ');
 
+  const baseParamCount = params.length; // parametros do baseWhere (as amostras usam so eles)
   params.push(minAds, minDays);
   const pMinAds = `$${params.length - 1}`;
   const pMinDays = `$${params.length}`;
@@ -1162,6 +1203,10 @@ async function handleMinerOffers(req, res, searchParams) {
   if (priceMinRaw !== undefined) { params.push(priceMinRaw); postConds.push(`md.price_min >= $${params.length}`); }
   if (priceMaxRaw !== undefined) { params.push(priceMaxRaw); postConds.push(`md.price_min <= $${params.length}`); }
   if (minScoreRaw !== undefined) { params.push(minScoreRaw); postConds.push(`g.score >= $${params.length}`); }
+  // BE-014: ocultos sobre os dominios ja agregados (antijuncao em ~milhares de linhas, nao nos anuncios); na tabela materializada entra tambem o kind
+  const hidConds = minerDomainConds('g.landing_domain', hiddenList, adLevel ? 'all' : kind, pushParam);
+  const outerConds = postConds.concat(hidConds);
+  if (!adLevel) for (const cnd of hidConds) postConds.push(cnd);
 
   // A pontuacao vem da definicao unica (minerScoredCte). Sem filtros por anuncio le a tabela materializada; com eles calcula
   // so os dominios dos anuncios filtrados (o activeAds conta so os anuncios filtrados).
@@ -1171,7 +1216,8 @@ async function handleMinerOffers(req, res, searchParams) {
         LEFT JOIN miner_ai ma ON ma.landing_domain = g.landing_domain`;
 
   const orderBy = `${MINER_SORTS[sortKey]} DESC, landing_domain ASC`;
-  const postWhere = postConds.length ? 'WHERE ' + postConds.join(' AND ') : '';
+  const postWhere = outerConds.length ? 'WHERE ' + outerConds.join(' AND ') : '';
+  const hidWhere = hidConds.length ? 'WHERE ' + hidConds.join(' AND ') : '';
 
   let pageRows;
   let total;
@@ -1183,13 +1229,13 @@ async function handleMinerOffers(req, res, searchParams) {
     const sql = postConds.length
       ? `WITH ${cte}, offers AS (${offerCols}, COUNT(*) OVER () AS total_count FROM scored g ${offerJoins} ${postWhere})
          SELECT * FROM offers ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset}`
-      : `WITH ${cte}, top AS (SELECT g.*, COUNT(*) OVER () AS total_count FROM scored g ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset})
+      : `WITH ${cte}, top AS (SELECT g.*, COUNT(*) OVER () AS total_count FROM scored g ${hidWhere} ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset})
          ${offerCols} FROM top g ${offerJoins} ORDER BY ${orderBy}`;
     const r = await pool.query(sql, params);
     pageRows = r.rows;
     total = pageRows.length ? Number(pageRows[0].total_count) : 0;
     if (!pageRows.length && offset > 0) { // pagina alem do fim: o total precisa de uma consulta propria
-      const c = await pool.query(`WITH ${cte} SELECT COUNT(*)::int AS total FROM scored g ${postConds.length ? offerJoins + ' ' + postWhere : ''}`, params);
+      const c = await pool.query(`WITH ${cte} SELECT COUNT(*)::int AS total FROM scored g ${postConds.length ? offerJoins + ' ' + postWhere : hidWhere}`, params);
       total = c.rows[0].total;
     }
   } else {
@@ -1211,7 +1257,7 @@ async function handleMinerOffers(req, res, searchParams) {
   const sparkByDomain = new Map();
   const namesByDomain = new Map();
   if (domains.length) {
-    const sampleParams = params.slice(0, params.length - (2 + postConds.length));
+    const sampleParams = params.slice(0, baseParamCount);
     sampleParams.push(domains);
     const dIdx = `$${sampleParams.length}`;
     const [samples, spk, names] = await Promise.all([
@@ -1684,12 +1730,22 @@ function detectCheckout(finalUrl, hrefs, srcs) {
   return { platform: 'unknown', url: null };
 }
 
+// BE-014 (AC-04): as MINER_ENRICH_TOP_N primeiras ofertas por score sem checkout ou enriquecidas ha mais de MINER_ENRICH_STALE_DAYS dias vao na frente da fila.
+// O vencimento (next_enrich_at <= NOW) e o backoff continuam valendo: so entram na prioridade os dominios ja vencidos; muda so a ordem dos elegiveis.
+const MINER_ENRICH_TOP_N = 50;
+const MINER_ENRICH_STALE_DAYS = 7;
 const MINER_ENRICH_RESERVE_SQL = `
+  WITH prio AS (
+    SELECT s.landing_domain, ROW_NUMBER() OVER (ORDER BY s.score DESC, s.landing_domain) AS rn
+      FROM miner_domain_scores s JOIN miner_domains pd ON pd.landing_domain = s.landing_domain
+     WHERE pd.sample_url <> '' AND pd.next_enrich_at <= NOW() AND (pd.checkout_platform IS NULL OR pd.enriched_at IS NULL OR pd.enriched_at < NOW() - INTERVAL '${MINER_ENRICH_STALE_DAYS} days')
+     ORDER BY s.score DESC, s.landing_domain LIMIT ${MINER_ENRICH_TOP_N})
   UPDATE miner_domains SET next_enrich_at = NOW() + ($2::int * INTERVAL '1 minute')
    WHERE landing_domain IN (
      SELECT d.landing_domain FROM miner_domains d
       WHERE d.next_enrich_at <= NOW() AND d.sample_url <> ''
-      ORDER BY (SELECT COUNT(*) FROM miner_ads a WHERE a.landing_domain = d.landing_domain AND a.is_active) DESC, d.next_enrich_at ASC
+      ORDER BY COALESCE((SELECT p.rn FROM prio p WHERE p.landing_domain = d.landing_domain), 1000000) ASC,
+               (SELECT COUNT(*) FROM miner_ads a WHERE a.landing_domain = d.landing_domain AND a.is_active) DESC, d.next_enrich_at ASC
       LIMIT $1
       FOR UPDATE OF d SKIP LOCKED)
   RETURNING landing_domain, sample_url, attempts`;
@@ -2438,6 +2494,7 @@ async function minerScoreFeedRows(o) {
     if (o.nicheRaw) dw.push(`ma.niche = ${P(o.nicheRaw)}`);
     if (o.formatRaw) dw.push(`ma.format = ${P(o.formatRaw)}`);
   }
+  for (const cnd of minerDomainConds('ds.landing_domain', o.hidden, o.kind, P)) dw.push(cnd); // BE-014
   if (o.cursor) {
     const v = P(o.cursor.v); const i = P(o.cursor.i);
     dw.push(`ds.score <= ${v}::float8`, `(ds.score, x.ad_archive_id) < (${v}::float8, ${i}::text)`); // o <= usa o indice de score
@@ -2453,7 +2510,8 @@ async function minerScoreFeedRows(o) {
   if (picked.length < n && !o.platformRaw && !o.nicheRaw && !o.formatRaw) {
     const p2 = [];
     const P2 = (v) => { p2.push(v); return '$' + p2.length; };
-    const cw = o.cursor ? ` AND (-1::float8, a.ad_archive_id) < (${P2(o.cursor.v)}::float8, ${P2(o.cursor.i)}::text)` : '';
+    const cw = (o.cursor ? ` AND (-1::float8, a.ad_archive_id) < (${P2(o.cursor.v)}::float8, ${P2(o.cursor.i)}::text)` : '')
+      + minerDomainConds('a.landing_domain', o.hidden, o.kind, P2).map((c) => ' AND ' + c).join(''); // BE-014
     const rest = await pool.query(
       `SELECT a.ad_archive_id FROM miner_ads a
         WHERE (a.landing_domain IS NULL OR NOT EXISTS (SELECT 1 FROM miner_domain_scores s WHERE s.landing_domain = a.landing_domain))${active}${cw}
@@ -2526,6 +2584,9 @@ async function handleMinerAds(req, res, sp) {
   const liveP = await minerLiveParam(sp.get('liveSearch'), getRequestUserId(req));
   if (liveP.error) return bad('invalid_live_search');
   const liveSearchId = liveP.id;
+  const kind = parseKind(sp.get('kind')); // BE-014: all (padrao) | info
+  if (kind === null) return bad('invalid_kind');
+  const hiddenList = await minerHiddenList(getRequestUserId(req));
   if (countryRaw && !/^[A-Za-z]{2,3}$/.test(countryRaw)) return bad('invalid_country');
   let placements = null;
   if (placementsRaw !== null && placementsRaw !== '') {
@@ -2568,6 +2629,7 @@ async function handleMinerAds(req, res, sp) {
   if (activeOnly) where.push(activeSql);
   // BE-012: q conforme searchIn e categoria do anuncio (os valores entram por parametro, na ordem de params)
   for (const cnd of minerPrimaryConds('a.', { q, searchIn, adCategory, liveSearchId }, params)) where.push(cnd);
+  for (const cnd of minerDomainConds('a.landing_domain', hiddenList, kind, P)) where.push(cnd); // BE-014: ocultos e kind=info
   if (minCollation !== undefined) where.push(`a.collation_count >= ${P(minCollation)}::int`);
   if (maxCollation !== undefined) where.push(`a.collation_count <= ${P(maxCollation)}::int`);
   if (seenWithinRaw !== null) where.push(`a.first_seen_at >= NOW() - INTERVAL '${SEEN_WITHIN[seenWithinRaw]}'`);
@@ -2608,7 +2670,7 @@ async function handleMinerAds(req, res, sp) {
   const lightScore = sort === 'score' && !q && !countryRaw && !placements && mediaType === 'ALL' && minDays === undefined && maxDays === undefined
     && !startFrom && !startTo && !domainRaw && !pageIdRaw && !cta
     && minCollation === undefined && maxCollation === undefined && !languageRaw && seenWithinRaw === null && adCategory === 'all' && liveSearchId === undefined;
-  const r = lightScore ? await minerScoreFeedRows({ activeOnly, activeSql, platformRaw, nicheRaw, formatRaw, cursor, limit }) : await pool.query(sql, params);
+  const r = lightScore ? await minerScoreFeedRows({ activeOnly, activeSql, platformRaw, nicheRaw, formatRaw, cursor, limit, hidden: hiddenList, kind }) : await pool.query(sql, params);
   const hasMore = r.rows.length > limit;
   const rows = hasMore ? r.rows.slice(0, limit) : r.rows;
   const offers = await minerOffersByDomain(Array.from(new Set(rows.map((x) => x.landing_domain).filter(Boolean))));
@@ -2637,45 +2699,73 @@ async function handleMinerStats(req, res, sp) {
   if (adCatS === null) return sendJson(res, 400, { ok: false, error: 'invalid_ad_category' });
   const liveS = await minerLiveParam(sp ? sp.get('liveSearch') : null, getRequestUserId(req));
   if (liveS.error) return sendJson(res, 400, { ok: false, error: 'invalid_live_search' });
+  const kindS = parseKind(sp ? sp.get('kind') : null); // BE-014: all (padrao) | info
+  if (kindS === null) return sendJson(res, 400, { ok: false, error: 'invalid_kind' });
+  const hiddenS = await minerHiddenList(getRequestUserId(req));
   const filtered = !!((MINER_STATS_Q_FILTER && qS) || countryS || adCatS !== 'all' || liveS.id !== undefined);
   const fo = { q: MINER_STATS_Q_FILTER ? qS : '', searchIn: searchInS, country: countryS, adCategory: adCatS, liveSearchId: liveS.id };
   // Janela estreita (24h/48h) ou filtros primarios: ofertas e rankings saem do calculo dinamico sobre os anuncios filtrados (growth da tabela).
   const narrow = (activeWithin !== undefined && activeWithin !== '7d') || filtered;
-  const pDyn = [];
-  const cDyn = minerPrimaryConds('', fo, pDyn);
-  const dyn = narrow ? `WITH ${minerScoredCte(minerScoreActiveWhereFor(activeWithin) + (cDyn.length ? ' AND ' + cDyn.join(' AND ') : ''), { growthFromTable: true, skipPageNames: true })}` : '';
+  // BE-014: ocultos e kind=info valem em todas as contagens (KPIs batem com a lista); o k do mkDyn permite medir a cobertura sem o kind
+  const mkDyn = (k) => {
+    const p = [];
+    const push = (v) => { p.push(v); return '$' + p.length; };
+    const c = minerPrimaryConds('', fo, p);
+    for (const x of minerDomainConds('landing_domain', null, k, push)) c.push(x); // kind antes de agregar
+    const outer = minerDomainConds('s.landing_domain', hiddenS, null, push).map((x) => ' AND ' + x).join(''); // ocultos depois, sobre os dominios agregados (antijuncao barata)
+    return { p, outer, sql: `WITH ${minerScoredCte(minerScoreActiveWhereFor(activeWithin) + (c.length ? ' AND ' + c.join(' AND ') : ''), { growthFromTable: true, skipPageNames: true })}` };
+  };
+  const dynMain = narrow ? mkDyn(kindS) : { p: [], sql: '' };
+  const pDyn = dynMain.p;
+  const dyn = dynMain.sql;
+  const pS = []; // janela padrao: filtros por dominio direto na tabela materializada (alias s)
+  const pushS = (v) => { pS.push(v); return '$' + pS.length; };
+  const dS = narrow ? [] : minerDomainConds('s.landing_domain', hiddenS, kindS, pushS);
+  const dSWhere = narrow ? dynMain.outer : (dS.length ? ' AND ' + dS.join(' AND ') : '');
+  const pNiche = narrow ? pDyn : pS;
   const pCnt = [];
   const cCnt = minerPrimaryConds('a.', fo, pCnt);
+  for (const x of minerDomainConds('a.landing_domain', null, kindS, (v) => { pCnt.push(v); return '$' + pCnt.length; })) cCnt.push(x); // so o kind; os ocultos saem por subtracao (abaixo), sem juntar os 50 mil anuncios
   const cntExtra = cCnt.length ? ' AND ' + cCnt.join(' AND ') : '';
-  const [counts, scaled, niches, checkouts, last, coll, scoresState] = await Promise.all([
+  // cobertura do enriquecimento das ofertas ativas (sem o filtro kind, so com os ocultos); reaproveita a consulta principal quando kind=all
+  const covNarrow = narrow && kindS !== 'all' ? mkDyn('all') : dynMain; // (kind=all: a cobertura sai da consulta de escaladas)
+  const pCov = [];
+  const dCov = narrow ? [] : minerDomainConds('s.landing_domain', hiddenS, 'all', (v) => { pCov.push(v); return '$' + pCov.length; });
+  const covSql = `SELECT COUNT(*)::int AS total, COUNT(d.enriched_at)::int AS enriched FROM ${narrow ? 'scored' : 'miner_domain_scores'} s LEFT JOIN miner_domains d ON d.landing_domain = s.landing_domain WHERE TRUE${narrow ? covNarrow.outer : (dCov.length ? ' AND ' + dCov.join(' AND ') : '')}`;
+  const countsSql = `SELECT COUNT(*) FILTER (WHERE ${minerActiveAdSqlFor(activeWithin)})::int AS active_ads,
+              COUNT(*) FILTER (WHERE a.first_seen_at >= NOW() - INTERVAL '24 hours')::int AS new_ads_24h
+         FROM miner_ads a WHERE TRUE${cntExtra}`;
+  const [counts, scaled, niches, checkouts, last, coll, scoresState, coverage, hidCnt] = await Promise.all([
     // Anuncios: contagens diretas. Ofertas ativas = linhas da tabela de pontuacoes (dominios com anuncio ativo na janela).
-    pool.query(
-      `SELECT COUNT(*) FILTER (WHERE ${minerActiveAdSqlFor(activeWithin)}${cntExtra})::int AS active_ads,
-              COUNT(*) FILTER (WHERE a.first_seen_at >= NOW() - INTERVAL '24 hours'${cntExtra})::int AS new_ads_24h
-         FROM miner_ads a`, pCnt),
+    pool.query(countsSql, pCnt),
     narrow
-      ? pool.query(`${dyn} SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE ${minerScaledSql('$' + (pDyn.length + 1), '$' + (pDyn.length + 2), '$' + (pDyn.length + 3))})::int AS scaled FROM scored`, pDyn.concat([MINER_SCALED_SCORE, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH]))
-      : pool.query(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE ${minerScaledSql('$1', '$2', '$3')})::int AS scaled FROM miner_domain_scores`, [MINER_SCALED_SCORE, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH]),
+      ? pool.query(`${dyn} SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE ${minerScaledSql('$' + (pDyn.length + 1), '$' + (pDyn.length + 2), '$' + (pDyn.length + 3))})::int AS scaled, COUNT(d.enriched_at)::int AS enriched FROM scored s LEFT JOIN miner_domains d ON d.landing_domain = s.landing_domain WHERE TRUE${dSWhere}`, pDyn.concat([MINER_SCALED_SCORE, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH]))
+      : pool.query(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE ${minerScaledSql('$' + (pS.length + 1), '$' + (pS.length + 2), '$' + (pS.length + 3))})::int AS scaled, COUNT(d.enriched_at)::int AS enriched FROM miner_domain_scores s LEFT JOIN miner_domains d ON d.landing_domain = s.landing_domain WHERE TRUE${dSWhere}`, pS.concat([MINER_SCALED_SCORE, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH])),
     pool.query(
       `${dyn} SELECT m.niche AS id, COUNT(*)::int AS count FROM miner_ai m JOIN ${narrow ? 'scored' : 'miner_domain_scores'} s ON s.landing_domain = m.landing_domain
-        WHERE m.niche IS NOT NULL AND m.classified_at IS NOT NULL
-        GROUP BY m.niche ORDER BY count DESC, id ASC LIMIT ${MINER_TOP_N}`, pDyn),
+        WHERE m.niche IS NOT NULL AND m.classified_at IS NOT NULL${dSWhere}
+        GROUP BY m.niche ORDER BY count DESC, id ASC LIMIT ${MINER_TOP_N}`, pNiche),
     pool.query(
       `${dyn} SELECT d.checkout_platform AS id, COUNT(*)::int AS count FROM miner_domains d JOIN ${narrow ? 'scored' : 'miner_domain_scores'} s ON s.landing_domain = d.landing_domain
-        WHERE d.checkout_platform IS NOT NULL AND d.checkout_platform <> 'unknown' AND d.enriched_at IS NOT NULL
-        GROUP BY d.checkout_platform ORDER BY count DESC, id ASC LIMIT ${MINER_TOP_N}`, pDyn),
+        WHERE d.checkout_platform IS NOT NULL AND d.checkout_platform <> 'unknown' AND d.enriched_at IS NOT NULL${dSWhere}
+        GROUP BY d.checkout_platform ORDER BY count DESC, id ASC LIMIT ${MINER_TOP_N}`, pNiche),
     pool.query('SELECT MAX(created_at) AS at FROM miner_ingest_batches'),
     pool.query(
       `SELECT COALESCE((SELECT ads FROM miner_collect_usage WHERE day = ${MINER_SP_TODAY_SQL}), 0)::int AS today_ads,
               COALESCE((SELECT ads FROM miner_live_usage WHERE day = ${MINER_SP_TODAY_SQL}), 0)::int AS live_today_ads,
               (SELECT MAX(finished_at) FROM miner_collect_runs) AS last_run_at,
               (SELECT COUNT(*) FROM miner_searches WHERE active)::int AS active_searches`),
-    pool.query('SELECT value FROM app_state WHERE key = $1', [MINER_SCORE_STATE_KEY])
+    pool.query('SELECT value FROM app_state WHERE key = $1', [MINER_SCORE_STATE_KEY]),
+    kindS === 'all' ? Promise.resolve(null) : pool.query(`${narrow ? covNarrow.sql : ''} ${covSql}`, narrow ? covNarrow.p : pCov),
+    // anuncios dos dominios ocultos que a consulta acima contou (mesmo filtro + dominio in ocultos, pelo indice de landing_domain)
+    hiddenS.length ? pool.query(`${countsSql} AND a.landing_domain = ANY($${pCnt.length + 1}::text[])`, pCnt.concat([Array.from(hiddenS)])) : Promise.resolve(null)
   ]);
-  const c = counts.rows[0];
+  const c = Object.assign({}, counts.rows[0]);
+  if (hidCnt) { c.active_ads -= hidCnt.rows[0].active_ads; c.new_ads_24h -= hidCnt.rows[0].new_ads_24h; }
   return sendJson(res, 200, {
     ok: true, activeAds: c.active_ads, activeOffers: scaled.rows[0].total, scaledOffers: scaled.rows[0].scaled, newAds24h: c.new_ads_24h,
     topNiches: niches.rows, topCheckouts: checkouts.rows, lastIngestAt: last.rows[0].at,
+    checkoutCoverage: coverage ? { enriched: coverage.rows[0].enriched, total: coverage.rows[0].total } : { enriched: scaled.rows[0].enriched, total: scaled.rows[0].total }, // BE-014
     collect: {
       configured: minerCollectConfigured(), actor: MINER_APIFY_ACTOR, todayAds: coll.rows[0].today_ads, dailyLimit: MINER_COLLECT_DAILY_AD_LIMIT,
       liveTodayAds: coll.rows[0].live_today_ads, liveDailyLimit: MINER_LIVE_DAILY_AD_LIMIT,
@@ -2691,8 +2781,12 @@ async function handleMinerFilters(req, res, sp) {
   // BE-013: sem liveSearch so os anuncios do ranking; com liveSearch=current (opcional) so os da ultima pesquisa ao vivo
   const liveF = await minerLiveParam(sp ? sp.get('liveSearch') : null, getRequestUserId(req));
   if (liveF.error) return sendJson(res, 400, { ok: false, error: 'invalid_live_search' });
+  const kindF = parseKind(sp ? sp.get('kind') : null); // BE-014: all (padrao) | info
+  if (kindF === null) return sendJson(res, 400, { ok: false, error: 'invalid_kind' });
+  const hiddenF = await minerHiddenList(getRequestUserId(req));
   const fParams = [];
-  const scope = liveF.id === undefined ? 'a.in_ranking' : (fParams.push(liveF.id), `a.ad_archive_id IN (SELECT lsa.ad_archive_id FROM miner_live_search_ads lsa WHERE lsa.live_search_id = $1::bigint)`);
+  let scope = liveF.id === undefined ? 'a.in_ranking' : (fParams.push(liveF.id), `a.ad_archive_id IN (SELECT lsa.ad_archive_id FROM miner_live_search_ads lsa WHERE lsa.live_search_id = $1::bigint)`);
+  for (const cnd of minerDomainConds('a.landing_domain', hiddenF, kindF, (v) => { fParams.push(v); return '$' + fParams.length; })) scope += ' AND ' + cnd;
   const act = `FROM miner_ads a WHERE ${MINER_ACTIVE_AD_SQL} AND ${scope}`;
   const activeDomains = `SELECT DISTINCT a.landing_domain ${act} AND a.landing_domain IS NOT NULL`;
   const [countries, ctas, placements, checkouts, niches, languages, adCats] = await Promise.all([
@@ -3140,6 +3234,34 @@ async function handleMinerSearches(req, res) {
     if (err && err.code === '23505') return sendJson(res, 409, { ok: false, error: 'search_exists' });
     throw err;
   }
+}
+
+/** Dominios ocultos (BE-014): GET lista, POST {domain} oculta, DELETE /:domain reexibe. Por usuario. */
+async function handleMinerHiddenDomains(req, res, rest) {
+  const userId = getRequestUserId(req);
+  if (!userId) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+  if (rest === '') {
+    if (req.method === 'GET') {
+      const r = await pool.query('SELECT domain, created_at FROM miner_hidden_domains WHERE user_id = $1 ORDER BY created_at DESC, domain ASC LIMIT ' + MINER_HIDDEN_MAX, [userId]);
+      return sendJson(res, 200, { ok: true, domains: r.rows.map((x) => ({ domain: x.domain, createdAt: x.created_at })) });
+    }
+    if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+    const body = await readJsonBody(req);
+    const raw = body && typeof body === 'object' && !Array.isArray(body) && typeof body.domain === 'string' ? body.domain.trim().toLowerCase().replace(/\.$/, '') : '';
+    if (!HOSTNAME_REGEX.test(raw)) return sendJson(res, 400, { ok: false, error: 'invalid_domain' });
+    const n = await pool.query('SELECT COUNT(*)::int AS n FROM miner_hidden_domains WHERE user_id = $1', [userId]);
+    if (n.rows[0].n >= MINER_HIDDEN_MAX) return sendJson(res, 400, { ok: false, error: 'hidden_limit' });
+    const ins = await pool.query('INSERT INTO miner_hidden_domains (user_id, domain) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING domain', [userId, raw]);
+    if (!ins.rowCount) return sendJson(res, 409, { ok: false, error: 'hidden_exists' });
+    return sendJson(res, 201, { ok: true, domain: raw });
+  }
+  if (req.method !== 'DELETE') return sendJson(res, 405, { ok: false, error: 'method_not_allowed' });
+  let domain;
+  try { domain = decodeURIComponent(rest).toLowerCase().replace(/\.$/, ''); } catch (e) { domain = ''; }
+  if (!HOSTNAME_REGEX.test(domain)) return sendJson(res, 400, { ok: false, error: 'invalid_domain' });
+  const del = await pool.query('DELETE FROM miner_hidden_domains WHERE user_id = $1 AND domain = $2 RETURNING domain', [userId, domain]);
+  if (!del.rowCount) return sendJson(res, 404, { ok: false, error: 'not_found' });
+  return sendJson(res, 200, { ok: true });
 }
 
 async function handleMinerSearchItem(req, res, rest) {
@@ -4055,6 +4177,8 @@ async function handleApi(req, res, pathname, searchParams) {
     if (pathname === '/api/miner/ads') return await handleMinerAds(req, res, searchParams);
     if (pathname === '/api/miner/stats') return await handleMinerStats(req, res, searchParams);
     if (pathname === '/api/miner/filters') return await handleMinerFilters(req, res, searchParams);
+    if (pathname === '/api/miner/hidden-domains') return await handleMinerHiddenDomains(req, res, '');
+    if (pathname.startsWith('/api/miner/hidden-domains/')) return await handleMinerHiddenDomains(req, res, pathname.slice('/api/miner/hidden-domains/'.length));
     if (pathname === '/api/miner/searches') return await handleMinerSearches(req, res);
     if (pathname.startsWith('/api/miner/searches/')) return await handleMinerSearchItem(req, res, pathname.slice('/api/miner/searches/'.length));
     if (pathname === '/api/miner/collect/runs') return await handleMinerCollectRuns(req, res, searchParams);
@@ -4221,4 +4345,4 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err && err.message ? err.message : err));
 
 // Funcoes internas expostas para os testes unitarios (o servidor roda como script principal).
-module.exports = { __minerTest: { MINER_AI_RESERVE_SQL, MINER_AI_PRIO_PLACEHOLDER_SQL, MINER_AI_PLACEHOLDER_SQL, minerDetectLanguage, minerIsScaled, MINER_PLACEMENTS, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH, minerLiveLibraryUrl, minerNormalizeAdCategories, parseSearchIn, parseAdCategory, minerSearchCond, minerDestinationType, minerHasTemplate, minerValidStart, MINER_NON_OFFER_HOSTS, minerAiErrorCode, minerAiStatusOf, normalizeMinerAd, isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS, minerScoredCte, minerScoresUpsertSql, minerScoresPruneSql, MINER_SCORES_BATCH_SQL, MINER_SCORE_CHUNK, MINER_SCORE_LOCK_KEY, mapApifyAdItem, toEpochSeconds, plainText, minerAdLibraryUrl, MINER_APIFY_ADAPTERS, normalizeMinerAd, scrubKey, minerCursorEncode, minerCursorDecode, parseIsoDate, parseNonNegNumber, validateAiResult, buildAiInput, buildAiRequest, aiInputHash, canonicalJson, aiClean, MINER_AI_RESPONSE_SCHEMA, MINER_AI_NICHES, MINER_AI_FORMATS, MINER_AI_ANGLES, MINER_AI_LANGUAGES } };
+module.exports = { __minerTest: { MINER_ENRICH_RESERVE_SQL, MINER_INFO_PLATFORMS, parseKind, MINER_AI_RESERVE_SQL, MINER_AI_PRIO_PLACEHOLDER_SQL, MINER_AI_PLACEHOLDER_SQL, minerDetectLanguage, minerIsScaled, MINER_PLACEMENTS, MINER_SCALED_MIN_ADS, MINER_SCALED_MIN_GROWTH, minerLiveLibraryUrl, minerNormalizeAdCategories, parseSearchIn, parseAdCategory, minerSearchCond, minerDestinationType, minerHasTemplate, minerValidStart, MINER_NON_OFFER_HOSTS, minerAiErrorCode, minerAiStatusOf, normalizeMinerAd, isPublicIp, validateOutboundUrl, makeSafeLookup, minerFetchLanding, parseLanding, extractPrices, detectCheckout, checkoutPlatformOfUrl, MINER_CHECKOUT_PATTERNS, minerScoredCte, minerScoresUpsertSql, minerScoresPruneSql, MINER_SCORES_BATCH_SQL, MINER_SCORE_CHUNK, MINER_SCORE_LOCK_KEY, mapApifyAdItem, toEpochSeconds, plainText, minerAdLibraryUrl, MINER_APIFY_ADAPTERS, normalizeMinerAd, scrubKey, minerCursorEncode, minerCursorDecode, parseIsoDate, parseNonNegNumber, validateAiResult, buildAiInput, buildAiRequest, aiInputHash, canonicalJson, aiClean, MINER_AI_RESPONSE_SCHEMA, MINER_AI_NICHES, MINER_AI_FORMATS, MINER_AI_ANGLES, MINER_AI_LANGUAGES } };
