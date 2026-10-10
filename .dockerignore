@@ -1,16 +1,25 @@
+# Contexto de build da v2: so entram server/, web/ (fontes), package*.json e o Dockerfile.
+# Padroes sem barra valem so na raiz do contexto; **/ vale em qualquer pasta.
+**/node_modules
+**/dist
+web/dist
 .git
 .gitignore
-node_modules
-npm-debug.log
-*.log
-*.bak
-*.ps1
-*.cs
-*.py
-*.md
-app/
-deploy-cockpit/
-test_script.js
+**/*.log
+**/npm-debug.log*
+**/*.bak
+**/*.bak*
+**/.DS_Store
+**/Thumbs.db
+.env
+.env.*
+**/.env
+**/.vite
+
+# app v1 (ficam no repositorio, nao sao usados pela v2)
+server.js
+server.ps1
+index.html
 app.js
 style.css
 minerador_manager.js
@@ -20,6 +29,13 @@ oferta_order_bump_manager.js
 oferta_order_bump_section.html
 projects_dashboard_section.html
 projects_manager.js
+app/
+deploy-cockpit/
+test_script.js
 __audit_*
+*.ps1
+*.cs
+*.py
 
-*.bak*
+# documentacao solta da raiz
+*.md
