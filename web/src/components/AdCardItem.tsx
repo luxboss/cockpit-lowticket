@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AdCard } from '../api/types';
 import { IconVideo, IconLayers, IconClock, IconCart } from './Icons';
+import { formatCheckoutPlatform } from '../utils/formatters';
 import './AdCardItem.css';
 
 interface AdCardItemProps {
@@ -108,7 +109,7 @@ export const AdCardItem: React.FC<AdCardItemProps> = ({ ad }) => {
         {ad.checkout && (
           <div className="ad-checkout-row">
             <span className="badge badge-checkout">
-              <IconCart size={13} /> {ad.checkout.platform}
+              <IconCart size={13} /> {formatCheckoutPlatform(ad.checkout.platform)}
             </span>
             {formattedPrice && (
               <span className="badge badge-price">

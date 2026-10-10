@@ -7,6 +7,7 @@ import { TimelineView } from '../components/TimelineView';
 import { LandingCard } from '../components/LandingCard';
 import { AdCardItem } from '../components/AdCardItem';
 import { IconClipboard, IconCheck, IconExternal, IconSearch, IconInfo } from '../components/Icons';
+import { getCountryName } from '../utils/formatters';
 import './AdDetail.css';
 
 export const AdDetail: React.FC = () => {
@@ -229,7 +230,17 @@ export const AdDetail: React.FC = () => {
             <div className="metadata-grid">
               <div className="meta-item">
                 <span className="meta-label">Países:</span>
-                <span className="meta-val">{ad.countries?.join(', ') || 'BR'}</span>
+                <span className="meta-val">
+                  {ad.countries && ad.countries.length > 0 ? (
+                    ad.countries.map((c, i) => (
+                      <span key={c} title={getCountryName(c)}>
+                        {c}{i < ad.countries.length - 1 ? ', ' : ''}
+                      </span>
+                    ))
+                  ) : (
+                    <span title={getCountryName('BR')}>BR</span>
+                  )}
+                </span>
               </div>
               <div className="meta-item">
                 <span className="meta-label">Idioma:</span>

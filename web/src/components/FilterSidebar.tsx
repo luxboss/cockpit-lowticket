@@ -137,6 +137,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               <option value="IMAGE">Imagem</option>
               <option value="VIDEO">Vídeo</option>
               <option value="CAROUSEL">Carrossel</option>
+              <option value="DCO">Dinâmico</option>
+              <option value="OTHER">Outro</option>
             </select>
           </div>
 

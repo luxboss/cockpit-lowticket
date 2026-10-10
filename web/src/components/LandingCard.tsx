@@ -1,6 +1,7 @@
 import React from 'react';
 import type { LandingInfo } from '../api/types';
 import { IconTarget, IconCart, IconExternal } from './Icons';
+import { formatCheckoutPlatform } from '../utils/formatters';
 import './LandingCard.css';
 
 interface LandingCardProps {
@@ -37,7 +38,7 @@ export const LandingCard: React.FC<LandingCardProps> = ({ landing }) => {
         <div className="landing-badges">
           {landing.checkoutPlatform && (
             <span className="badge badge-checkout">
-              <IconCart size={13} /> {landing.checkoutPlatform}
+              <IconCart size={13} /> {formatCheckoutPlatform(landing.checkoutPlatform)}
             </span>
           )}
           {formattedPrice && (

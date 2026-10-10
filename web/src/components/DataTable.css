@@ -108,6 +108,17 @@
 .datatable-domain-name {
   font-weight: 600;
   color: var(--text);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datatable-adv-cell {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .datatable-scaled-badge {
@@ -216,6 +227,46 @@
 .datatable-page-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+@media (min-width: 769px) and (max-width: 1440px) {
+  .datatable-table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .datatable-th,
+  .datatable-td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .datatable-col-domain { width: 22%; }
+  .datatable-col-score { width: 8%; }
+  .datatable-col-active { width: 11%; }
+  .datatable-col-growth { width: 13%; }
+  .datatable-col-dup { width: 7%; }
+  .datatable-col-days { width: 7%; }
+  .datatable-col-checkout { width: 14%; }
+  .datatable-col-adv { width: 18%; }
+
+  .datatable-adv-cell {
+    max-width: 100%;
+  }
+
+  .datatable-domain-name {
+    max-width: 130px;
+  }
+
+  .datatable-domain-cell {
+    gap: 8px;
+  }
+
+  .datatable-thumb,
+  .datatable-thumb-placeholder {
+    width: 30px;
+    height: 30px;
+  }
 }
 
 @media (max-width: 768px) {

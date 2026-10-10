@@ -9,7 +9,7 @@ import { BarList } from '../components/BarList';
 import { DataTable } from '../components/DataTable';
 import { CollectModal } from '../components/CollectModal';
 import { IconRocket, IconPin, IconCheck } from '../components/Icons';
-import { formatNumber, pluralize } from '../utils/formatters';
+import { formatNumber, pluralize, formatDecimal } from '../utils/formatters';
 import './KeywordOverview.css';
 
 export const KeywordOverview: React.FC = () => {
@@ -232,7 +232,7 @@ export const KeywordOverview: React.FC = () => {
           />
           <KpiCard
             label="Média no Ar"
-            value={`${data.kpis.avgDaysRunning} ${pluralize(data.kpis.avgDaysRunning, 'dia', 'dias')}`}
+            value={`${formatDecimal(data.kpis.avgDaysRunning, 1)} ${pluralize(Math.round(data.kpis.avgDaysRunning), 'dia', 'dias')}`}
             tooltip="Média de dias em que os criativos permanecem veiculando ativamente."
           />
         </section>

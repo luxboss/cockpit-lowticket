@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OfferRow } from '../api/types';
 import { Sparkline } from './Sparkline';
-import { formatScore, formatNumber, formatCurrency, pluralize, formatGrowth } from '../utils/formatters';
+import { formatScore, formatNumber, formatCurrency, pluralize, formatGrowth, formatCheckoutPlatform } from '../utils/formatters';
 import './DataTable.css';
 
 export interface DataTableProps {
@@ -43,6 +43,20 @@ export const DataTable: React.FC<DataTableProps> = ({
     return <span className="datatable-sort-icon">{order === 'asc' ? '▲' : '▼'}</span>;
   };
 
+  const renderAdvertisersText = (offer: OfferRow) => {
+    if (!offer.advertisers || offer.advertisers.length === 0) {
+      return `${offer.advertisersCount} ${pluralize(offer.advertisersCount, 'anunciante', 'anunciantes')}`;
+    }
+    const names = offer.advertisers.map((a) => a.name).filter(Boolean);
+    const totalAdv = Math.max(offer.advertisersCount, names.length);
+    if (totalAdv <= 2) {
+      return names.join(', ');
+    }
+    const firstTwo = names.slice(0, 2).join(', ');
+    const extra = totalAdv - 2;
+    return `${firstTwo}, +${extra}`;
+  };
+
   const totalPages = total && pageSize ? Math.ceil(total / pageSize) : 1;
 
   return (
@@ -52,11 +66,11 @@ export const DataTable: React.FC<DataTableProps> = ({
         <table className="datatable-table">
           <thead>
             <tr>
-              <th className="datatable-th" style={{ width: '280px' }}>
+              <th className="datatable-th datatable-th-offer datatable-col-domain">
                 Oferta
               </th>
               <th
-                className="datatable-th sortable"
+                className="datatable-th sortable datatable-col-score"
                 onClick={() => handleHeaderClick('score')}
                 title="Ordenar por nota"
               >
@@ -66,7 +80,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 </div>
               </th>
               <th
-                className="datatable-th sortable"
+                className="datatable-th sortable datatable-col-active"
                 onClick={() => handleHeaderClick('active')}
                 title="Ordenar por anúncios ativos"
               >
@@ -76,7 +90,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 </div>
               </th>
               <th
-                className="datatable-th sortable"
+                className="datatable-th sortable datatable-col-growth"
                 onClick={() => handleHeaderClick('growth')}
                 title="Ordenar por crescimento em 7 dias"
               >
@@ -86,7 +100,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 </div>
               </th>
               <th
-                className="datatable-th sortable"
+                className="datatable-th sortable datatable-col-dup"
                 onClick={() => handleHeaderClick('duplicates')}
                 title="Ordenar por máximo de duplicados"
               >
@@ -96,7 +110,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 </div>
               </th>
               <th
-                className="datatable-th sortable"
+                className="datatable-th sortable datatable-col-days"
                 onClick={() => handleHeaderClick('days')}
                 title="Ordenar por dias no ar"
               >
@@ -106,7 +120,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 </div>
               </th>
               <th
-                className="datatable-th sortable"
+                className="datatable-th sortable datatable-col-checkout"
                 onClick={() => handleHeaderClick('price')}
                 title="Ordenar por preço"
               >
@@ -115,7 +129,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                   {renderSortArrow('price')}
                 </div>
               </th>
-              <th className="datatable-th">Anunciantes</th>
+              <th className="datatable-th datatable-col-adv">Anunciantes</th>
             </tr>
           </thead>
           <tbody>
@@ -144,7 +158,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                       </div>
                     )}
                     <div className="datatable-domain-info">
-                      <span className="datatable-domain-name">{offer.domain}</span>
+                      <span className="datatable-domain-name" title={offer.domain}>{offer.domain}</span>
                       {offer.scaled && (
                         <span className="datatable-scaled-badge">Escalada</span>
                       )}
@@ -163,7 +177,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                   </span>
                 </td>
                 <td className="datatable-td">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
                       style={{
                         fontWeight: 600,
@@ -172,7 +186,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                     >
                       {formatGrowth(offer.growth7d).text}
                     </span>
-                    <Sparkline data={offer.spark} width={64} height={20} />
+                    <Sparkline data={offer.spark} width={50} height={20} />
                   </div>
                 </td>
                 <td className="datatable-td">{offer.dupMax}x</td>
@@ -180,7 +194,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 <td className="datatable-td">
                   {offer.checkout ? (
                     <div>
-                      <span>{offer.checkout.platform}</span>
+                      <span>{formatCheckoutPlatform(offer.checkout.platform)}</span>
                       <div style={{ color: 'var(--text-2)', fontSize: 11 }}>
                         {formatCurrency(offer.checkout.priceMin)}
                       </div>
@@ -189,10 +203,11 @@ export const DataTable: React.FC<DataTableProps> = ({
                     <span style={{ color: 'var(--text-2)' }}>Sem checkout</span>
                   )}
                 </td>
-                <td className="datatable-td" style={{ color: 'var(--text-2)', fontSize: 12 }}>
-                  {offer.advertisers && offer.advertisers.length > 0
-                    ? offer.advertisers.map((a) => a.name).join(', ')
-                    : `${offer.advertisersCount} ${pluralize(offer.advertisersCount, 'anunciante', 'anunciantes')}`}
+                <td
+                  className="datatable-td datatable-adv-cell"
+                  title={offer.advertisers && offer.advertisers.length > 0 ? offer.advertisers.map((a) => a.name).join(', ') : ''}
+                >
+                  {renderAdvertisersText(offer)}
                 </td>
               </tr>
             ))}
@@ -253,7 +268,7 @@ export const DataTable: React.FC<DataTableProps> = ({
               <div className="datatable-card-item">
                 <span className="datatable-card-item-label">Checkout</span>
                 <span className="datatable-card-item-val">
-                  {offer.checkout ? `${offer.checkout.platform} (${formatCurrency(offer.checkout.priceMin)})` : 'Sem checkout'}
+                  {offer.checkout ? `${formatCheckoutPlatform(offer.checkout.platform)} (${formatCurrency(offer.checkout.priceMin)})` : 'Sem checkout'}
                 </span>
               </div>
             </div>
