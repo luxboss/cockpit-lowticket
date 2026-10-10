@@ -21,7 +21,7 @@ export const AdCardItem: React.FC<AdCardItemProps> = ({ ad }) => {
 
   return (
     <article
-      className="ad-card"
+      className="ad-card ad-card-item"
       id={`ad-card-${ad.id}`}
       onClick={handleCardClick}
       role="button"

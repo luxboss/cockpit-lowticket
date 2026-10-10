@@ -31,6 +31,7 @@ export interface AdCard {
   duplicates: number;
   checkout: CheckoutInfo | null;
   score: number;
+  offerScaled?: boolean;
 }
 
 export interface AdMedia {
@@ -157,3 +158,144 @@ export interface SystemStatus {
   };
   importedFromV1: boolean;
 }
+
+// SPEC-009: Tipos da Estrutura Semrush
+export interface OfferAdvertiser {
+  pageId: string;
+  name: string;
+  avatarUrl?: string;
+  activeAds?: number;
+}
+
+export interface OfferRow {
+  domain: string;
+  score: number;
+  scaled: boolean;
+  activeAds: number;
+  totalAds: number;
+  growth7d: number;
+  spark: number[];
+  dupMax: number;
+  daysMax: number;
+  checkout: CheckoutInfo | null;
+  thumbUrl?: string;
+  advertisersCount: number;
+  advertisers: OfferAdvertiser[];
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+export interface HomeKeyword {
+  id: number;
+  term: string;
+  country: string;
+  active: boolean;
+  adsTotal: number;
+  new24h: number;
+  spark: number[];
+}
+
+export interface HomeLastRun {
+  id: number;
+  kind: string;
+  term: string;
+  status: string;
+  inserted: number;
+  finishedAt: string;
+}
+
+export interface HomeData {
+  ok: boolean;
+  kpis: {
+    activeAds: number;
+    offers: number;
+    scaledOffers: number;
+    new24h: number;
+  };
+  rising: OfferRow[];
+  keywords: HomeKeyword[];
+  lastRuns: HomeLastRun[];
+}
+
+export interface TrendPoint {
+  day: string;
+  activeAds: number;
+}
+
+export interface KeywordOverviewData {
+  ok: boolean;
+  q: string;
+  kpis: {
+    activeAds: number;
+    offers: number;
+    scaledOffers: number;
+    advertisers: number;
+    avgDaysRunning: number;
+  };
+  trend: TrendPoint[];
+  countries: { id: string; count: number }[];
+  formats: { id: string; count: number }[];
+  checkouts: { id: string; count: number }[];
+  topOffers: OfferRow[];
+  monitored: { id: number } | null;
+}
+
+export interface OfferCluster {
+  term: string;
+  count: number;
+}
+
+export interface OffersSummary {
+  offers: number;
+  activeAds: number;
+  scaledOffers: number;
+  avgScore: number;
+}
+
+export interface OffersResponse {
+  ok: boolean;
+  total: number;
+  page: number;
+  pageSize: number;
+  summary: OffersSummary;
+  clusters?: OfferCluster[];
+  items: OfferRow[];
+}
+
+export interface OfferDetailData {
+  ok: boolean;
+  offer: OfferRow & {
+    landing: LandingInfo | null;
+    trend: TrendPoint[];
+    countries: { id: string; count: number }[];
+    formats: { id: string; count: number }[];
+    topAds: AdCard[];
+    advertisers: { pageId: string; name: string; avatarUrl?: string; activeAds: number }[];
+  };
+}
+
+export interface AdvertiserDetailData {
+  ok: boolean;
+  advertiser: {
+    pageId: string;
+    name: string;
+    avatarUrl?: string;
+    firstSeenAt: string;
+    lastSeenAt: string;
+    kpis: {
+      activeAds: number;
+      offers: number;
+      totalAds: number;
+    };
+    trend: TrendPoint[];
+    offers: OfferRow[];
+    topAds: AdCard[];
+  };
+}
+
+export interface CompareData {
+  ok: boolean;
+  items: (OfferRow & { trend: TrendPoint[] })[];
+  missing: string[];
+}
+

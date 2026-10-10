@@ -173,7 +173,7 @@ export const Keywords: React.FC = () => {
                 </thead>
                 <tbody>
                   {keywords.map((kw) => (
-                    <tr key={kw.id} id={`keyword-row-${kw.id}`}>
+                    <tr key={kw.id} id={`keyword-row-${kw.id}`} className="kw-table-row">
                       <td className="td-term">
                         <strong>{kw.term}</strong>
                       </td>
@@ -230,7 +230,7 @@ export const Keywords: React.FC = () => {
             {/* Visão Mobile (< 768px): Cartões Empilhados */}
             <div className="mobile-cards-wrap" id="keywords-mobile-cards">
               {keywords.map((kw) => (
-                <div className="keyword-mobile-card" key={kw.id} id={`keyword-card-${kw.id}`}>
+                <div className="keyword-mobile-card kw-card-item" key={kw.id} id={`keyword-card-${kw.id}`}>
                   <div className="km-header">
                     <span className="km-term">{kw.term}</span>
                     <span className="badge badge-country">{kw.country}</span>

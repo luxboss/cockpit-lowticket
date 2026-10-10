@@ -154,7 +154,7 @@ export const Search: React.FC = () => {
   };
 
   return (
-    <div className="search-page-container">
+    <div className="search-page-container" id="search-results">
       <SearchBar
         initialQuery={filters.q}
         initialField={filters.field}

@@ -1,8 +1,16 @@
 import http from 'http';
 import { URL } from 'url';
 import { MOCK_STATUS, MOCK_FILTERS, INITIAL_KEYWORDS, MOCK_ADS } from './data.js';
+import {
+  handleHome,
+  handleKeywordOverview,
+  handleOfferDetail,
+  handleAdvertiserDetail,
+  handleCompare,
+} from './semrush_routes.js';
+import { handleOffers, handleOffersCsv } from './semrush_routes_offers.js';
 
-const PORT = 3531;
+const PORT = 3551;
 let keywords = [...INITIAL_KEYWORDS];
 let runs = new Map();
 let nextRunId = 200;
@@ -50,6 +58,7 @@ function toAdCard(ad) {
     duplicates: ad.duplicates,
     checkout: ad.checkout,
     score: ad.score,
+    offerScaled: Boolean(ad.score >= 60 && ad.duplicates >= 3),
   };
 }
 
@@ -83,6 +92,37 @@ const server = http.createServer(async (req, res) => {
     if (token === 'app_token_missing') {
       return sendJson(res, 503, { ok: false, error: 'app_token_required' });
     }
+  }
+
+  // SPEC-009: Novas rotas Semrush
+  if (req.method === 'GET' && pathname === '/api/v2/home') {
+    return handleHome(req, res, keywords);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/v2/keyword-overview') {
+    return handleKeywordOverview(req, res, reqUrl, keywords);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/v2/offers') {
+    return handleOffers(req, res, reqUrl);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/v2/offers.csv') {
+    return handleOffersCsv(req, res, reqUrl);
+  }
+
+  const offerMatch = pathname.match(/^\/api\/v2\/offers\/([^/]+)$/);
+  if (req.method === 'GET' && offerMatch) {
+    return handleOfferDetail(req, res, offerMatch[1], reqUrl);
+  }
+
+  const advertiserMatch = pathname.match(/^\/api\/v2\/advertisers\/([^/]+)$/);
+  if (req.method === 'GET' && advertiserMatch) {
+    return handleAdvertiserDetail(req, res, advertiserMatch[1], reqUrl);
+  }
+
+  if (req.method === 'GET' && pathname === '/api/v2/compare') {
+    return handleCompare(req, res, reqUrl);
   }
 
   // Rotas da API v2

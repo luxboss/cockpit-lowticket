@@ -1,0 +1,71 @@
+.barlist-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.barlist-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.barlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.barlist-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.barlist-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.barlist-label {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barlist-value {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.barlist-track {
+  width: 100%;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.barlist-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.barlist-empty {
+  font-size: 13px;
+  color: var(--text-2);
+  padding: 12px 0;
+  text-align: center;
+}

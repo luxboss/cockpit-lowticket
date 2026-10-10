@@ -162,3 +162,64 @@ export const IconExternal: React.FC<IconProps> = ({ size = 16, className }) => (
     <line x1="10" y1="14" x2="21" y2="3" />
   </svg>
 );
+
+export const IconHome: React.FC<IconProps> = ({ size = 18, className }) => (
+  <svg {...baseProps(size, className)}>
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+export const IconGlobe: React.FC<IconProps> = ({ size = 18, className }) => (
+  <svg {...baseProps(size, className)}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+);
+
+export const IconCompare: React.FC<IconProps> = ({ size = 18, className }) => (
+  <svg {...baseProps(size, className)}>
+    <polyline points="16 3 21 3 21 8" />
+    <line x1="4" y1="20" x2="21" y2="3" />
+    <polyline points="21 16 21 21 16 21" />
+    <line x1="15" y1="15" x2="21" y2="21" />
+    <line x1="4" y1="4" x2="9" y2="9" />
+  </svg>
+);
+
+export const IconMenu: React.FC<IconProps> = ({ size = 18, className }) => (
+  <svg {...baseProps(size, className)}>
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+export const IconChevronDown: React.FC<IconProps> = ({ size = 16, className }) => (
+  <svg {...baseProps(size, className)}>
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+export const IconChevronRight: React.FC<IconProps> = ({ size = 16, className }) => (
+  <svg {...baseProps(size, className)}>
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+export const IconFilter: React.FC<IconProps> = ({ size = 18, className }) => (
+  <svg {...baseProps(size, className)}>
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+export const IconDownload: React.FC<IconProps> = ({ size = 18, className }) => (
+  <svg {...baseProps(size, className)}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+export const InfoIcon = IconInfo;
