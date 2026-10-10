@@ -8,6 +8,8 @@ const runner = require('./collect/runner');
 const enrich = require('./enrich/queue');
 const score = require('./score');
 const offerStats = require('./offers/stats');
+const checkoutStats = require('./offers/checkouts');
+const sitemap = require('./enrich/sitemap');
 
 const BEAT_MS = 15000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -15,7 +17,7 @@ const startedAt = new Date().toISOString();
 let pool = null;
 let fts = false;
 let stopping = false;
-const stats = { collectRuns: 0, enriched: 0, scored: 0, lastError: null };
+const stats = { sitemaps: 0, collectRuns: 0, enriched: 0, scored: 0, lastError: null };
 
 // Exclusao mutua: coleta (ingestao), nota e snapshot mexem na mesma tabela; um de cada vez evita impasse entre UPDATEs.
 let chain = Promise.resolve();
@@ -81,6 +83,7 @@ async function main() {
     const r = await exclusive(() => runner.tick(pool));
     if (r) { stats.collectRuns++; await beat(); }
   });
+  loop('sitemap', Math.max(cfg.ENRICH_INTERVAL_MS, 5000), async () => { stats.sitemaps += await sitemap.tick(pool); });
   loop('landing', cfg.ENRICH_INTERVAL_MS, async () => { stats.enriched += await enrich.tick(pool, fts); });
   if (cfg.SCORE_ENABLED) {
     sleep(Math.min(5000, cfg.SCORE_INTERVAL_MS)).then(() => loop('nota', cfg.SCORE_INTERVAL_MS, async () => {
@@ -90,6 +93,7 @@ async function main() {
   // ofertas materializadas (SPEC-009): primeiro calculo logo apos subir e depois a cada 30 min, apos a nota dos anuncios
   sleep(Math.min(8000, cfg.SCORE_INTERVAL_MS)).then(() => loop('ofertas', cfg.SCORE_INTERVAL_MS, async () => {
     stats.offers = await exclusive(() => offerStats.recompute(pool));
+    await checkoutStats.recompute(pool).catch((e) => console.error('[worker] checkouts:', e && e.message));
   }));
   loop('snapshot', 3600000, () => exclusive(dailySnapshot));
 }

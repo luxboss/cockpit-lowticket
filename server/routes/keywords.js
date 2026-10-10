@@ -27,7 +27,7 @@ const LIST_SQL = `
   SELECT k.*, COALESCE(c.total, 0) AS ads_total, COALESCE(c.n24, 0) AS new24h
     FROM spy.keywords k
     LEFT JOIN (SELECT s.source, COUNT(*) AS total, COUNT(*) FILTER (WHERE a.first_seen_at >= NOW() - INTERVAL '24 hours') AS n24
-                 FROM spy.ad_sources s JOIN spy.ads a ON a.ad_archive_id = s.ad_archive_id
+                 FROM spy.ad_sources s JOIN spy.ads a ON a.ad_archive_id = s.ad_archive_id AND a.dest_type <> 'catalog'
                 WHERE s.source LIKE 'keyword:%' GROUP BY s.source) c ON c.source = 'keyword:' || k.id
    WHERE ($1::bigint IS NULL OR k.id = $1)
    ORDER BY k.id`;

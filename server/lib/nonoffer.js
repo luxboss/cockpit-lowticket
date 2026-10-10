@@ -32,7 +32,7 @@ function destTypeSql(col) {
 }
 
 // Plataformas de checkout de infoproduto (infoOnly=1)
-const INFO_PLATFORMS = ['kiwify', 'hotmart', 'eduzz', 'monetizze', 'perfectpay', 'greenn', 'ticto', 'braip', 'cakto', 'lastlink', 'pepper'];
+const INFO_PLATFORMS = ['kiwify', 'hotmart', 'eduzz', 'monetizze', 'perfectpay', 'greenn', 'ticto', 'braip', 'cakto', 'lastlink', 'pepper', 'kirvano', 'payt'];
 
 // Mapa de padroes de checkout: id -> sufixos de host (host igual ou subdominio)
 const CHECKOUT_PATTERNS = {
@@ -47,8 +47,18 @@ const CHECKOUT_PATTERNS = {
   cakto: ['cakto.com.br', 'cakto.com'],
   lastlink: ['lastlink.com', 'lastlink.com.br'],
   pepper: ['pepper.com.br', 'pepper.com'],
+  kirvano: ['kirvano.com', 'kirvano.com.br'],
+  payt: ['payt.com.br', 'payt.com'],
   yampi: ['yampi.com.br', 'yampi.io'],
   shopify: ['myshopify.com', 'shopify.com', 'shop.app']
 };
+
+// SPY_CHECKOUT_HOSTS soma hosts a lista padrao: plataforma=host1,host2;outra=host3
+for (const part of (require('../config').CHECKOUT_EXTRA || '').split(';')) {
+  const [id, hosts] = part.split('=');
+  const key = (id || '').trim().toLowerCase();
+  if (!/^[a-z0-9_-]{1,30}$/.test(key) || !hosts) continue;
+  CHECKOUT_PATTERNS[key] = (CHECKOUT_PATTERNS[key] || []).concat(hosts.split(',').map((h) => h.trim().toLowerCase()).filter(Boolean));
+}
 
 module.exports = { NON_OFFER_HOSTS, destinationType, destTypeSql, INFO_PLATFORMS, CHECKOUT_PATTERNS };

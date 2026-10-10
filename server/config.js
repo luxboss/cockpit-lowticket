@@ -38,6 +38,28 @@ module.exports = {
   KEYWORD_RETRY_HOURS: int('SPY_KEYWORD_RETRY_HOURS', 1),
   KEYWORD_MAX: 50,
 
+  // BE-017: escala real
+  APIFY_PAGE_ACTOR: process.env.SPY_PAGE_ACTOR || 'apify~facebook-ads-scraper', // tem onlyTotal: devolve so o total de anuncios da pagina (1 item por pagina)
+  PAGE_COUNTRY: (process.env.SPY_PAGE_COUNTRY || 'BR').toUpperCase(), // pais do total real (ALL = todos)
+  PAGE_CHECKS_PER_DAY: int('SPY_PAGE_CHECKS_PER_DAY', 60), // anunciantes que o job diario escolhe
+  PAGE_DAILY_LIMIT: int('SPY_PAGE_DAILY_LIMIT', 60), // teto de consultas de total por dia (cota propria)
+  PAGE_RECHECK_DAYS: int('SPY_PAGE_RECHECK_DAYS', 3),
+  PAGE_GAP_MS: int('SPY_PAGE_GAP_MS', 30000), // intervalo minimo entre duas consultas de total
+  PAGE_SAMPLE_ADS: int('SPY_PAGE_SAMPLE_ADS', 30), // so se o actor nao tiver onlyTotal: baixa ate isso e usa a contagem como minimo
+  PAGE_COST_USD: num('SPY_PAGE_COST_USD', 0.0058), // custo por consulta quando o Apify nao informa (1 item pago, plano gratis)
+  DOMAIN_CHECKS_PER_DAY: int('SPY_DOMAIN_CHECKS_PER_DAY', 20), // buscas do dominio do produtor por dia
+  DOMAIN_RUN_ADS: int('SPY_DOMAIN_RUN_ADS', 30), // anuncios pedidos por busca de dominio
+  DOMAIN_MAX_SHARE: num('SPY_DOMAIN_MAX_SHARE', 0.5), // parte maxima da cota diaria das palavras que as buscas de dominio podem gastar
+  DOMAIN_RECHECK_DAYS: int('SPY_DOMAIN_RECHECK_DAYS', 7),
+  DOMAIN_GAP_MS: int('SPY_DOMAIN_GAP_MS', 30000),
+  LIBRARY_SORT: process.env.SPY_LIBRARY_SORT === undefined ? 'total_impressions' : process.env.SPY_LIBRARY_SORT, // '', total_impressions ou relevancy_monthly_grouped
+  SITEMAP_ENABLED: process.env.SPY_SITEMAP_ENABLED !== '0',
+  SITEMAP_BATCH: int('SPY_SITEMAP_BATCH', 3),
+  SITEMAP_MAX_URLS: int('SPY_SITEMAP_MAX_URLS', 500),
+  SITEMAP_MAX_BYTES: 3 * 1024 * 1024,
+  SITEMAP_EVERY_HOURS: int('SPY_SITEMAP_EVERY_HOURS', 24),
+  CHECKOUT_EXTRA: process.env.SPY_CHECKOUT_HOSTS || '', // plataforma=host1,host2;outra=host3 (soma a lista padrao)
+
   // Enriquecimento de landing
   ENRICH_ENABLED: process.env.SPY_ENRICH_ENABLED !== '0',
   ENRICH_INTERVAL_MS: int('SPY_ENRICH_INTERVAL_MS', 20000),
@@ -69,8 +91,23 @@ module.exports = {
   },
 
   // Ofertas (SPEC-009): oferta escalada = nota >= SCALED_SCORE e ativos >= SCALED_MIN_ACTIVE
-  SCALED_SCORE: num('SPY_SCALED_SCORE', 60),
-  SCALED_MIN_ACTIVE: int('SPY_SCALED_MIN_ACTIVE', 3),
+  SCALED_SCORE: num('SPY_SCALED_SCORE', 35), // BE-017: a nota nova tem outra escala (ver SCORE2); 60 quase nunca seria atingido
+  SCALED_MIN_PAGE_ADS: int('SPY_SCALED_MIN_PAGE_ADS', 20), // total real do principal anunciante
+  SCALED_MIN_ACTIVE_OFFER: int('SPY_SCALED_MIN_ACTIVE_OFFER', 15), // ou ativos da propria oferta
+  SCORE2_W: {
+    pages: num('SPY_SCORE2_W_PAGES', 0.40),
+    active: num('SPY_SCORE2_W_ACTIVE', 0.20),
+    dup: num('SPY_SCORE2_W_DUP', 0.15),
+    days: num('SPY_SCORE2_W_DAYS', 0.10),
+    growth: num('SPY_SCORE2_W_GROWTH', 0.15)
+  },
+  SCORE2_CAP: {
+    pages: num('SPY_SCORE2_CAP_PAGES', 100),
+    active: num('SPY_SCORE2_CAP_ACTIVE', 50),
+    dup: num('SPY_SCORE2_CAP_DUP', 50),
+    days: num('SPY_SCORE2_CAP_DAYS', 90),
+    growth: num('SPY_SCORE2_CAP_GROWTH', 20)
+  },
   OFFER_STATS_ENABLED: process.env.SPY_OFFER_STATS_ENABLED !== '0',
 
   // Midia

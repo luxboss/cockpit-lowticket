@@ -6,11 +6,14 @@ const { SP_TODAY_SQL } = require('../db');
 const apify = require('./apify');
 const { ingestAds } = require('./ingest');
 const score = require('../score');
+const pages = require('./pages');
+const checkoutStats = require('../offers/checkouts');
 const offerStats = require('../offers/stats');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const limitOf = (kind) => (kind === 'now' ? cfg.NOW_DAILY_LIMIT : cfg.COLLECT_DAILY_LIMIT);
-const usageKind = (kind) => (kind === 'now' ? 'now' : 'keyword');
+// cotas: now (anuncios), page (consultas de total) e keyword (anuncios; as buscas de dominio gastam desta, com teto SPY_DOMAIN_MAX_SHARE)
+const limitOf = (kind) => (kind === 'now' ? cfg.NOW_DAILY_LIMIT : kind === 'page' ? cfg.PAGE_DAILY_LIMIT : cfg.COLLECT_DAILY_LIMIT);
+const usageKind = (kind) => (kind === 'now' ? 'now' : kind === 'page' ? 'page' : 'keyword');
 
 /** Anuncios ja usados hoje na cota do tipo. */
 async function usedToday(pool, kind) {
@@ -53,6 +56,11 @@ async function finish(pool, run, status, c, error, cost) {
   if (run.keyword_id) {
     await pool.query('UPDATE spy.keywords SET last_run_at = NOW(), last_status = $2 WHERE id = $1', [run.keyword_id, status]);
   }
+  if (run.kind === 'domain' && status === 'succeeded') {
+    await pool.query('INSERT INTO spy.domain_checks (domain, found) VALUES ($1, $2) ON CONFLICT (domain) DO UPDATE SET checked_at = NOW(), found = EXCLUDED.found', [run.term, c.received]);
+  } else if (run.kind === 'domain') {
+    await pool.query('INSERT INTO spy.domain_checks (domain, checked_at, found) VALUES ($1, NOW() - ($2::int * INTERVAL \'1 day\') + INTERVAL \'6 hours\', 0) ON CONFLICT (domain) DO NOTHING', [run.term, cfg.DOMAIN_RECHECK_DAYS]);
+  }
 }
 
 /** Executa o run no Apify: POST runs -> polling -> dataset paginado -> ingestao em lotes. Nunca lanca. */
@@ -61,11 +69,11 @@ async function executeRun(pool, run) {
   const touched = { domains: new Set(), ids: [] };
   let apifyRunId = null;
   let terminal = false;
-  const source = (run.kind === 'now' ? 'now:' : 'keyword:') + (run.kind === 'now' ? run.id : run.keyword_id);
+  const source = run.kind === 'now' ? 'now:' + run.id : run.kind === 'domain' ? ('domain:' + run.term).slice(0, 60) : 'keyword:' + run.keyword_id;
   try {
     const ad = apify.adapter();
     if (!apify.configured() || !ad) throw apify.collectError('apify_not_configured');
-    const { reserved, day } = await reserve(pool, run.kind, run.kind === 'now' ? cfg.NOW_RUN_ADS : cfg.COLLECT_RUN_ADS);
+    const { reserved, day } = await reserve(pool, run.kind, run.kind === 'now' ? cfg.NOW_RUN_ADS : run.kind === 'domain' ? cfg.DOMAIN_RUN_ADS : cfg.COLLECT_RUN_ADS);
     if (reserved <= 0) throw apify.collectError('daily_limit');
     run.reserved = reserved; run.reserved_day = day;
     await pool.query('UPDATE spy.collect_runs SET reserved = $2, reserved_day = $3::date WHERE id = $1', [run.id, reserved, day]);
@@ -119,6 +127,29 @@ async function executeRun(pool, run) {
   }
 }
 
+/** Consulta de total real de uma pagina (kind page). Nunca lanca. */
+async function executePageRun(pool, run) {
+  let reserved = { reserved: 0, day: null };
+  try {
+    reserved = await reserve(pool, 'page', 1);
+    if (reserved.reserved <= 0) throw apify.collectError('daily_limit');
+    await pool.query('UPDATE spy.collect_runs SET reserved = $2, reserved_day = $3::date WHERE id = $1', [run.id, reserved.reserved, reserved.day]);
+    const res = await pages.checkPage(pool, run);
+    if (res.status !== 'succeeded') throw Object.assign(new Error(res.error), { collectCode: res.error });
+    const domains = await pages.savePageTotal(pool, run.term, res);
+    await pool.query("UPDATE spy.collect_runs SET status = 'succeeded', received = $2, inserted = 0, cost_usd = $3, finished_at = NOW(), error = NULL WHERE id = $1", [run.id, res.total, res.cost]);
+    await offerStats.recompute(pool, { domains }).catch((e) => console.error('[pagina] ofertas:', e && e.message));
+    await checkoutStats.recompute(pool, { domains }).catch((e) => console.error('[pagina] checkouts:', e && e.message));
+    return { status: 'succeeded', total: res.total };
+  } catch (err) {
+    const text = apify.errText(err);
+    console.error('[pagina] run', run.id, 'falhou:', text);
+    await pool.query("UPDATE spy.collect_runs SET status = 'failed', received = 0, finished_at = NOW(), error = $2 WHERE id = $1", [run.id, text]).catch(() => {});
+    if (reserved.reserved > 0) await refund(pool, 'page', reserved.day, reserved.reserved).catch(() => {});
+    return { status: 'failed', error: text };
+  }
+}
+
 /** Marca como falhos os runs presos em running (worker caiu no meio). Sem idade = todos (usado na subida do worker). */
 async function sweepStale(pool, olderThanMinutes) {
   const r = await pool.query(
@@ -140,6 +171,42 @@ const DUE_KEYWORD_SQL = `
    ORDER BY k.last_run_at ASC NULLS FIRST, k.id ASC LIMIT 1`;
 
 let lastKeywordAt = 0;
+let lastPageAt = 0; let pageIdleUntil = 0;
+let lastDomainAt = 0; let domainIdleUntil = 0;
+
+/** Ads que as buscas de dominio ja gastaram hoje (soma dos received dos runs de hoje). */
+async function domainAdsToday(pool) {
+  const r = await pool.query(`SELECT COALESCE(SUM(received), 0)::int AS n FROM spy.collect_runs WHERE kind = 'domain' AND (started_at AT TIME ZONE 'America/Sao_Paulo')::date = ${SP_TODAY_SQL}`);
+  return r.rows[0].n;
+}
+
+/** Consulta de total real do proximo anunciante candidato (prioridade logo depois do Buscar agora). */
+async function tryPage(pool) {
+  if (!apify.pageConfigured()) return null;
+  const now = Date.now();
+  if (now < pageIdleUntil || now - lastPageAt < cfg.PAGE_GAP_MS) return null;
+  const cap = Math.min(cfg.PAGE_CHECKS_PER_DAY, cfg.PAGE_DAILY_LIMIT);
+  if (cap <= 0 || (await pages.runsToday(pool, 'page')) >= cap) { pageIdleUntil = now + 300000; return null; }
+  const pageId = await pages.pickPage(pool);
+  if (!pageId) { pageIdleUntil = now + 120000; return null; }
+  lastPageAt = now;
+  const ins = await pool.query("INSERT INTO spy.collect_runs (kind, term, country, status) VALUES ('page', $1, $2, 'running') RETURNING *", [pageId, cfg.PAGE_COUNTRY]);
+  return await executePageRun(pool, ins.rows[0]);
+}
+
+/** Busca o dominio do produtor na Biblioteca e ingere os anuncios (fonte domain:dominio), dentro da cota das palavras. */
+async function tryDomain(pool) {
+  if (!apify.configured()) return null;
+  const now = Date.now();
+  if (now < domainIdleUntil || now - lastDomainAt < cfg.DOMAIN_GAP_MS) return null;
+  if (cfg.DOMAIN_CHECKS_PER_DAY <= 0 || (await pages.runsToday(pool, 'domain')) >= cfg.DOMAIN_CHECKS_PER_DAY) { domainIdleUntil = now + 300000; return null; }
+  if ((await domainAdsToday(pool)) + cfg.DOMAIN_RUN_ADS > Math.floor(cfg.DOMAIN_MAX_SHARE * cfg.COLLECT_DAILY_LIMIT) || (await remaining(pool, 'keyword')) < cfg.COLLECT_MIN_RESERVE) { domainIdleUntil = now + 300000; return null; }
+  const domain = await pages.pickDomain(pool);
+  if (!domain) { domainIdleUntil = now + 120000; return null; }
+  lastDomainAt = now;
+  const ins = await pool.query("INSERT INTO spy.collect_runs (kind, term, country, status) VALUES ('domain', $1, $2, 'running') RETURNING *", [domain.slice(0, 80), cfg.PAGE_COUNTRY]);
+  return await executeRun(pool, ins.rows[0]);
+}
 /** Um passo do agendador. Primeiro a fila de Buscar agora; senao 1 palavra vencida, no maximo 1 por COLLECT_INTERVAL_MS. Nunca lanca. */
 async function tick(pool) {
   try {
@@ -147,6 +214,11 @@ async function tick(pool) {
     await sweepStale(pool, Math.ceil(cfg.COLLECT_RUN_TIMEOUT_MS / 60000) + 10);
     const q = await pool.query(CLAIM_NOW_SQL);
     if (q.rows.length) return await executeRun(pool, q.rows[0]);
+    // prioridade (AC-06): Buscar agora > total do anunciante > dominio do produtor > palavras
+    const pg = await tryPage(pool);
+    if (pg) return pg;
+    const dm = await tryDomain(pool);
+    if (dm) return dm;
     if (Date.now() - lastKeywordAt < cfg.COLLECT_INTERVAL_MS) return null;
     if ((await remaining(pool, 'keyword')) < cfg.COLLECT_MIN_RESERVE) return null; // cota do dia esgotada
     const k = await pool.query(DUE_KEYWORD_SQL, [cfg.KEYWORD_EVERY_HOURS, cfg.KEYWORD_RETRY_HOURS]);
@@ -164,4 +236,4 @@ async function tick(pool) {
   }
 }
 
-module.exports = { tick, executeRun, sweepStale, usedToday, remaining };
+module.exports = { tick, executeRun, executePageRun, sweepStale, usedToday, remaining, domainAdsToday };

@@ -5,9 +5,10 @@ const http = require('http');
 const https = require('https');
 const zlib = require('zlib');
 const cfg = require('../config');
-const { validateOutboundUrl, makeSafeLookup, netError } = require('../lib/net-safe');
+const { validateOutboundUrl, makeSafeLookup, netError, TEST_RESOLVER } = require('../lib/net-safe');
 const { decodeHtmlEntities } = require('../lib/text');
 const { CHECKOUT_PATTERNS } = require('../lib/nonoffer');
+const { extractCheckouts } = require('./checkouts');
 
 const PRICE_MIN = 1;
 const PRICE_MAX = 10000;
@@ -25,7 +26,12 @@ async function hostThrottle(key) {
 }
 
 /** Um GET (sem seguir redirecionamento). Resolve {redirect,status} ou {status,body}; rejeita com errCode. */
-function requestOnce(u, timeoutMs, resolver) {
+const HTML_TYPES = /^(text\/html|application\/xhtml\+xml)\b/i;
+/** opts: types (regex do content-type aceito; padrao html), maxBytes, headersOnly (devolve so o status/redirect, sem baixar o corpo). */
+function requestOnce(u, timeoutMs, resolver, opts) {
+  opts = opts || {};
+  const types = opts.types || HTML_TYPES;
+  const maxBytes = opts.maxBytes || cfg.ENRICH_MAX_BYTES;
   return new Promise((resolve, reject) => {
     let done = false;
     let req = null;
@@ -46,7 +52,7 @@ function requestOnce(u, timeoutMs, resolver) {
         path: u.pathname + u.search,
         method: 'GET',
         agent: false,
-        lookup: makeSafeLookup(resolver),
+        lookup: makeSafeLookup(resolver || TEST_RESOLVER),
         headers: {
           'User-Agent': cfg.USER_AGENT,
           'Accept': 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.1',
@@ -61,7 +67,8 @@ function requestOnce(u, timeoutMs, resolver) {
           return loc ? finish(resolve, { redirect: String(loc), status }) : finish(reject, netError('bad_redirect', { httpStatus: status }));
         }
         if (status >= 400 || status < 200) { res.destroy(); return finish(reject, netError('http_' + status, { httpStatus: status })); }
-        if (!/^(text\/html|application\/xhtml\+xml)\b/i.test(String(res.headers['content-type'] || ''))) {
+        if (opts.headersOnly) { res.destroy(); return finish(resolve, { status, body: Buffer.alloc(0) }); }
+        if (!types.test(String(res.headers['content-type'] || ''))) {
           res.destroy();
           return finish(reject, netError('not_html', { httpStatus: status }));
         }
@@ -75,10 +82,10 @@ function requestOnce(u, timeoutMs, resolver) {
         let size = 0;
         let raw = 0;
         const abort = (code) => { res.destroy(); if (stream !== res) stream.destroy(); finish(reject, netError(code, { httpStatus: status })); };
-        res.on('data', (c) => { raw += c.length; if (raw > cfg.ENRICH_MAX_BYTES) abort('too_large'); });
+        res.on('data', (c) => { raw += c.length; if (raw > maxBytes) abort('too_large'); });
         stream.on('data', (c) => {
           size += c.length;
-          if (size > cfg.ENRICH_MAX_BYTES) return abort('too_large');
+          if (size > maxBytes) return abort('too_large');
           chunks.push(c);
         });
         stream.on('end', () => finish(resolve, { status, body: Buffer.concat(chunks) }));
@@ -91,6 +98,19 @@ function requestOnce(u, timeoutMs, resolver) {
     req.on('error', (e) => finish(reject, e && e.code === 'SSRF_BLOCKED' ? netError('ssrf_blocked') : netError('network_error')));
     req.end();
   });
+}
+
+/** Um nivel de redirecionamento de um link (encurtador de checkout): devolve a URL absoluta de destino ou null. Lookup seguro e throttle por host. */
+async function resolveRedirect(urlStr, opts) {
+  const v = validateOutboundUrl(urlStr);
+  if (!v.ok) return null;
+  await hostThrottle(v.host + ':' + (v.url.port || (v.url.protocol === 'https:' ? '443' : '80')));
+  try {
+    const r = await requestOnce(v.url, Math.min(cfg.ENRICH_TIMEOUT_MS, 6000), opts && opts.resolver, { headersOnly: true });
+    if (r.redirect === undefined) return null;
+    const next = new URL(r.redirect, v.url);
+    return validateOutboundUrl(next.href).ok ? next.href : null;
+  } catch (e) { return null; }
 }
 
 /** GET da landing seguindo ate ENRICH_MAX_REDIRECTS redirecionamentos, revalidando CADA salto (esquema, porta, IP). */
@@ -111,7 +131,7 @@ async function fetchLanding(startUrl, opts) {
     else deadline += waited;
     const remaining = deadline - Date.now();
     if (remaining <= 0) throw netError('timeout');
-    const r = await requestOnce(v.url, remaining, resolver);
+    const r = await requestOnce(v.url, remaining, resolver, opts);
     if (r.redirect !== undefined) {
       if (++redirects > cfg.ENRICH_MAX_REDIRECTS) throw netError('too_many_redirects');
       try { current = new URL(r.redirect, v.url).href; } catch (e) { throw netError('invalid_url'); }
@@ -249,7 +269,9 @@ async function analyzeLanding(startUrl, opts) {
   const parsed = parseLanding(page.html, page.finalUrl);
   const checkout = detectCheckout(page.finalUrl, parsed.hrefs, parsed.srcs);
   const prices = extractPrices(parsed.text);
+  const checkouts = await extractCheckouts(page.finalUrl, parsed.hrefs, parsed.srcs, opts);
   return {
+    checkouts,
     finalUrl: page.finalUrl.slice(0, 2000),
     title: parsed.pageTitle,
     text: parsed.text,
@@ -258,4 +280,4 @@ async function analyzeLanding(startUrl, opts) {
   };
 }
 
-module.exports = { analyzeLanding, fetchLanding, parseLanding, extractPrices, detectCheckout };
+module.exports = { analyzeLanding, fetchLanding, resolveRedirect, parseLanding, extractPrices, detectCheckout };

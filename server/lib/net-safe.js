@@ -93,7 +93,8 @@ function validateOutboundUrl(str) {
   if (u.username || u.password) return { ok: false, error: 'ssrf_blocked' };
   const host = u.hostname.replace(/^\[|\]$/g, '').toLowerCase();
   if (!host) return { ok: false, error: 'invalid_url' };
-  const portOk = u.port === '' || u.port === '80' || u.port === '443' || (cfg.TEST_LOOPBACK && (/^127\.\d+\.\d+\.\d+$/.test(host) || host === '::1'));
+  const mappedHost = cfg.TEST_LOOPBACK && !!cfg.MEDIA_TEST_HOSTMAP && Object.prototype.hasOwnProperty.call(cfg.MEDIA_TEST_HOSTMAP, host); // so teste: host simulado para o mock local
+  const portOk = mappedHost || u.port === '' || u.port === '80' || u.port === '443' || (cfg.TEST_LOOPBACK && (/^127\.\d+\.\d+\.\d+$/.test(host) || host === '::1'));
   if (!portOk) return { ok: false, error: 'ssrf_blocked' };
   if (net.isIP(host) && !isPublicIp(host)) return { ok: false, error: 'ssrf_blocked' };
   return { ok: true, url: u, host };
@@ -116,8 +117,17 @@ function makeSafeLookup(resolver) {
   };
 }
 
+/** Resolvedor de DNS simulado (so NODE_ENV=test com SPY_MEDIA_TEST_HOSTMAP); em producao e undefined e vale o DNS real. */
+const TEST_RESOLVER = cfg.TEST_LOOPBACK && cfg.MEDIA_TEST_HOSTMAP
+  ? (host, opts, cb) => {
+    const ip = Object.prototype.hasOwnProperty.call(cfg.MEDIA_TEST_HOSTMAP, host) ? String(cfg.MEDIA_TEST_HOSTMAP[host]) : null;
+    if (ip) return cb(null, [{ address: ip, family: net.isIPv6(ip) ? 6 : 4 }]);
+    return dns.lookup(host, opts, cb);
+  }
+  : undefined;
+
 function netError(code, extra) {
   return Object.assign(new Error(code), { errCode: code }, extra || {});
 }
 
-module.exports = { isPublicIp, validateOutboundUrl, makeSafeLookup, netError };
+module.exports = { TEST_RESOLVER, isPublicIp, validateOutboundUrl, makeSafeLookup, netError };
