@@ -6,6 +6,7 @@ const { SP_TODAY_SQL } = require('../db');
 const apify = require('./apify');
 const { ingestAds } = require('./ingest');
 const score = require('../score');
+const offerStats = require('../offers/stats');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const limitOf = (kind) => (kind === 'now' ? cfg.NOW_DAILY_LIMIT : cfg.COLLECT_DAILY_LIMIT);
@@ -107,6 +108,7 @@ async function executeRun(pool, run) {
     }
     await finish(pool, run, 'succeeded', counters, null, cost);
     await score.recompute(pool, { domains: Array.from(touched.domains), ids: touched.ids }).catch((e) => console.error('[coleta] nota:', e && e.message));
+    await offerStats.recompute(pool, { domains: Array.from(touched.domains) }).catch((e) => console.error('[coleta] ofertas:', e && e.message));
     return { status: 'succeeded', counters };
   } catch (err) {
     if (apifyRunId && !terminal) { try { await apify.apifyCall('POST', `/v2/actor-runs/${encodeURIComponent(apifyRunId)}/abort`, {}); } catch (e) { /* melhor esforco */ } }

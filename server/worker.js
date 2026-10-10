@@ -7,6 +7,7 @@ const { detectFts } = require('./migrate');
 const runner = require('./collect/runner');
 const enrich = require('./enrich/queue');
 const score = require('./score');
+const offerStats = require('./offers/stats');
 
 const BEAT_MS = 15000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -86,6 +87,10 @@ async function main() {
       stats.scored = await exclusive(() => score.recompute(pool));
     }));
   }
+  // ofertas materializadas (SPEC-009): primeiro calculo logo apos subir e depois a cada 30 min, apos a nota dos anuncios
+  sleep(Math.min(8000, cfg.SCORE_INTERVAL_MS)).then(() => loop('ofertas', cfg.SCORE_INTERVAL_MS, async () => {
+    stats.offers = await exclusive(() => offerStats.recompute(pool));
+  }));
   loop('snapshot', 3600000, () => exclusive(dailySnapshot));
 }
 

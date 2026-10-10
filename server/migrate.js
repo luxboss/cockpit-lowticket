@@ -67,6 +67,31 @@ CREATE INDEX IF NOT EXISTS idx_spy_ads_format ON spy.ads (display_format);
 CREATE INDEX IF NOT EXISTS idx_spy_ads_cta ON spy.ads (cta_text);
 CREATE INDEX IF NOT EXISTS idx_spy_ads_collation ON spy.ads (collation_id);
 
+-- uma linha por oferta (dominio de destino com dest_type = offer), recalculada pelo worker (SPEC-009 secao 5); quem le nao recalcula
+CREATE TABLE IF NOT EXISTS spy.offer_stats (
+  domain            VARCHAR(253) PRIMARY KEY,
+  active_ads        INTEGER NOT NULL DEFAULT 0,
+  total_ads         INTEGER NOT NULL DEFAULT 0,
+  dup_max           INTEGER NOT NULL DEFAULT 0,
+  days_max          INTEGER NOT NULL DEFAULT 0,
+  growth_7d         INTEGER NOT NULL DEFAULT 0,
+  score             REAL NOT NULL DEFAULT 0,
+  scaled            BOOLEAN NOT NULL DEFAULT FALSE,
+  spark             JSONB NOT NULL DEFAULT '[]'::jsonb,
+  advertisers_count INTEGER NOT NULL DEFAULT 0,
+  advertisers       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  countries         TEXT[] NOT NULL DEFAULT '{}',
+  top_ad_id         VARCHAR(30),
+  thumb_url         TEXT,
+  first_seen_at     TIMESTAMPTZ,
+  last_seen_at      TIMESTAMPTZ,
+  computed_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_spy_offer_stats_score ON spy.offer_stats (score DESC, domain);
+CREATE INDEX IF NOT EXISTS idx_spy_offer_stats_growth ON spy.offer_stats (growth_7d DESC, score DESC, domain);
+CREATE INDEX IF NOT EXISTS idx_spy_offer_stats_countries ON spy.offer_stats USING GIN (countries);
+CREATE INDEX IF NOT EXISTS idx_spy_ads_first_seen ON spy.ads (first_seen_at) WHERE dest_type = 'offer';
+
 CREATE TABLE IF NOT EXISTS spy.ad_sources (
   ad_archive_id VARCHAR(30) NOT NULL,
   source        VARCHAR(60) NOT NULL,

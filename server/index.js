@@ -16,6 +16,10 @@ const { handleMedia } = require('./routes/media');
 const { handleKeywords } = require('./routes/keywords');
 const { handleCollectNow, handleCollectRun } = require('./routes/collect');
 const { handleStatus } = require('./routes/status');
+const { handleHome } = require('./routes/home');
+const { handleKeywordOverview } = require('./routes/overview');
+const { handleOffers, handleOffersCsv, handleOfferDetail } = require('./routes/offers');
+const { handleAdvertiser, handleCompare } = require('./routes/advertisers');
 
 const ctx = { pool: null, state: { ready: false, fts: false, warnings: [], importError: null } };
 let httpServer = null;
@@ -36,6 +40,13 @@ async function route(req, res, url) {
   if (a === 'keywords' && parts.length === 2) return handleKeywords(ctx, req, res, b);
   if (a === 'collect' && b === 'now' && parts.length === 2) return handleCollectNow(ctx, req, res);
   if (a === 'collect' && b === 'runs' && parts.length === 3) return handleCollectRun(ctx, req, res, c);
+  if (a === 'home' && parts.length === 1) return only('GET', () => handleHome(ctx, req, res, url.searchParams));
+  if (a === 'keyword-overview' && parts.length === 1) return only('GET', () => handleKeywordOverview(ctx, req, res, url.searchParams));
+  if (a === 'offers.csv' && parts.length === 1) return only('GET', () => handleOffersCsv(ctx, req, res, url.searchParams));
+  if (a === 'offers' && parts.length === 1) return only('GET', () => handleOffers(ctx, req, res, url.searchParams));
+  if (a === 'offers' && parts.length === 2) return only('GET', () => handleOfferDetail(ctx, req, res, b, url.searchParams));
+  if (a === 'advertisers' && parts.length === 2) return only('GET', () => handleAdvertiser(ctx, req, res, b, url.searchParams));
+  if (a === 'compare' && parts.length === 1) return only('GET', () => handleCompare(ctx, req, res, url.searchParams));
   if (a === 'status' && parts.length === 1) return handleStatus(ctx, req, res);
   return sendError(res, 404, 'not_found');
 }

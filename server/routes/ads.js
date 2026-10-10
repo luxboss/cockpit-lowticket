@@ -1,7 +1,7 @@
 'use strict';
 // GET /api/v2/ads/:id
 const { sendJson, sendError } = require('../lib/http');
-const { cardFromRow, CARD_COLS, CARD_JOIN_COLS, DAYS_SQL, ORDER } = require('../search');
+const { cardFromRow, CARD_COLS, CARD_JOIN_COLS, CARD_JOINS, DAYS_SQL, ORDER } = require('../search');
 
 /** Lista de midia do anuncio: imagens e videos com indice (o mesmo usado em /media/:id/:kind/:index). */
 function mediaList(media) {
@@ -23,7 +23,7 @@ async function handleAd(ctx, req, res, id) {
             a.platforms, a.media, a.start_date, a.end_date, a.first_seen_at, a.last_seen_at, a.is_active, a.duplicates, a.score,
             ${DAYS_SQL('a')} AS days_running, ${CARD_JOIN_COLS},
             l.final_url, l.title AS l_title, left(l.text, 400) AS l_excerpt, l.fetched_at, (l.domain IS NOT NULL) AS has_landing, l.text IS NOT NULL AS has_text
-       FROM spy.ads a LEFT JOIN spy.advertisers adv ON adv.page_id = a.page_id LEFT JOIN spy.landings l ON l.domain = a.domain
+       FROM spy.ads a ${CARD_JOINS}
       WHERE a.ad_archive_id = $1`, [id]);
   if (!r.rows.length) return sendError(res, 404, 'not_found');
   const row = r.rows[0];
@@ -39,7 +39,7 @@ async function handleAd(ctx, req, res, id) {
         `WITH page AS MATERIALIZED (SELECT ${CARD_COLS('a')} FROM spy.ads a WHERE a.domain = $1 AND a.ad_archive_id <> $2
                                      ORDER BY a.is_active DESC, ${ORDER.score('a')} LIMIT 12)
          SELECT a.*, ${DAYS_SQL('a')} AS days_running, ${CARD_JOIN_COLS}
-           FROM page a LEFT JOIN spy.advertisers adv ON adv.page_id = a.page_id LEFT JOIN spy.landings l ON l.domain = a.domain
+           FROM page a ${CARD_JOINS}
           ORDER BY a.is_active DESC, ${ORDER.score('a')}`, [row.domain, id])
       : Promise.resolve({ rows: [] }),
     pool.query("SELECT to_char(day, 'YYYY-MM-DD') AS day, is_active FROM spy.snapshots WHERE ad_archive_id = $1 ORDER BY day ASC LIMIT 400", [id])
