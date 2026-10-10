@@ -68,6 +68,11 @@ module.exports = {
     growth: num('SPY_SCORE_CAP_GROWTH', 10)
   },
 
+  // Ofertas (SPEC-009): oferta escalada = nota >= SCALED_SCORE e ativos >= SCALED_MIN_ACTIVE
+  SCALED_SCORE: num('SPY_SCALED_SCORE', 60),
+  SCALED_MIN_ACTIVE: int('SPY_SCALED_MIN_ACTIVE', 3),
+  OFFER_STATS_ENABLED: process.env.SPY_OFFER_STATS_ENABLED !== '0',
+
   // Midia
   MEDIA_MAX_BYTES: 300 * 1024 * 1024,
   MEDIA_TIMEOUT_MS: 120000,
@@ -76,6 +81,7 @@ module.exports = {
 
   // Busca
   FILTERS_CACHE_MS: int('SPY_FILTERS_CACHE_MS', 30000),
+  HOME_CACHE_MS: int('SPY_HOME_CACHE_MS', 15000), // palavras da home (total, novos e minicurva de cada uma): agrega ad_sources inteira
   FORCE_NO_FTS: isTest && process.env.SPY_FORCE_NO_FTS === '1', // so teste: simula banco sem extensoes
   REIMPORT_V1: process.env.SPY_REIMPORT_V1 === '1',
 

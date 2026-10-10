@@ -3,6 +3,7 @@
 const cfg = require('../config');
 const { sendJson, sendError, invalidParam, readBodyObject } = require('../lib/http');
 const { CONTROL_RE } = require('../lib/text');
+const home = require('./home');
 
 /** Termo limpo (espacos colapsados, sem controle) ou null se fora de 2..80 caracteres. */
 function cleanTerm(v) {
@@ -32,6 +33,7 @@ const LIST_SQL = `
    ORDER BY k.id`;
 
 async function handleKeywords(ctx, req, res, idRaw) {
+  if (req.method !== 'GET') home.invalidateKeywords(); // POST, PATCH e DELETE mudam a lista da home
   const pool = ctx.pool;
   if (idRaw === null) {
     if (req.method === 'GET') {

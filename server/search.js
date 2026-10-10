@@ -28,7 +28,9 @@ const CARD_COLS = (a) => `${a}.ad_archive_id, ${a}.page_id, ${a}.domain, left(${
   (jsonb_array_length(COALESCE(${a}.media->'videos', '[]'::jsonb)) > 0) AS has_video`;
 
 /** Colunas extras do AdCard vindas dos joins (anunciante e landing) com os aliases adv e l. */
-const CARD_JOIN_COLS = 'adv.name AS adv_name, adv.avatar_url AS adv_avatar, l.checkout_platform, l.price_min';
+const CARD_JOIN_COLS = 'adv.name AS adv_name, adv.avatar_url AS adv_avatar, l.checkout_platform, l.price_min, COALESCE(os.scaled, false) AS offer_scaled';
+/** Joins do AdCard (alias a = spy.ads): anunciante, landing e oferta materializada (offerScaled). */
+const CARD_JOINS = 'LEFT JOIN spy.advertisers adv ON adv.page_id = a.page_id LEFT JOIN spy.landings l ON l.domain = a.domain LEFT JOIN spy.offer_stats os ON os.domain = a.domain';
 
 function cardFromRow(r) {
   return {
@@ -50,7 +52,8 @@ function cardFromRow(r) {
     isActive: !!r.is_active,
     duplicates: r.duplicates,
     checkout: r.checkout_platform ? { platform: r.checkout_platform, priceMin: r.price_min === null || r.price_min === undefined ? null : Number(r.price_min) } : null,
-    score: Number(r.score)
+    score: Number(r.score),
+    offerScaled: !!r.offer_scaled
   };
 }
 
@@ -185,10 +188,10 @@ async function runSearch(pool, p, fts) {
       `WITH page AS MATERIALIZED (
          SELECT ${CARD_COLS('a')} FROM spy.ads a WHERE ${where} ORDER BY ${order('a')} LIMIT ${limit} OFFSET ${offset})
        SELECT a.*, ${DAYS_SQL('a')} AS days_running, ${CARD_JOIN_COLS}
-         FROM page a LEFT JOIN spy.advertisers adv ON adv.page_id = a.page_id LEFT JOIN spy.landings l ON l.domain = a.domain
+         FROM page a ${CARD_JOINS}
         ORDER BY ${order('a')}`, params)
   ]);
   return { total: cnt.rows[0].n, items: rows.rows.map(cardFromRow) };
 }
 
-module.exports = { parseSearchParams, runSearch, cardFromRow, CARD_COLS, CARD_JOIN_COLS, DAYS_SQL, ORDER };
+module.exports = { parseSearchParams, runSearch, textCondition, likeEsc, cardFromRow, CARD_COLS, CARD_JOIN_COLS, CARD_JOINS, DAYS_SQL, ORDER };
