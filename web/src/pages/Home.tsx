@@ -151,35 +151,38 @@ export const Home: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {data.keywords.map((kw) => (
-                <tr key={kw.id}>
-                  <td>
-                    <strong>{kw.term}</strong>
-                  </td>
-                  <td>
-                    <span title={getCountryName(kw.country)}>{kw.country}</span>
-                  </td>
-                  <td>{formatNumber(kw.adsTotal)}</td>
-                  <td>
-                    {kw.new24h > 0 ? (
-                      <span style={{ color: 'var(--ok)', fontWeight: 600 }}>+{kw.new24h}</span>
-                    ) : (
-                      <span style={{ color: 'var(--text-2)', fontWeight: 600 }}>0</span>
-                    )}
-                  </td>
-                  <td>
-                    <Sparkline data={kw.spark} width={80} height={22} />
-                  </td>
-                  <td>
-                    <Link
-                      to={`/palavra/${encodeURIComponent(kw.term)}`}
-                      className="home-section-link"
-                    >
-                      Ver visão geral
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {data.keywords.map((kw) => {
+                const countryCode = typeof kw.country === 'object' && kw.country !== null ? (kw.country as any).id : kw.country;
+                return (
+                  <tr key={kw.id}>
+                    <td>
+                      <strong>{typeof kw.term === 'object' && kw.term !== null ? (kw.term as any).id : kw.term}</strong>
+                    </td>
+                    <td>
+                      <span title={getCountryName(countryCode)}>{countryCode}</span>
+                    </td>
+                    <td>{formatNumber(kw.adsTotal)}</td>
+                    <td>
+                      {kw.new24h > 0 ? (
+                        <span style={{ color: 'var(--ok)', fontWeight: 600 }}>+{kw.new24h}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-2)', fontWeight: 600 }}>0</span>
+                      )}
+                    </td>
+                    <td>
+                      <Sparkline data={kw.spark} width={80} height={22} />
+                    </td>
+                    <td>
+                      <Link
+                        to={`/palavra/${encodeURIComponent(typeof kw.term === 'object' && kw.term !== null ? (kw.term as any).id : kw.term)}`}
+                        className="home-section-link"
+                      >
+                        Ver visão geral
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

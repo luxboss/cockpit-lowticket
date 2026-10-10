@@ -1,6 +1,12 @@
 import React, { useEffect } from 'react';
 import type { SearchParams, FilterMeta } from '../api/types';
 import { IconGear, IconClose } from './Icons';
+import {
+  getCountryName,
+  formatAdFormat,
+  formatLanguage,
+  formatCheckoutPlatform,
+} from '../utils/formatters';
 import './FilterSidebar.css';
 
 interface FilterSidebarProps {
@@ -12,7 +18,14 @@ interface FilterSidebarProps {
   onClose: () => void;
 }
 
-const CHECKOUT_PLATFORMS = ['Hotmart', 'Kiwify', 'Eduzz', 'Cakto', 'Monetizze', 'Braip'];
+const DEFAULT_CHECKOUTS = [
+  { id: 'hotmart', count: 0 },
+  { id: 'kiwify', count: 0 },
+  { id: 'eduzz', count: 0 },
+  { id: 'cakto', count: 0 },
+  { id: 'monetizze', count: 0 },
+  { id: 'braip', count: 0 },
+];
 
 export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   filters,
@@ -116,11 +129,20 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               onChange={(e) => onChange({ country: e.target.value })}
             >
               <option value="">Todos os países</option>
-              {(meta?.countries || [{ id: 'BR', count: 0 }, { id: 'PT', count: 0 }, { id: 'US', count: 0 }]).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.id} {c.count ? `(${c.count})` : ''}
-                </option>
-              ))}
+              {(meta?.countries || [
+                { id: 'BR', count: 0 },
+                { id: 'PT', count: 0 },
+                { id: 'US', count: 0 },
+              ]).map((c) => {
+                const id = typeof c === 'object' && c !== null ? c.id : String(c);
+                const count = typeof c === 'object' && c !== null ? c.count : 0;
+                const name = getCountryName(id);
+                return (
+                  <option key={id} value={id}>
+                    {name && name !== id ? `${name} (${id})` : id} {count ? `(${count})` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -134,11 +156,21 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               onChange={(e) => onChange({ format: e.target.value as any })}
             >
               <option value="">Todos os formatos</option>
-              <option value="IMAGE">Imagem</option>
-              <option value="VIDEO">Vídeo</option>
-              <option value="CAROUSEL">Carrossel</option>
-              <option value="DCO">Dinâmico</option>
-              <option value="OTHER">Outro</option>
+              {(meta?.formats && meta.formats.length > 0 ? meta.formats : [
+                { id: 'IMAGE', count: 0 },
+                { id: 'VIDEO', count: 0 },
+                { id: 'CAROUSEL', count: 0 },
+                { id: 'DCO', count: 0 },
+                { id: 'OTHER', count: 0 },
+              ]).map((f) => {
+                const id = typeof f === 'object' && f !== null ? f.id : String(f);
+                const count = typeof f === 'object' && f !== null ? f.count : 0;
+                return (
+                  <option key={id} value={id}>
+                    {formatAdFormat(id)} {count ? `(${count})` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -152,9 +184,19 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               onChange={(e) => onChange({ language: e.target.value as any })}
             >
               <option value="">Todos os idiomas</option>
-              <option value="pt">Português</option>
-              <option value="es">Espanhol</option>
-              <option value="en">Inglês</option>
+              {(meta?.languages && meta.languages.length > 0 ? meta.languages : [
+                { id: 'pt', count: 0 },
+                { id: 'es', count: 0 },
+                { id: 'en', count: 0 },
+              ]).map((l) => {
+                const id = typeof l === 'object' && l !== null ? l.id : String(l);
+                const count = typeof l === 'object' && l !== null ? l.count : 0;
+                return (
+                  <option key={id} value={id}>
+                    {formatLanguage(id)} {count ? `(${count})` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -168,9 +210,20 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               onChange={(e) => onChange({ cta: e.target.value })}
             >
               <option value="">Todas as CTAs</option>
-              {(meta?.ctas || ['Saiba mais', 'Compre agora', 'Obter oferta', 'Cadastre-se']).map((cta) => (
-                <option key={cta} value={cta}>{cta}</option>
-              ))}
+              {(meta?.ctas && meta.ctas.length > 0 ? meta.ctas : [
+                { id: 'Saiba mais', count: 0 },
+                { id: 'Compre agora', count: 0 },
+                { id: 'Obter oferta', count: 0 },
+                { id: 'Cadastre-se', count: 0 },
+              ]).map((cta) => {
+                const id = typeof cta === 'object' && cta !== null ? cta.id : String(cta);
+                const count = typeof cta === 'object' && cta !== null ? cta.count : 0;
+                return (
+                  <option key={id} value={id}>
+                    {id} {count ? `(${count})` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -178,16 +231,23 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           <div className="filter-group">
             <span className="filter-label">Plataforma de Checkout</span>
             <div className="filter-checkbox-grid">
-              {CHECKOUT_PLATFORMS.map((plat) => (
-                <label key={plat} className="filter-checkbox-item">
-                  <input
-                    type="checkbox"
-                    checked={selectedCheckouts.includes(plat.toLowerCase())}
-                    onChange={() => handleCheckoutToggle(plat)}
-                  />
-                  <span>{plat}</span>
-                </label>
-              ))}
+              {(meta?.checkouts && meta.checkouts.length > 0 ? meta.checkouts : DEFAULT_CHECKOUTS).map((plat) => {
+                const platId = typeof plat === 'object' && plat !== null ? plat.id : String(plat);
+                const count = typeof plat === 'object' && plat !== null ? plat.count : 0;
+                const isChecked = selectedCheckouts.includes(platId.toLowerCase());
+                return (
+                  <label key={platId} className="filter-checkbox-item">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleCheckoutToggle(platId)}
+                    />
+                    <span>
+                      {formatCheckoutPlatform(platId)} {count ? `(${count})` : ''}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
 

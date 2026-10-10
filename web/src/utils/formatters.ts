@@ -146,6 +146,21 @@ export function getCountryName(code: string | undefined | null): string {
   return COUNTRY_NAMES[upper] || code;
 }
 
+export const LANGUAGE_NAMES: Record<string, string> = {
+  pt: 'Português',
+  es: 'Espanhol',
+  en: 'Inglês',
+  fr: 'Francês',
+  de: 'Alemão',
+  it: 'Italiano',
+};
+
+export function formatLanguage(lang: string | undefined | null): string {
+  if (!lang) return '';
+  const lower = lang.toLowerCase().trim();
+  return LANGUAGE_NAMES[lower] || lang.toUpperCase();
+}
+
 // Helper para BarList: devolve label formatado e title completo
 export function formatBarListLabel(id: string): { label: string; title: string } {
   if (!id) return { label: '', title: '' };
@@ -157,6 +172,9 @@ export function formatBarListLabel(id: string): { label: string; title: string }
     return { label: FORMAT_LABELS[upper], title: FORMAT_LABELS[upper] };
   }
   const lower = id.toLowerCase().trim();
+  if (LANGUAGE_NAMES[lower]) {
+    return { label: LANGUAGE_NAMES[lower], title: LANGUAGE_NAMES[lower] };
+  }
   if (CHECKOUT_LABELS[lower]) {
     return { label: CHECKOUT_LABELS[lower], title: CHECKOUT_LABELS[lower] };
   }

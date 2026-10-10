@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SideNav } from './SideNav';
 import { AnalyzeBar } from './AnalyzeBar';
+import { ErrorBoundary } from './ErrorBoundary';
 import { IconMenu } from './Icons';
 import './AppLayout.css';
 
@@ -40,7 +41,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </header>
 
         <main className="app-content-body" id="main-content">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>
