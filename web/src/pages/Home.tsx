@@ -4,7 +4,7 @@ import { getHome } from '../api/semrush';
 import type { HomeData } from '../api/types';
 import { KpiCard } from '../components/KpiCard';
 import { Sparkline } from '../components/Sparkline';
-import { formatNumber, formatScore, formatDatePtBr, pluralize, formatGrowth } from '../utils/formatters';
+import { formatNumber, formatScore, formatDatePtBr, pluralize, formatGrowth, getCountryName } from '../utils/formatters';
 import './Home.css';
 
 export const Home: React.FC = () => {
@@ -75,7 +75,7 @@ export const Home: React.FC = () => {
         <KpiCard
           label="Ofertas Escaladas"
           value={formatNumber(data.kpis.scaledOffers)}
-          diff={`+${Math.round(data.kpis.scaledOffers * 0.12)}`}
+          diff={Math.round(data.kpis.scaledOffers * 0.12)}
           diffLabel="na semana"
           tooltip="Ofertas com nota ≥ 60 e pelo menos 3 anúncios ativos simultâneos."
         />
@@ -156,12 +156,16 @@ export const Home: React.FC = () => {
                   <td>
                     <strong>{kw.term}</strong>
                   </td>
-                  <td>{kw.country}</td>
+                  <td>
+                    <span title={getCountryName(kw.country)}>{kw.country}</span>
+                  </td>
                   <td>{formatNumber(kw.adsTotal)}</td>
                   <td>
-                    <span style={{ color: kw.new24h > 0 ? 'var(--ok)' : 'var(--text-2)', fontWeight: 600 }}>
-                      +{kw.new24h}
-                    </span>
+                    {kw.new24h > 0 ? (
+                      <span style={{ color: 'var(--ok)', fontWeight: 600 }}>+{kw.new24h}</span>
+                    ) : (
+                      <span style={{ color: 'var(--text-2)', fontWeight: 600 }}>0</span>
+                    )}
                   </td>
                   <td>
                     <Sparkline data={kw.spark} width={80} height={22} />

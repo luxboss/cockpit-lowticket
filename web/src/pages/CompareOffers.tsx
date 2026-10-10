@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { getCompare } from '../api/semrush';
 import type { CompareData } from '../api/types';
 import { LineChart, type ChartSeries } from '../components/LineChart';
-import { formatScore, formatNumber, formatCurrency, formatGrowth, pluralize } from '../utils/formatters';
+import { formatScore, formatNumber, formatCurrency, formatGrowth, pluralize, formatCheckoutPlatform } from '../utils/formatters';
 import './CompareOffers.css';
 
 const CHART_COLORS = ['#7C5CFF', '#06B6D4', '#10B981', '#F59E0B', '#EC4899'];
@@ -259,7 +259,7 @@ export const CompareOffers: React.FC = () => {
                     <div className="compare-card-stat-row">
                       <span className="compare-card-stat-label">Checkout</span>
                       <span className="compare-card-stat-val">
-                        {item.checkout ? `${item.checkout.platform} (${formatCurrency(item.checkout.priceMin)})` : 'Sem checkout'}
+                        {item.checkout ? `${formatCheckoutPlatform(item.checkout.platform)} (${formatCurrency(item.checkout.priceMin)})` : 'Sem checkout'}
                       </span>
                     </div>
 

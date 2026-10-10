@@ -36,9 +36,22 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       diffDisplay = '0';
     }
   } else if (typeof diff === 'string') {
-    diffDisplay = diff;
-    if (diff.startsWith('+')) diffType = 'positive';
-    else if (diff.startsWith('-')) diffType = 'negative';
+    const clean = diff.trim();
+    const num = parseFloat(clean.replace('+', ''));
+    if (!isNaN(num) && num === 0) {
+      diffType = 'neutral';
+      diffDisplay = '0';
+    } else if (!isNaN(num) && num > 0) {
+      diffType = 'positive';
+      diffDisplay = clean.startsWith('+') ? clean : `+${clean}`;
+    } else if (!isNaN(num) && num < 0) {
+      diffType = 'negative';
+      diffDisplay = clean;
+    } else {
+      diffDisplay = clean;
+      if (clean.startsWith('+')) diffType = 'positive';
+      else if (clean.startsWith('-')) diffType = 'negative';
+    }
   }
 
   return (

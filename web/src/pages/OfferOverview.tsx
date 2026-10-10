@@ -7,7 +7,7 @@ import { LineChart } from '../components/LineChart';
 import { BarList } from '../components/BarList';
 import { AdCardItem } from '../components/AdCardItem';
 import { IconCompare, IconExternal } from '../components/Icons';
-import { formatNumber, formatScore, formatCurrency, pluralize } from '../utils/formatters';
+import { formatNumber, formatScore, formatCurrency, pluralize, formatCheckoutPlatform } from '../utils/formatters';
 import './OfferOverview.css';
 
 export const OfferOverview: React.FC = () => {
@@ -234,7 +234,7 @@ export const OfferOverview: React.FC = () => {
           </a>
           {offer.checkout && (
             <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4 }}>
-              Checkout identificado: <strong>{offer.checkout.platform}</strong> ({formatCurrency(offer.checkout.priceMin)})
+              Checkout identificado: <strong>{formatCheckoutPlatform(offer.checkout.platform)}</strong> ({formatCurrency(offer.checkout.priceMin)})
             </div>
           )}
         </section>

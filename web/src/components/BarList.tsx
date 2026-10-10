@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatNumber } from '../utils/formatters';
+import { formatNumber, formatBarListLabel } from '../utils/formatters';
 import './BarList.css';
 
 export interface BarListItem {
@@ -33,11 +33,12 @@ export const BarList: React.FC<BarListProps> = ({
           {items.map((item) => {
             const pct = Math.round((item.count / max) * 100);
             const totalPct = Math.round((item.count / total) * 100);
+            const { label, title: itemTitle } = formatBarListLabel(item.id);
             return (
               <div key={item.id} className="barlist-item">
                 <div className="barlist-item-row">
-                  <span className="barlist-label" title={item.id}>
-                    {item.id}
+                  <span className="barlist-label" title={itemTitle}>
+                    {label}
                   </span>
                   <span className="barlist-value">
                     {formatNumber(item.count)} ({totalPct}%)

@@ -10,6 +10,7 @@ import {
 import { KeywordsOverview } from '../components/KeywordsOverview';
 import { AddKeywordModal, DeleteKeywordModal } from '../components/KeywordModals';
 import { IconChart, IconPin, IconPause, IconPlay, IconTrash } from '../components/Icons';
+import { getCountryName } from '../utils/formatters';
 import './Keywords.css';
 
 export const Keywords: React.FC = () => {
@@ -178,7 +179,7 @@ export const Keywords: React.FC = () => {
                         <strong>{kw.term}</strong>
                       </td>
                       <td>
-                        <span className="badge badge-country">{kw.country}</span>
+                        <span className="badge badge-country" title={getCountryName(kw.country)}>{kw.country}</span>
                       </td>
                       <td>
                         <span className={`badge ${kw.active ? 'badge-active' : 'badge-paused'}`}>
@@ -191,7 +192,7 @@ export const Keywords: React.FC = () => {
                         {kw.new24h > 0 ? (
                           <span className="badge badge-active">+{kw.new24h}</span>
                         ) : (
-                          '0'
+                          <span style={{ color: 'var(--text-2)' }}>0</span>
                         )}
                       </td>
                       <td className="td-actions">
@@ -233,7 +234,7 @@ export const Keywords: React.FC = () => {
                 <div className="keyword-mobile-card kw-card-item" key={kw.id} id={`keyword-card-${kw.id}`}>
                   <div className="km-header">
                     <span className="km-term">{kw.term}</span>
-                    <span className="badge badge-country">{kw.country}</span>
+                    <span className="badge badge-country" title={getCountryName(kw.country)}>{kw.country}</span>
                   </div>
                   <div className="km-metrics">
                     <div className="km-metric">
@@ -248,7 +249,11 @@ export const Keywords: React.FC = () => {
                     </div>
                     <div className="km-metric">
                       <small>Novos (24h)</small>
-                      <span className={kw.new24h > 0 ? 'km-badge-green' : ''}>+{kw.new24h}</span>
+                      {kw.new24h > 0 ? (
+                        <span className="km-badge-green">+{kw.new24h}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-2)' }}>0</span>
+                      )}
                     </div>
                   </div>
                   <div className="km-date">

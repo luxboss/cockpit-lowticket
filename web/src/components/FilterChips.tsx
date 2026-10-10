@@ -1,6 +1,7 @@
 import React from 'react';
 import type { SearchParams } from '../api/types';
 import { IconClose } from './Icons';
+import { formatAdFormat, formatCheckoutPlatform } from '../utils/formatters';
 import './FilterChips.css';
 
 interface FilterChipsProps {
@@ -22,13 +23,13 @@ export const FilterChips: React.FC<FilterChipsProps> = ({ filters, onRemove, onC
     chips.push({ key: 'language', label: `Idioma: ${filters.language}` });
   }
   if (filters.format) {
-    chips.push({ key: 'format', label: `Formato: ${filters.format}` });
+    chips.push({ key: 'format', label: `Formato: ${formatAdFormat(filters.format)}` });
   }
   if (filters.cta) {
     chips.push({ key: 'cta', label: `CTA: ${filters.cta}` });
   }
   if (filters.checkout) {
-    chips.push({ key: 'checkout', label: `Checkout: ${filters.checkout}` });
+    chips.push({ key: 'checkout', label: `Checkout: ${formatCheckoutPlatform(filters.checkout)}` });
   }
   if (filters.infoOnly === '1') {
     chips.push({ key: 'infoOnly', label: 'Somente infoprodutos' });
