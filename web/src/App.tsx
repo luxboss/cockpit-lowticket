@@ -12,6 +12,7 @@ import { CompareOffers } from './pages/CompareOffers';
 import { Keywords } from './pages/Keywords';
 import { AdDetail } from './pages/AdDetail';
 import { Login } from './pages/Login';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/global.css';
 
 interface ProtectedLayoutProps {
@@ -31,7 +32,8 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <Routes>
+      <ErrorBoundary fallbackTitle="Ocorreu um erro no aplicativo">
+        <Routes>
         <Route path="/login" element={<Login />} />
 
         {/* Início */}
@@ -143,6 +145,7 @@ export const App: React.FC = () => {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
-  );
+    </ErrorBoundary>
+  </BrowserRouter>
+);
 };

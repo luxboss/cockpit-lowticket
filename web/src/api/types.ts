@@ -102,18 +102,20 @@ export interface SearchResponse {
   items: AdCard[];
 }
 
-export interface FilterCountry {
+export interface FilterItem {
   id: string;
   count: number;
 }
 
+export type FilterCountry = FilterItem;
+
 export interface FilterMeta {
   ok: boolean;
-  countries: FilterCountry[];
-  languages: string[];
-  formats: AdFormat[];
-  ctas: string[];
-  checkouts: string[];
+  countries: FilterItem[];
+  languages: FilterItem[];
+  formats: FilterItem[];
+  ctas: FilterItem[];
+  checkouts: FilterItem[];
 }
 
 export interface Keyword {

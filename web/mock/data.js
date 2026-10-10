@@ -34,18 +34,35 @@ export const MOCK_FILTERS = {
     { id: 'US', count: 18 },
     { id: 'ES', count: 12 },
   ],
-  languages: ['pt', 'es', 'en'],
-  formats: ['IMAGE', 'VIDEO', 'CAROUSEL'],
-  ctas: [
-    'Saiba mais',
-    'Compre agora',
-    'Obter oferta',
-    'Cadastre-se',
-    'Assinar',
-    'Fale conosco',
-    'Baixar',
+  languages: [
+    { id: 'pt', count: 190 },
+    { id: 'es', count: 32 },
+    { id: 'en', count: 12 },
   ],
-  checkouts: ['Hotmart', 'Kiwify', 'Eduzz', 'Cakto', 'Monetizze', 'Braip'],
+  formats: [
+    { id: 'IMAGE', count: 120 },
+    { id: 'VIDEO', count: 85 },
+    { id: 'CAROUSEL', count: 29 },
+    { id: 'DCO', count: 8 },
+    { id: 'OTHER', count: 4 },
+  ],
+  ctas: [
+    { id: 'Saiba mais', count: 110 },
+    { id: 'Compre agora', count: 48 },
+    { id: 'Obter oferta', count: 35 },
+    { id: 'Cadastre-se', count: 24 },
+    { id: 'Assinar', count: 15 },
+    { id: 'Fale conosco', count: 10 },
+    { id: 'Baixar', count: 6 },
+  ],
+  checkouts: [
+    { id: 'hotmart', count: 75 },
+    { id: 'kiwify', count: 54 },
+    { id: 'eduzz', count: 38 },
+    { id: 'cakto', count: 22 },
+    { id: 'monetizze', count: 19 },
+    { id: 'braip', count: 14 },
+  ],
 };
 
 export const INITIAL_KEYWORDS = [
