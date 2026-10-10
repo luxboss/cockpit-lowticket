@@ -25,6 +25,8 @@ export const OfferOverview: React.FC = () => {
     if (!domain) return;
     let mounted = true;
     setLoading(true);
+    setData(null);
+    setError(null);
 
     getOfferDetail(domain, period, country, infoOnly ? '1' : '0')
       .then((res) => {
@@ -68,7 +70,7 @@ export const OfferOverview: React.FC = () => {
     );
   }
 
-  if (error && !data) {
+  if (error) {
     return (
       <div style={{ padding: '30px', background: 'var(--surface)', borderRadius: 8, color: 'var(--bad)' }} id="offer-error">
         <h3>{error}</h3>
