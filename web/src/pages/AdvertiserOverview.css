@@ -1,0 +1,71 @@
+.adv-overview-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.adv-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adv-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.adv-info-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.adv-avatar-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.adv-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adv-name-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.adv-id-badge {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.adv-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.adv-creatives-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .adv-kpis-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}

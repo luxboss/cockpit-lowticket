@@ -1,0 +1,128 @@
+.analyzebar-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 6px;
+  max-width: 780px;
+  width: 100%;
+}
+
+.analyzebar-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.analyzebar-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding-left: 8px;
+}
+
+.analyzebar-input-icon {
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+
+.analyzebar-input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+}
+
+.analyzebar-input::placeholder {
+  color: var(--text-2);
+}
+
+.analyzebar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.analyzebar-select {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.analyzebar-select:hover {
+  background: var(--surface-2);
+}
+
+.analyzebar-select option {
+  background: #15151B;
+  color: #EDEDF2;
+}
+
+.analyzebar-submit {
+  background: var(--accent);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+  font-family: inherit;
+}
+
+.analyzebar-submit:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .analyzebar-container {
+    flex-wrap: wrap;
+    padding: 6px;
+  }
+
+  .analyzebar-form {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .analyzebar-input-wrap {
+    width: 100%;
+    flex: 1 1 100%;
+    padding: 4px;
+  }
+
+  .analyzebar-divider {
+    display: none;
+  }
+
+  .analyzebar-select {
+    flex: 1;
+    background: var(--surface-2);
+  }
+
+  .analyzebar-submit {
+    flex: 1;
+    justify-content: center;
+  }
+}

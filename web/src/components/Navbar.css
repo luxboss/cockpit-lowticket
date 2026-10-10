@@ -1,0 +1,161 @@
+.navbar {
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-icon {
+  font-size: 1.3rem;
+  color: var(--accent);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.brand-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-2);
+  border-radius: var(--radius-input);
+  transition: all 0.15s ease;
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background-color: var(--surface-2);
+}
+
+.nav-link.active {
+  color: #ffffff;
+  background-color: var(--accent);
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+}
+
+.brand-mobile {
+  display: none;
+}
+
+.brand-desktop {
+  display: inline;
+}
+
+.nav-mobile {
+  display: none;
+}
+
+.nav-desktop {
+  display: inline;
+}
+
+.btn-logout {
+  color: var(--text-2);
+  border-color: var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-logout:hover {
+  color: var(--bad);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+@media (max-width: 768px) {
+  .navbar-container {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .brand-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 540px) {
+  .navbar-container {
+    padding: 8px 8px;
+    gap: 6px;
+  }
+  .brand-link {
+    gap: 6px;
+  }
+  .brand-desktop {
+    display: none;
+  }
+  .brand-mobile {
+    display: inline;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+  .navbar-nav {
+    gap: 4px;
+  }
+  .nav-link {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .nav-desktop {
+    display: none;
+  }
+  .nav-mobile {
+    display: inline;
+  }
+  .btn-logout {
+    padding: 6px 8px;
+  }
+  .logout-text {
+    display: none;
+  }
+}

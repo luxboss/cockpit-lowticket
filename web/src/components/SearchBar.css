@@ -1,0 +1,163 @@
+.search-bar-wrap {
+  width: 100%;
+  margin: 20px 0 16px;
+}
+
+.search-bar-form {
+  display: flex;
+  align-items: center;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.search-bar-form:focus-within {
+  border-color: var(--accent);
+}
+
+.search-field-select-wrap {
+  border-right: 1px solid var(--border);
+  background-color: var(--surface-2);
+  flex-shrink: 0;
+}
+
+.search-field-select {
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  font-weight: 500;
+  font-size: 0.88rem;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+
+.search-field-select option {
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.search-inputs-row {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.search-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-width: 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  font-size: 0.95rem;
+  color: var(--text);
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--text-2);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.search-clear-btn:hover {
+  color: var(--text);
+}
+
+.search-submit-btn {
+  border-radius: 0;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filters-trigger-btn {
+  border-radius: 0;
+  padding: 10px 14px;
+  border-left: 1px solid var(--border);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-badge-count {
+  background-color: var(--accent);
+  color: #ffffff;
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+}
+
+@media (max-width: 768px) {
+  .search-field-select {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    max-width: 120px;
+  }
+  .search-input {
+    padding: 8px 10px;
+    font-size: 0.88rem;
+  }
+  .search-btn-label {
+    display: none;
+  }
+  .search-submit-btn {
+    padding: 8px 12px;
+  }
+  .filters-trigger-btn {
+    padding: 8px 10px;
+  }
+}
+
+/* Em 540px e 360px: o seletor de campo fica numa linha própria no topo */
+@media (max-width: 540px) {
+  .search-bar-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-field-select-wrap {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-field-select {
+    width: 100%;
+    max-width: 100%;
+    padding: 9px 12px;
+    font-size: 0.85rem;
+  }
+  .search-inputs-row {
+    width: 100%;
+    display: flex;
+  }
+  .search-input {
+    padding: 9px 10px;
+    font-size: 0.85rem;
+  }
+  .filter-btn-label {
+    display: none;
+  }
+}
