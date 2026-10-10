@@ -1,0 +1,90 @@
+.landing-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.landing-card.unanalyzed {
+  border-style: dashed;
+}
+
+.landing-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.landing-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.landing-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.landing-desc-empty {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.landing-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.landing-page-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.landing-url-link {
+  font-size: 0.82rem;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  word-break: break-all;
+}
+
+.landing-url-link:hover {
+  text-decoration: underline;
+}
+
+.ext-icon {
+  font-size: 0.8rem;
+}
+
+.landing-excerpt-box {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.excerpt-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.landing-excerpt-text {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  line-height: 1.45;
+}
