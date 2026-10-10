@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { AdMedia } from '../api/types';
 import { downloadMedia } from '../api/client';
 import './MediaViewer.css';
@@ -14,13 +14,23 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({ adId, media, thumbUrl 
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const currentMedia = media && media.length > 0 ? media[currentIndex] : null;
+  useEffect(() => {
+    setCurrentIndex(0);
+    setDownloadError(null);
+  }, [adId]);
 
-  const handlePrev = () => {
+  const safeIndex = media && media.length > 0 ? Math.min(Math.max(0, currentIndex), media.length - 1) : 0;
+  const currentMedia = media && media.length > 0 ? media[safeIndex] : null;
+
+  const handlePrev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!media || media.length <= 1) return;
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : media.length - 1));
   };
 
-  const handleNext = () => {
+  const handleNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!media || media.length <= 1) return;
     setCurrentIndex((prev) => (prev < media.length - 1 ? prev + 1 : 0));
   };
 
@@ -80,7 +90,7 @@ export const MediaViewer: React.FC<MediaViewerProps> = ({ adId, media, thumbUrl 
               ‹
             </button>
             <span className="carousel-indicator">
-              {currentIndex + 1} / {media.length}
+              {safeIndex + 1} / {media.length}
             </span>
             <button
               type="button"

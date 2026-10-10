@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import type { AdDetail as AdDetailType } from '../api/types';
 import { getAdDetail } from '../api/client';
 import { MediaViewer } from '../components/MediaViewer';
@@ -100,6 +100,21 @@ export const AdDetail: React.FC = () => {
           Voltar aos Resultados
         </button>
 
+        <Link
+          to={`/oferta/${encodeURIComponent(ad.domain)}`}
+          className="btn btn-secondary btn-sm"
+          id="btn-detail-offer"
+        >
+          Visão da Oferta
+        </Link>
+        <Link
+          to={`/anunciante/${encodeURIComponent(ad.advertiser.pageId)}`}
+          className="btn btn-secondary btn-sm"
+          id="btn-detail-advertiser"
+        >
+          Visão do Anunciante
+        </Link>
+
         <a
           href={ad.libraryUrl}
           target="_blank"
@@ -117,6 +132,7 @@ export const AdDetail: React.FC = () => {
         {/* Coluna Esquerda: Criativo Grande */}
         <div className="ad-detail-media-col">
           <MediaViewer
+            key={ad.id}
             adId={ad.id}
             media={ad.media}
             thumbUrl={ad.thumbUrl}
@@ -144,8 +160,20 @@ export const AdDetail: React.FC = () => {
                 </div>
               )}
               <div className="adv-titles">
-                <h3 className="adv-heading">{ad.advertiser.name}</h3>
-                <span className="adv-page-id">ID da Página: {ad.advertiser.pageId}</span>
+                <Link
+                  to={`/anunciante/${encodeURIComponent(ad.advertiser.pageId)}`}
+                  id="link-detail-advertiser"
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
+                  <h3 className="adv-heading">{ad.advertiser.name}</h3>
+                </Link>
+                <Link
+                  to={`/anunciante/${encodeURIComponent(ad.advertiser.pageId)}`}
+                  className="adv-page-id"
+                  style={{ color: 'var(--accent)', textDecoration: 'none' }}
+                >
+                  ID da Página: {ad.advertiser.pageId}
+                </Link>
               </div>
             </div>
 
@@ -209,7 +237,9 @@ export const AdDetail: React.FC = () => {
               </div>
               <div className="meta-item">
                 <span className="meta-label">Duplicados:</span>
-                <span className="meta-val">{ad.duplicates} anúncios</span>
+                <span className="meta-val">
+                  {ad.duplicates} {ad.duplicates === 1 ? 'anúncio' : 'anúncios'}
+                </span>
               </div>
               <div className="meta-item">
                 <span className="meta-label">CTA:</span>
@@ -221,7 +251,14 @@ export const AdDetail: React.FC = () => {
               </div>
               <div className="meta-item">
                 <span className="meta-label">Domínio:</span>
-                <span className="meta-val">{ad.domain}</span>
+                <Link
+                  to={`/oferta/${encodeURIComponent(ad.domain)}`}
+                  id="link-detail-offer"
+                  className="meta-val"
+                  style={{ color: 'var(--accent)', textDecoration: 'none' }}
+                >
+                  {ad.domain}
+                </Link>
               </div>
             </div>
           </div>

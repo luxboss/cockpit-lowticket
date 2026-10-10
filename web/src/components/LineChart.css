@@ -1,0 +1,74 @@
+.linechart-container {
+  width: 100%;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.linechart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.linechart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+}
+
+.linechart-legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.linechart-svg-wrap {
+  width: 100%;
+  position: relative;
+  user-select: none;
+}
+
+.linechart-svg {
+  width: 100%;
+  display: block;
+}
+
+.linechart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #1C1C24;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.linechart-tooltip-date {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-2);
+}
+
+.linechart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
