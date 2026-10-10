@@ -13,13 +13,14 @@ function stripSslMode(url) {
 function createPool(max) {
   if (!pg) throw new Error('modulo pg ausente');
   if (!cfg.DATABASE_URL) throw new Error('DATABASE_URL nao configurada');
-  const wantsSsl = /sslmode=(require|verify-ca|verify-full)/i.test(cfg.DATABASE_URL);
+  // mesma regra da v1: SSL se a URL pedir (sslmode) ou PGSSL=true; o certificado so e validado com PGSSL_REJECT_UNAUTHORIZED=true
+  const wantsSsl = /sslmode=(require|verify-ca|verify-full)/i.test(cfg.DATABASE_URL) || String(process.env.PGSSL || '').toLowerCase() === 'true';
   const pool = new pg.Pool({
     connectionString: stripSslMode(cfg.DATABASE_URL),
     max: max || 8,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 8000,
-    ssl: wantsSsl ? { rejectUnauthorized: false } : undefined
+    ssl: wantsSsl ? { rejectUnauthorized: String(process.env.PGSSL_REJECT_UNAUTHORIZED || '').toLowerCase() === 'true' } : undefined
   });
   pool.on('error', (e) => console.error('[db] erro no pool:', e && e.message));
   return pool;

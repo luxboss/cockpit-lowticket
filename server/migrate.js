@@ -6,8 +6,6 @@ const cfg = require('./config');
 const LOCK_KEY = 8150001; // pg_advisory_lock: dois processos subindo juntos nao disputam o DDL
 
 const CORE_SQL = `
-CREATE SCHEMA IF NOT EXISTS spy;
-
 CREATE TABLE IF NOT EXISTS spy.meta (
   key        TEXT PRIMARY KEY,
   value      JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -234,6 +232,9 @@ async function migrate(pool) {
   const warnings = [];
   try {
     await client.query('SELECT pg_advisory_lock($1)', [LOCK_KEY]);
+    // so cria o schema se faltar: um papel sem CREATE no banco ainda sobe quando o DBA ja provisionou o schema spy
+    const has = await client.query("SELECT 1 FROM pg_namespace WHERE nspname = 'spy'");
+    if (!has.rows.length) await client.query('CREATE SCHEMA spy');
     await client.query(CORE_SQL);
     const fts = await setupFts(client, warnings);
     return { fts, warnings };
