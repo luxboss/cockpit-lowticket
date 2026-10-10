@@ -24,6 +24,8 @@ export const AdvertiserOverview: React.FC = () => {
     if (!pageId) return;
     let mounted = true;
     setLoading(true);
+    setData(null);
+    setError(null);
 
     getAdvertiserDetail(pageId, period, country, infoOnly ? '1' : '0')
       .then((res) => {
@@ -67,7 +69,7 @@ export const AdvertiserOverview: React.FC = () => {
     );
   }
 
-  if (error && !data) {
+  if (error) {
     return (
       <div style={{ padding: '30px', background: 'var(--surface)', borderRadius: 8, color: 'var(--bad)' }} id="adv-error">
         <h3>{error}</h3>
