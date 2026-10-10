@@ -19,23 +19,46 @@ function errText(err) {
   return scrub(code + (err && err.detail ? ': ' + err.detail : '')).slice(0, 200);
 }
 
+/**
+ * Ordenacao da Biblioteca (BE-017, AC-07): sort_data[mode]=total_impressions (impressoes, do maior para o menor) ou relevancy_monthly_grouped.
+ * Vem de SPY_LIBRARY_SORT; vazio = nao manda o parametro. Os dois valores sao os que o actor apify~facebook-ads-scraper oferece no campo sorting.
+ * A Meta so publica impressoes para parte dos anuncios (politicos/temas sociais e UE); para anuncio comercial no Brasil a ordenacao pode cair na padrao.
+ */
+function sortParams() {
+  const mode = cfg.LIBRARY_SORT;
+  if (mode !== 'total_impressions' && mode !== 'relevancy_monthly_grouped') return '';
+  return '&sort_data%5Bdirection%5D=desc&sort_data%5Bmode%5D=' + mode;
+}
+
 /** URL de busca da Biblioteca de Anuncios (so anuncios ativos). country ALL = todos os paises. */
 function libraryUrl(term, country) {
   return 'https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=' + encodeURIComponent(country)
-    + '&q=' + encodeURIComponent(term) + '&search_type=keyword_unordered&media_type=all';
+    + '&q=' + encodeURIComponent(term) + '&search_type=keyword_unordered&media_type=all' + sortParams();
+}
+
+/** Anuncios ativos de UMA pagina (view_all_page_id), como o link "ver todos os anuncios" da Biblioteca. */
+function pageLibraryUrl(pageId, country) {
+  return 'https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=' + encodeURIComponent(country)
+    + '&view_all_page_id=' + encodeURIComponent(pageId) + '&search_type=page&media_type=all';
 }
 
 // Adaptadores por actor: buildInput(term, country, limit) monta o input do run.
 const ADAPTERS = {
   'apify~facebook-ads-scraper': {
+    mode: 'total', // tem onlyTotal: 1 item por pagina com totalCount
+    buildTotalInput: (pageId, country) => ({ startUrls: [{ url: pageLibraryUrl(pageId, country) }], onlyTotal: true, resultsLimit: 1, activeStatus: 'active', isDetailsPerAd: false, includeAboutPage: false }),
     buildInput: (term, country, limit) => ({ startUrls: [{ url: libraryUrl(term, country) }], resultsLimit: limit, isDetailsPerAd: false, includeAboutPage: false, onlyTotal: false })
   },
   'curious_coder~facebook-ads-library-scraper': {
+    mode: 'sample', // sem total: baixa uma amostra e a contagem vira o minimo
+    buildTotalInput: (pageId, country) => ({ urls: [{ url: pageLibraryUrl(pageId, country) }], limitPerSource: cfg.PAGE_SAMPLE_ADS, count: cfg.PAGE_SAMPLE_ADS, scrapeAdDetails: false }),
     buildInput: (term, country, limit) => ({ urls: [{ url: libraryUrl(term, country) }], count: limit, scrapeAdDetails: false })
   }
 };
 function adapter() { return Object.prototype.hasOwnProperty.call(ADAPTERS, cfg.APIFY_ACTOR) ? ADAPTERS[cfg.APIFY_ACTOR] : null; }
 function configured() { return !!cfg.APIFY_TOKEN && !!adapter(); }
+function pageAdapter() { return Object.prototype.hasOwnProperty.call(ADAPTERS, cfg.APIFY_PAGE_ACTOR) ? ADAPTERS[cfg.APIFY_PAGE_ACTOR] : null; }
+function pageConfigured() { return !!cfg.APIFY_TOKEN && !!pageAdapter(); }
 
 /** Chamada a API v2 do Apify (token so no header). Resolve {status, headers, data} ou lanca com collectCode curto. */
 async function apifyCall(method, pathAndQuery, body) {
@@ -130,4 +153,4 @@ function mapApifyAdItem(item) {
   };
 }
 
-module.exports = { TERMINAL, collectError, errText, scrub, configured, adapter, apifyCall, mapApifyAdItem, libraryUrl };
+module.exports = { pageAdapter, pageConfigured, pageLibraryUrl, sortParams, TERMINAL, collectError, errText, scrub, configured, adapter, apifyCall, mapApifyAdItem, libraryUrl };

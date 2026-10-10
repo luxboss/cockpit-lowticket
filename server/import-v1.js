@@ -3,6 +3,7 @@
 // Marca em spy.meta (chave import_v1); sem a marca roda, e todo INSERT usa ON CONFLICT DO NOTHING (repetir e seguro).
 const cfg = require('./config');
 const { destTypeSql } = require('./lib/nonoffer');
+const { TEMPLATE_SQL_RE } = require('./lib/text');
 
 const META_KEY = 'import_v1';
 
@@ -44,6 +45,7 @@ async function importFromV1(pool) {
     // anuncios (catalogo dinamico fica de fora, como no ranking da v1)
     const where = ['TRUE'];
     if (cols.has('is_catalog')) where.push('NOT m.is_catalog');
+    where.push(`NOT (m.body ~ '${TEMPLATE_SQL_RE}' OR m.title ~ '${TEMPLATE_SQL_RE}' OR m.caption ~ '${TEMPLATE_SQL_RE}')`); // catalogo dinamico sem a marca is_catalog
     const lang = cols.has('language') ? "NULLIF(m.language, '')" : 'NULL';
     const validStart = (c) => `CASE WHEN m.${c} > 0 AND m.${c} <= EXTRACT(EPOCH FROM NOW()) + 86400 THEN to_timestamp(m.${c}) END`;
     r = await client.query(

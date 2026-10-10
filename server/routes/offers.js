@@ -68,4 +68,28 @@ async function handleOfferDetail(ctx, req, res, domainRaw, sp) {
   return sendJson(res, 200, { ok: true, offer: Object.assign(rows[0], { landing, trend: d.trend, countries: d.countries, formats: d.formats, topAds: d.topAds, advertisers: d.advertisers }) });
 }
 
-module.exports = { handleOffers, handleOffersCsv, handleOfferDetail, toCsv };
+/** GET /api/v2/offers/:domain/pages - paginas do produtor (sitemap), da mais recente para a mais antiga. */
+async function handleOfferPages(ctx, req, res, domainRaw) {
+  const domain = decodeURIComponent(domainRaw).toLowerCase().replace(/^www\./, '');
+  if (!HOSTNAME_REGEX.test(domain)) return sendError(res, 404, 'not_found');
+  const o = await ctx.pool.query('SELECT 1 FROM spy.offer_stats WHERE domain = $1', [domain]);
+  if (!o.rows.length) return sendError(res, 404, 'not_found');
+  const [pages, meta] = await Promise.all([
+    ctx.pool.query(
+      `SELECT p.url, p.lastmod, p.first_seen_at,
+              CASE WHEN p.lastmod IS NOT NULL THEN p.lastmod >= NOW() - INTERVAL '7 days'
+                   ELSE p.first_seen_at >= NOW() - INTERVAL '7 days' AND l.sitemap_first_at IS NOT NULL AND p.first_seen_at > l.sitemap_first_at END AS is_new
+         FROM spy.offer_pages p LEFT JOIN spy.landings l ON l.domain = p.domain
+        WHERE p.domain = $1 ORDER BY COALESCE(p.lastmod, p.first_seen_at) DESC, p.url LIMIT 500`, [domain]),
+    ctx.pool.query('SELECT sitemap_checked_at, sitemap_error FROM spy.landings WHERE domain = $1', [domain])
+  ]);
+  const m = meta.rows[0] || {};
+  return sendJson(res, 200, {
+    ok: true,
+    checkedAt: m.sitemap_checked_at ? m.sitemap_checked_at.toISOString() : null,
+    error: m.sitemap_error || null,
+    items: pages.rows.map((x) => ({ url: x.url, lastmod: x.lastmod ? x.lastmod.toISOString() : null, firstSeenAt: x.first_seen_at.toISOString(), isNew: !!x.is_new }))
+  });
+}
+
+module.exports = { handleOffers, handleOffersCsv, handleOfferDetail, handleOfferPages, toCsv };

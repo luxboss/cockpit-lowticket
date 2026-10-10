@@ -60,4 +60,10 @@ function extractLandingTarget(linkUrl) {
   return null;
 }
 
-module.exports = { HOSTNAME_REGEX, CONTROL_RE, cleanText, decodeHtmlEntities, plainText, toEpochSeconds, extractLandingTarget };
+// Anuncio de catalogo dinamico (DPA): o texto traz marcadores como {{product.name}} (a Meta troca pelo produto de cada pessoa; na Biblioteca vem cru)
+const TEMPLATE_RE = /\{\{[^{}]*\}\}/;
+const hasTemplate = (v) => typeof v === 'string' && (TEMPLATE_RE.test(v) || v.includes('{{product.'));
+// o mesmo teste em SQL (Postgres ~): usado no backfill e na importacao da v1
+const TEMPLATE_SQL_RE = '\\{\\{[^{}]*\\}\\}';
+
+module.exports = { hasTemplate, TEMPLATE_SQL_RE, HOSTNAME_REGEX, CONTROL_RE, cleanText, decodeHtmlEntities, plainText, toEpochSeconds, extractLandingTarget };

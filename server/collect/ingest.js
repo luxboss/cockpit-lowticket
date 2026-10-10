@@ -1,6 +1,6 @@
 'use strict';
 // Ingestao em lotes: anunciantes, anuncios (upsert), fontes e snapshot do dia. SQL parametrizado, um lote por transacao.
-const { extractLandingTarget, cleanText } = require('../lib/text');
+const { extractLandingTarget, cleanText, hasTemplate } = require('../lib/text');
 const { destinationType } = require('../lib/nonoffer');
 const { detectLanguage } = require('../lib/lang');
 const { SP_TODAY_SQL } = require('../db');
@@ -25,7 +25,7 @@ function toRow(ad, country) {
     cta_text: cleanText(ad.ctaText, 200),
     link_url: cleanText(ad.linkUrl, 2000),
     domain,
-    dest_type: destinationType(domain),
+    dest_type: hasTemplate(ad.body) || hasTemplate(ad.title) || hasTemplate(ad.caption) ? 'catalog' : destinationType(domain), // catalogo dinamico fica fora da busca, das contagens e do ranking
     display_format: ad.displayFormat,
     media: { images: ad.images, videos: ad.videos },
     countries: country && country !== 'ALL' ? [country] : [],

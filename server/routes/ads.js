@@ -36,7 +36,7 @@ async function handleAd(ctx, req, res, id) {
   const [sib, snaps] = await Promise.all([
     row.domain
       ? pool.query(
-        `WITH page AS MATERIALIZED (SELECT ${CARD_COLS('a')} FROM spy.ads a WHERE a.domain = $1 AND a.ad_archive_id <> $2
+        `WITH page AS MATERIALIZED (SELECT ${CARD_COLS('a')} FROM spy.ads a WHERE a.domain = $1 AND a.ad_archive_id <> $2 AND a.dest_type = 'offer'
                                      ORDER BY a.is_active DESC, ${ORDER.score('a')} LIMIT 12)
          SELECT a.*, ${DAYS_SQL('a')} AS days_running, ${CARD_JOIN_COLS}
            FROM page a ${CARD_JOINS}

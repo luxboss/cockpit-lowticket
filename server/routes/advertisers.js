@@ -13,7 +13,7 @@ async function handleAdvertiser(ctx, req, res, pageIdRaw, sp) {
   if (parsed.error) return invalidParam(res, parsed.error);
   const c = parsed.c;
   const pool = ctx.pool;
-  const adv = await pool.query('SELECT page_id, name, avatar_url, first_seen_at, last_seen_at FROM spy.advertisers WHERE page_id = $1', [pageId]);
+  const adv = await pool.query('SELECT page_id, name, avatar_url, first_seen_at, last_seen_at, active_total, checked_at FROM spy.advertisers WHERE page_id = $1', [pageId]);
   if (!adv.rows.length) return sendError(res, 404, 'not_found');
   const a = adv.rows[0];
 
@@ -33,6 +33,7 @@ async function handleAdvertiser(ctx, req, res, pageIdRaw, sp) {
     advertiser: {
       pageId: a.page_id, name: a.name, avatarUrl: a.avatar_url || null,
       firstSeenAt: a.first_seen_at ? a.first_seen_at.toISOString() : null, lastSeenAt: a.last_seen_at ? a.last_seen_at.toISOString() : null,
+      activeTotal: a.active_total === null || a.active_total === undefined ? null : a.active_total, checkedAt: a.checked_at ? a.checked_at.toISOString() : null,
       kpis: { activeAds: kp.active_ads, offers: kp.offers, totalAds: kp.total_ads },
       trend: d.trend,
       offers: await fetchOfferRows(pool, off.rows.map((x) => x.domain)),

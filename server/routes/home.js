@@ -13,7 +13,7 @@ const { fetchOfferRows } = require('../offers/rows');
 const KEYWORDS_SQL = `
   WITH kad AS MATERIALIZED (
     SELECT s.source, a.first_seen_at, ${SD_SQL('a')} AS sd, ${ED_SQL('a')} AS ed
-      FROM spy.ad_sources s JOIN spy.ads a ON a.ad_archive_id = s.ad_archive_id WHERE s.source LIKE 'keyword:%'),
+      FROM spy.ad_sources s JOIN spy.ads a ON a.ad_archive_id = s.ad_archive_id AND a.dest_type <> 'catalog' WHERE s.source LIKE 'keyword:%'),
   days AS (SELECT g::date AS d FROM generate_series(${TODAY} - 13, ${TODAY}, INTERVAL '1 day') g),
   pairs AS MATERIALIZED (SELECT source, sd, ed, COUNT(*) AS c FROM kad WHERE sd IS NOT NULL GROUP BY source, sd, ed),
   cnt AS (SELECT p.source, days.d, SUM(p.c) AS n FROM pairs p JOIN days ON p.sd <= days.d AND p.ed >= days.d GROUP BY p.source, days.d),

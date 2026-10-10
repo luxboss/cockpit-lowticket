@@ -16,9 +16,10 @@ const { handleMedia } = require('./routes/media');
 const { handleKeywords } = require('./routes/keywords');
 const { handleCollectNow, handleCollectRun } = require('./routes/collect');
 const { handleStatus } = require('./routes/status');
+const { handleCheckouts } = require('./routes/checkouts');
 const { handleHome } = require('./routes/home');
 const { handleKeywordOverview } = require('./routes/overview');
-const { handleOffers, handleOffersCsv, handleOfferDetail } = require('./routes/offers');
+const { handleOffers, handleOffersCsv, handleOfferDetail, handleOfferPages } = require('./routes/offers');
 const { handleAdvertiser, handleCompare } = require('./routes/advertisers');
 
 const ctx = { pool: null, state: { ready: false, fts: false, warnings: [], importError: null } };
@@ -44,6 +45,8 @@ async function route(req, res, url) {
   if (a === 'keyword-overview' && parts.length === 1) return only('GET', () => handleKeywordOverview(ctx, req, res, url.searchParams));
   if (a === 'offers.csv' && parts.length === 1) return only('GET', () => handleOffersCsv(ctx, req, res, url.searchParams));
   if (a === 'offers' && parts.length === 1) return only('GET', () => handleOffers(ctx, req, res, url.searchParams));
+  if (a === 'checkouts' && parts.length === 1) return only('GET', () => handleCheckouts(ctx, req, res, url.searchParams));
+  if (a === 'offers' && parts.length === 3 && c === 'pages') return only('GET', () => handleOfferPages(ctx, req, res, b));
   if (a === 'offers' && parts.length === 2) return only('GET', () => handleOfferDetail(ctx, req, res, b, url.searchParams));
   if (a === 'advertisers' && parts.length === 2) return only('GET', () => handleAdvertiser(ctx, req, res, b, url.searchParams));
   if (a === 'compare' && parts.length === 1) return only('GET', () => handleCompare(ctx, req, res, url.searchParams));

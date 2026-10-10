@@ -3,6 +3,7 @@
 // Extensoes unaccent e pg_trgm sao opcionais: sem elas a busca cai para ILIKE e /status mostra search.fts=false.
 const cfg = require('./config');
 
+const { TEMPLATE_SQL_RE } = require('./lib/text');
 const LOCK_KEY = 8150001; // pg_advisory_lock: dois processos subindo juntos nao disputam o DDL
 
 const CORE_SQL = `
@@ -90,6 +91,63 @@ CREATE INDEX IF NOT EXISTS idx_spy_offer_stats_growth ON spy.offer_stats (growth
 CREATE INDEX IF NOT EXISTS idx_spy_offer_stats_countries ON spy.offer_stats USING GIN (countries);
 CREATE INDEX IF NOT EXISTS idx_spy_ads_first_seen ON spy.ads (first_seen_at) WHERE dest_type = 'offer';
 
+-- BE-017: total real de anuncios ativos por anunciante (consulta barata na Biblioteca) e historico das consultas
+ALTER TABLE spy.advertisers ADD COLUMN IF NOT EXISTS active_total INTEGER;
+ALTER TABLE spy.advertisers ADD COLUMN IF NOT EXISTS checked_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS spy.advertiser_checks (
+  id           BIGSERIAL PRIMARY KEY,
+  page_id      VARCHAR(100) NOT NULL,
+  checked_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  active_total INTEGER NOT NULL,
+  source       VARCHAR(30) NOT NULL,
+  cost_usd     NUMERIC(10,4)
+);
+CREATE INDEX IF NOT EXISTS idx_spy_adv_checks_page ON spy.advertiser_checks (page_id, checked_at DESC);
+-- buscas do dominio do produtor na Biblioteca (uma por dominio a cada SPY_DOMAIN_RECHECK_DAYS)
+CREATE TABLE IF NOT EXISTS spy.domain_checks (
+  domain     VARCHAR(253) PRIMARY KEY,
+  checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  found      INTEGER NOT NULL DEFAULT 0
+);
+-- checkouts achados nas paginas de venda (url normalizada sem query) e as ofertas que levam a eles
+CREATE TABLE IF NOT EXISTS spy.checkouts (
+  checkout_url  TEXT PRIMARY KEY,
+  platform      VARCHAR(30) NOT NULL,
+  product_id    VARCHAR(100),
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_spy_checkouts_platform ON spy.checkouts (platform);
+CREATE INDEX IF NOT EXISTS idx_spy_checkouts_first_seen ON spy.checkouts (first_seen_at);
+CREATE TABLE IF NOT EXISTS spy.offer_checkouts (
+  domain       VARCHAR(253) NOT NULL,
+  checkout_url TEXT NOT NULL,
+  PRIMARY KEY (domain, checkout_url)
+);
+CREATE INDEX IF NOT EXISTS idx_spy_offer_checkouts_url ON spy.offer_checkouts (checkout_url);
+-- ranking de checkouts materializado (somas das ofertas que levam a cada um)
+CREATE TABLE IF NOT EXISTS spy.checkout_stats (
+  checkout_url        TEXT PRIMARY KEY,
+  active_ads          INTEGER NOT NULL DEFAULT 0,
+  advertisers_total   INTEGER NOT NULL DEFAULT 0,
+  growth_7d           INTEGER NOT NULL DEFAULT 0,
+  spark               JSONB NOT NULL DEFAULT '[]'::jsonb,
+  offers              JSONB NOT NULL DEFAULT '[]'::jsonb,
+  countries           TEXT[] NOT NULL DEFAULT '{}',
+  computed_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_spy_checkout_stats_growth ON spy.checkout_stats (growth_7d DESC, active_ads DESC);
+-- paginas do produtor pelo sitemap
+CREATE TABLE IF NOT EXISTS spy.offer_pages (
+  domain        VARCHAR(253) NOT NULL,
+  url           TEXT NOT NULL,
+  lastmod       TIMESTAMPTZ,
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (domain, url)
+);
+ALTER TABLE spy.offer_stats ADD COLUMN IF NOT EXISTS advertisers_active_total INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE spy.offer_stats ADD COLUMN IF NOT EXISTS main_page_total INTEGER NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS spy.ad_sources (
   ad_archive_id VARCHAR(30) NOT NULL,
   source        VARCHAR(60) NOT NULL,
@@ -110,6 +168,11 @@ CREATE TABLE IF NOT EXISTS spy.landings (
   error             VARCHAR(100)
 );
 CREATE INDEX IF NOT EXISTS idx_spy_landings_checkout ON spy.landings (checkout_platform);
+-- BE-017: sitemap do produtor (no maximo 1 leitura por dia por dominio)
+ALTER TABLE spy.landings ADD COLUMN IF NOT EXISTS sitemap_checked_at TIMESTAMPTZ;
+ALTER TABLE spy.landings ADD COLUMN IF NOT EXISTS sitemap_first_at TIMESTAMPTZ;
+ALTER TABLE spy.landings ADD COLUMN IF NOT EXISTS sitemap_error VARCHAR(100);
+ALTER TABLE spy.landings ADD COLUMN IF NOT EXISTS checkouts_at TIMESTAMPTZ; -- quando os checkouts da pagina foram lidos (landing antiga volta para a fila uma vez)
 
 CREATE TABLE IF NOT EXISTS spy.snapshots (
   ad_archive_id VARCHAR(30) NOT NULL,
@@ -237,6 +300,13 @@ async function migrate(pool) {
     if (!has.rows.length) await client.query('CREATE SCHEMA spy');
     await client.query(CORE_SQL);
     const fts = await setupFts(client, warnings);
+    // BE-017: anuncios de catalogo ({{product.name}}) ja gravados passam a dest_type catalog (some da busca, das contagens e das ofertas)
+    const done = await client.query("SELECT 1 FROM spy.meta WHERE key = 'catalog_backfill'");
+    if (!done.rows.length) {
+      const r = await client.query(`UPDATE spy.ads SET dest_type = 'catalog' WHERE dest_type <> 'catalog' AND (body ~ '${TEMPLATE_SQL_RE}' OR title ~ '${TEMPLATE_SQL_RE}' OR caption ~ '${TEMPLATE_SQL_RE}')`);
+      await client.query("INSERT INTO spy.meta (key, value) VALUES ('catalog_backfill', $1::jsonb) ON CONFLICT (key) DO NOTHING", [JSON.stringify({ at: new Date().toISOString(), fixed: r.rowCount })]);
+      if (r.rowCount) await client.query("DELETE FROM spy.offer_stats o WHERE NOT EXISTS (SELECT 1 FROM spy.ads a WHERE a.domain = o.domain AND a.dest_type = 'offer')");
+    }
     return { fts, warnings };
   } finally {
     try { await client.query('SELECT pg_advisory_unlock($1)', [LOCK_KEY]); } catch (e) { /* conexao ja caiu */ }
