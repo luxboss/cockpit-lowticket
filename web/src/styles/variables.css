@@ -1,0 +1,21 @@
+:root {
+  --bg: #0B0B0F;
+  --surface: #15151B;
+  --surface-2: #1C1C24;
+  --border: #26262F;
+  --text: #EDEDF2;
+  --text-2: #8B8B99;
+  --accent: #7C5CFF;
+  --accent-soft: rgba(124, 92, 255, 0.14);
+  --ok: #22C55E;
+  --bad: #EF4444;
+  --warn: #F59E0B;
+
+  --radius-card: 10px;
+  --radius-input: 8px;
+  --radius-sm: 4px;
+  --radius-full: 9999px;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
